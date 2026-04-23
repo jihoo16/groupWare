@@ -21,6 +21,7 @@ import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.constant.CodeConstants;
+import com.pinecni.erp.exception.ApiErrorResponse;
 import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -362,11 +363,12 @@ public class VacationController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException | IllegalStateException e) {
             // 비즈니스 검증 실패 (사용자에게 검증 메시지 전달)
-            log.error("연차 신청서 저장 실패 - 검증 오류: {}", e.getMessage(), e);
+            log.warn("[연차 신청서 저장 - 검증 오류] reason: {}", e.getMessage());
 
-            Map<String, Object> errorResponse = new HashMap<>();
+            Map<String, Object> errorResponse = ApiErrorResponse.of(e);
+            // 기존 프론트 호환: success/message 키 유지
             errorResponse.put("success", false);
-            errorResponse.put("message", e.getMessage());
+            errorResponse.put("message", errorResponse.get("message"));
 
             return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
@@ -501,11 +503,13 @@ public class VacationController {
 
             return ResponseEntity.ok(detail);
         } catch (IllegalArgumentException e) {
-            log.error("[연차신청서 상세 조회 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            log.warn("[연차신청서 상세 조회 - 대상 없음] documentIdx: {}, reason: {}", documentIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiErrorResponse.of(
+                    "요청하신 연차 신청서를 찾을 수 없습니다. 목록을 새로고침한 뒤 다시 시도해 주세요."));
         } catch (Exception e) {
-            log.error("[연차신청서 상세 조회 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(Map.of("error", "문서 조회 중 오류가 발생했습니다."));
+            log.error("[연차신청서 상세 조회 실패] documentIdx: {}", documentIdx, e);
+            return ResponseEntity.internalServerError().body(ApiErrorResponse.of(
+                    "연차 신청서를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."));
         }
     }
 
@@ -534,15 +538,13 @@ public class VacationController {
             vacationService.deleteVacation(documentIdx, currentUserIdx, false);
 
             return ResponseEntity.ok(Map.of("message", "삭제되었습니다."));
-        } catch (IllegalArgumentException e) {
-            log.error("[연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (IllegalStateException e) {
-            log.error("[연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("[연차신청서 삭제 - 검증 오류] documentIdx: {}, reason: {}", documentIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiErrorResponse.of(e));
         } catch (Exception e) {
-            log.error("[연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(Map.of("error", "삭제 처리 중 오류가 발생했습니다."));
+            log.error("[연차신청서 삭제 실패] documentIdx: {}", documentIdx, e);
+            return ResponseEntity.internalServerError().body(ApiErrorResponse.of(
+                    "연차 신청서를 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요."));
         }
     }
 
@@ -743,15 +745,13 @@ public class VacationController {
 
             String message = approve ? "승인되었습니다." : "승인이 취소되었습니다.";
             return ResponseEntity.ok(Map.of("message", message, "isApproved", approve));
-        } catch (IllegalArgumentException e) {
-            log.error("[연차 승인 처리 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (IllegalStateException e) {
-            log.error("[연차 승인 처리 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("[연차 승인 처리 - 검증 오류] documentIdx: {}, reason: {}", documentIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiErrorResponse.of(e));
         } catch (Exception e) {
-            log.error("[연차 승인 처리 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(Map.of("error", "승인 처리 중 오류가 발생했습니다."));
+            log.error("[연차 승인 처리 실패] documentIdx: {}", documentIdx, e);
+            return ResponseEntity.internalServerError().body(ApiErrorResponse.of(
+                    "승인 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
         }
     }
 
@@ -783,15 +783,13 @@ public class VacationController {
             vacationService.deleteVacation(documentIdx, currentUserIdx, true);
 
             return ResponseEntity.ok(Map.of("message", "삭제되었습니다."));
-        } catch (IllegalArgumentException e) {
-            log.error("[관리자 연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (IllegalStateException e) {
-            log.error("[관리자 연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("[관리자 연차신청서 삭제 - 검증 오류] documentIdx: {}, reason: {}", documentIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiErrorResponse.of(e));
         } catch (Exception e) {
-            log.error("[관리자 연차신청서 삭제 실패] documentIdx: {}, error: {}", documentIdx, e.getMessage(), e);
-            return ResponseEntity.internalServerError().body(Map.of("error", "삭제 처리 중 오류가 발생했습니다."));
+            log.error("[관리자 연차신청서 삭제 실패] documentIdx: {}", documentIdx, e);
+            return ResponseEntity.internalServerError().body(ApiErrorResponse.of(
+                    "연차 신청서를 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요."));
         }
     }
 
@@ -833,10 +831,10 @@ public class VacationController {
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException | IllegalStateException e) {
-            log.error("[대리 연차 신청 실패 - 검증 오류] error: {}", e.getMessage());
-            Map<String, Object> errorResponse = new HashMap<>();
+            log.warn("[대리 연차 신청 - 검증 오류] reason: {}", e.getMessage());
+            Map<String, Object> errorResponse = ApiErrorResponse.of(e);
             errorResponse.put("success", false);
-            errorResponse.put("message", e.getMessage());
+            errorResponse.put("message", errorResponse.get("message"));
             return ResponseEntity.badRequest().body(errorResponse);
         } catch (Exception e) {
             log.error("[대리 연차 신청 실패 - 시스템 오류] error: {}", e.getMessage(), e);

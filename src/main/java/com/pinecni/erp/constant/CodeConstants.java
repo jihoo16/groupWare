@@ -62,7 +62,7 @@ public class CodeConstants {
                     return groupCode;
                 }
             }
-            throw new IllegalArgumentException("Unknown group code: " + code);
+            throw new IllegalArgumentException("알 수 없는 코드 그룹입니다. (code=" + code + ")");
         }
     }
 
@@ -109,7 +109,7 @@ public class CodeConstants {
                     return dept;
                 }
             }
-            throw new IllegalArgumentException("Unknown department code: " + code);
+            throw new IllegalArgumentException("알 수 없는 부서 코드입니다. (code=" + code + ")");
         }
     }
 
@@ -160,7 +160,7 @@ public class CodeConstants {
                     return position;
                 }
             }
-            throw new IllegalArgumentException("Unknown position code: " + code);
+            throw new IllegalArgumentException("알 수 없는 직급 코드입니다. (code=" + code + ")");
         }
 
         public static Position fromSortOrder(int sortOrder) {
@@ -169,7 +169,7 @@ public class CodeConstants {
                     return position;
                 }
             }
-            throw new IllegalArgumentException("Unknown position sortOrder: " + sortOrder);
+            throw new IllegalArgumentException("알 수 없는 직급 정렬순서입니다. (sortOrder=" + sortOrder + ")");
         }
     }
 
@@ -217,7 +217,7 @@ public class CodeConstants {
                     return type;
                 }
             }
-            throw new IllegalArgumentException("Unknown leave type code: " + code);
+            throw new IllegalArgumentException("알 수 없는 연차유형 코드입니다. (code=" + code + ")");
         }
     }
 
@@ -268,7 +268,7 @@ public class CodeConstants {
             for (DocumentType type : values()) {
                 if (type.code.equals(code)) return type;
             }
-            throw new IllegalArgumentException("Unknown document type code: " + code);
+            throw new IllegalArgumentException("알 수 없는 문서유형 코드입니다. (code=" + code + ")");
         }
 
         public static DocumentType fromCodeOrNull(String code) {
@@ -326,7 +326,7 @@ public class CodeConstants {
                     return status;
                 }
             }
-            throw new IllegalArgumentException("Unknown document status code: " + code);
+            throw new IllegalArgumentException("알 수 없는 문서상태 코드입니다. (code=" + code + ")");
         }
     }
 
@@ -373,7 +373,7 @@ public class CodeConstants {
                     return type;
                 }
             }
-            throw new IllegalArgumentException("Unknown work type code: " + code);
+            throw new IllegalArgumentException("알 수 없는 근무형태 코드입니다. (code=" + code + ")");
         }
     }
 
@@ -419,7 +419,7 @@ public class CodeConstants {
                     return status;
                 }
             }
-            throw new IllegalArgumentException("Unknown employment status code: " + code);
+            throw new IllegalArgumentException("알 수 없는 재직상태 코드입니다. (code=" + code + ")");
         }
     }
 
@@ -467,7 +467,7 @@ public class CodeConstants {
                     return rank;
                 }
             }
-            throw new IllegalArgumentException("Unknown rank code: " + code);
+            throw new IllegalArgumentException("알 수 없는 직위 코드입니다. (code=" + code + ")");
         }
     }
 
@@ -514,7 +514,7 @@ public class CodeConstants {
                     return type;
                 }
             }
-            throw new IllegalArgumentException("Unknown team type code: " + code);
+            throw new IllegalArgumentException("알 수 없는 팀유형 코드입니다. (code=" + code + ")");
         }
     }
 
@@ -552,7 +552,7 @@ public class CodeConstants {
             for (ExpenseSettlementStatus status : values()) {
                 if (status.code.equals(code)) return status;
             }
-            throw new IllegalArgumentException("Unknown expense settlement status code: " + code);
+            throw new IllegalArgumentException("알 수 없는 경비정산상태 코드입니다. (code=" + code + ")");
         }
 
         public static ExpenseSettlementStatus fromCodeOrNull(String code) {
@@ -598,7 +598,7 @@ public class CodeConstants {
             for (MilitaryStatus status : values()) {
                 if (status.code.equals(code)) return status;
             }
-            throw new IllegalArgumentException("Unknown military status code: " + code);
+            throw new IllegalArgumentException("알 수 없는 병역상태 코드입니다. (code=" + code + ")");
         }
 
         public static MilitaryStatus fromCodeOrNull(String code) {
@@ -650,7 +650,7 @@ public class CodeConstants {
             for (SignatureSessionStatus status : values()) {
                 if (status.code.equals(code)) return status;
             }
-            throw new IllegalArgumentException("Unknown signature session status code: " + code);
+            throw new IllegalArgumentException("알 수 없는 서명세션상태 코드입니다. (code=" + code + ")");
         }
 
         public static SignatureSessionStatus fromCodeOrNull(String code) {
@@ -697,7 +697,7 @@ public class CodeConstants {
             for (DocumentSignatureStatus status : values()) {
                 if (status.code.equals(code)) return status;
             }
-            throw new IllegalArgumentException("Unknown document signature status code: " + code);
+            throw new IllegalArgumentException("알 수 없는 문서서명상태 코드입니다. (code=" + code + ")");
         }
 
         public static DocumentSignatureStatus fromCodeOrNull(String code) {
@@ -747,7 +747,7 @@ public class CodeConstants {
             for (SignatureSlot slot : values()) {
                 if (slot.code.equals(code)) return slot;
             }
-            throw new IllegalArgumentException("Unknown signature slot code: " + code);
+            throw new IllegalArgumentException("알 수 없는 서명위치 코드입니다. (code=" + code + ")");
         }
 
         public static SignatureSlot fromCodeOrNull(String code) {
@@ -791,7 +791,7 @@ public class CodeConstants {
             for (AuditTargetType type : values()) {
                 if (type.code.equals(code)) return type;
             }
-            throw new IllegalArgumentException("Unknown audit target type code: " + code);
+            throw new IllegalArgumentException("알 수 없는 감사로그 대상유형 코드입니다. (code=" + code + ")");
         }
     }
 
@@ -834,7 +834,7 @@ public class CodeConstants {
             for (AuditAction action : values()) {
                 if (action.code.equals(code)) return action;
             }
-            throw new IllegalArgumentException("Unknown audit action code: " + code);
+            throw new IllegalArgumentException("알 수 없는 감사로그 행위 코드입니다. (code=" + code + ")");
         }
     }
 }
