@@ -142,16 +142,16 @@ function loadEmployees() {
             updateStatistics(response);
         },
         error: function(xhr, status, error) {
-            console.error('사용자 목록 조회 실패:', error);
-            showError('직원 목록을 불러오는데 실패했습니다.', '조회 실패');
+            console.error('[직원 목록 조회]', error);
+            showLoadFailure('직원 목록');
 
-            // 에러 발생 시 빈 테이블 표시
+            // 목록을 불러오지 못한 경우 안내 메시지 표시
             $('#employeeTableBody').html(`
                 <tr class="empty-message">
                     <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
                         <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; display: block; color: #ff6b6b;"></i>
-                        <p style="font-size: 16px; font-weight: 500; color: #ff6b6b;">직원 목록을 불러오는데 실패했습니다.</p>
-                        <p style="font-size: 14px; margin-top: 8px; color: #bbb;">서버 연결을 확인하거나 잠시 후 다시 시도해주세요.</p>
+                        <p style="font-size: 16px; font-weight: 500; color: #ff6b6b;">직원 목록을 표시할 수 없습니다.</p>
+                        <p style="font-size: 14px; margin-top: 8px; color: #bbb;">페이지를 새로고침(F5)한 뒤 다시 시도해 주세요.</p>
                     </td>
                 </tr>
             `);
@@ -345,8 +345,8 @@ function viewEmployeeDetail(idx) {
             $('#view-empNotes').text(user.empNotes || '-');
         },
         error: function(xhr, status, error) {
-            console.error('직원 상세 조회 실패:', error);
-            showError('직원 정보를 불러오는데 실패했습니다.', '조회 실패');
+            console.error('[직원 상세 조회]', error);
+            showLoadFailure('직원 정보');
         }
     });
 }
@@ -403,8 +403,8 @@ function editEmployee(idx) {
             $('#empNotes').val(user.empNotes || '');
         },
         error: function(xhr, status, error) {
-            console.error('직원 정보 조회 실패:', error);
-            showError('직원 정보를 불러오는데 실패했습니다.', '조회 실패');
+            console.error('[직원 정보 조회]', error);
+            showLoadFailure('직원 정보');
         }
     });
 }
@@ -674,11 +674,11 @@ function openEmployeeModal() {
             $('#empId').val(response.empId);
         },
         error: function(xhr, status, error) {
-            console.error('사번 생성 실패:', error);
-            // 실패 시 기본값 설정 (날짜 + 01)
+            console.error('[사번 생성]', error);
+            // 사번을 자동으로 만들지 못한 경우 날짜 기반 기본값 설정
             const fallbackEmpId = `${year}${month}${day}01`;
             $('#empId').val(fallbackEmpId);
-            showWarning('사번 생성 중 오류가 발생했습니다. 기본값이 설정되었습니다.', '사번 생성 오류');
+            showWarning('사번을 자동으로 만들지 못해 기본값으로 채웠습니다.\n필요하면 직접 수정해 주세요.', '사번 안내');
         }
     });
 }
@@ -742,9 +742,8 @@ function saveEmployee() {
                 loadEmployees(); // 목록 새로고침
             },
             error: function(xhr, status, error) {
-                console.error('직원 수정 실패:', xhr.responseJSON);
-                const errorMsg = xhr.responseJSON?.error || '직원 정보 수정에 실패했습니다.';
-                showError(errorMsg, '수정 실패');
+                console.error('[직원 수정] 응답:', xhr.responseJSON);
+                showUpdateFailure('직원 정보');
             }
         });
     } else {
@@ -761,9 +760,8 @@ function saveEmployee() {
                 loadEmployees(); // 목록 새로고침
             },
             error: function(xhr, status, error) {
-                console.error('직원 등록 실패:', xhr.responseJSON);
-                const errorMsg = xhr.responseJSON?.error || '직원 등록에 실패했습니다.';
-                showError(errorMsg, '등록 실패');
+                console.error('[직원 등록] 응답:', xhr.responseJSON);
+                showSaveFailure('직원 정보');
             }
         });
     }
@@ -853,14 +851,8 @@ function deleteEmployee(idx) {
                     loadEmployees(); // 목록 새로고침
                 },
                 error: function(xhr, status, error) {
-                    console.error('직원 삭제 실패:', xhr.responseJSON);
-                    const errorMsg = xhr.responseJSON?.error || '직원 삭제에 실패했습니다.';
-                    Swal.fire({
-                        icon: 'error',
-                        title: '삭제 실패',
-                        text: errorMsg,
-                        confirmButtonText: '확인'
-                    });
+                    console.error('[직원 삭제] 응답:', xhr.responseJSON);
+                    showDeleteFailure('직원 정보');
                 }
             });
         }

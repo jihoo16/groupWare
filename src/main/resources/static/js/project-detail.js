@@ -116,10 +116,12 @@ document.addEventListener('DOMContentLoaded', async function () {
                 loadProjectDetail(projectId, currentUserIdx);
             } else {
                 const err = await res.json().catch(() => ({}));
-                Swal.fire({ icon: 'error', title: '저장 실패', text: '저장에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
+                console.error('[보정값 저장] 응답:', err);
+                showSaveFailure('보정값');
             }
         } catch (e) {
-            Swal.fire({ icon: 'error', title: '저장 실패', text: '저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
+            console.error('[보정값 저장]', e);
+            showSaveFailure('보정값');
         }
     });
 
@@ -196,10 +198,10 @@ async function loadProjectDetail(projectId, currentUserIdx) {
         // 로딩 오버레이 숨김
         window.hidePageLoadingOverlay();
     } catch (error) {
-        console.error('프로젝트 조회 오류:', error);
-        await showError('프로젝트를 불러오는데 실패했습니다.');
+        console.error('[프로젝트 조회]', error);
+        await showLoadFailure('프로젝트');
         window.hidePageLoadingOverlay();
-        // history.back() 대신 목록 페이지로 이동하여 무한 루프 방지
+        // 무한 루프 방지를 위해 목록 페이지로 이동
         setTimeout(() => {
             window.location.href = '/project';
         }, 1500);
@@ -672,8 +674,8 @@ async function deleteProject(projectId) {
         await showSuccess('프로젝트가 삭제되었습니다.');
         location.href = '/project';
     } catch (error) {
-        console.error('프로젝트 삭제 오류:', error);
-        await showError('프로젝트 삭제에 실패했습니다.');
+        console.error('[프로젝트 삭제]', error);
+        await showDeleteFailure('프로젝트');
     }
 }
 

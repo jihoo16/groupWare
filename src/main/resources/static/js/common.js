@@ -381,7 +381,8 @@ window.fetchWithErrorHandling = async function(url, options = {}, autoHandle404 
 
             // 기타 에러
             const errorText = await response.text();
-            throw new Error('데이터를 불러올 수 없습니다.\n잠시 후 다시 시도해주세요.');
+            console.error(`[API 실패] ${url} status=${response.status} body=${errorText}`);
+            throw new Error('LOAD_FAILURE');
         }
 
         const data = await response.json();
@@ -412,18 +413,13 @@ window.loadDetailPageData = async function(url, onSuccess, onError) {
         // data가 null이면 이미 리다이렉트 중
 
     } catch (error) {
-        console.error('상세 페이지 데이터 로드 실패:', error);
+        console.error('[상세 페이지 로드] 데이터', error);
         hidePageLoadingOverlay();
 
         if (onError) {
             onError(error);
         } else {
-            await Swal.fire({
-                icon: 'error',
-                title: '오류',
-                text: '데이터를 불러오는데 실패했습니다.',
-                confirmButtonText: '확인'
-            });
+            await showLoadFailure('정보');
         }
     }
 };

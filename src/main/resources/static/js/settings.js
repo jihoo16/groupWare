@@ -218,8 +218,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
 
                 if (!response.ok) {
-                    // 서버에서 반환한 에러 메시지 표시
-                    await showError(data.error || '비밀번호 변경에 실패했습니다.');
+                    // 서버가 사용자에게 보여줄 명확한 메시지를 주는 경우 그대로 노출
+                    if (data && data.error) {
+                        await showError(data.error);
+                    } else {
+                        console.error('[비밀번호 변경] 응답:', response.status, data);
+                        await showUpdateFailure('비밀번호');
+                    }
                     return;
                 }
 
@@ -240,8 +245,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (reqSpecial) reqSpecial.classList.remove('valid');
 
             } catch (error) {
-                console.error('비밀번호 변경 오류:', error);
-                await showError('비밀번호 변경 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[비밀번호 변경]', error);
+                await showUpdateFailure('비밀번호');
             }
         });
     }
@@ -305,8 +310,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
 
                 if (!response.ok) {
-                    const data = await response.json();
-                    await showError(data.error || '프로필 업데이트에 실패했습니다.');
+                    const data = await response.json().catch(() => ({}));
+                    if (data && data.error) {
+                        await showError(data.error);
+                    } else {
+                        console.error('[프로필 업데이트] 응답:', response.status, data);
+                        await showUpdateFailure('프로필');
+                    }
                     return;
                 }
 
@@ -316,8 +326,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 await showSuccess('프로필이 성공적으로 업데이트되었습니다.');
 
             } catch (error) {
-                console.error('프로필 업데이트 오류:', error);
-                await showError('프로필 업데이트 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[프로필 업데이트]', error);
+                await showUpdateFailure('프로필');
             }
         });
     }
@@ -888,12 +898,17 @@ async function saveCompetency(type) {
         });
 
         if (res.status === 403) {
-            await showWarning('본인 또는 관리자만 수정할 수 있습니다.');
+            await showPermissionDenied('이 항목 수정');
             return;
         }
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            await showError(data.error || '저장에 실패했습니다.');
+            if (data && data.error) {
+                await showError(data.error);
+            } else {
+                console.error(`[${type}] 저장 응답 실패:`, res.status, data);
+                await showSaveFailure('내용');
+            }
             return;
         }
 
@@ -928,7 +943,8 @@ async function saveCompetency(type) {
                 await loadCompetency(type);
 
                 if (upFail > 0) {
-                    await showWarning(`저장은 완료되었으나 ${upFail}개 첨부파일 업로드에 실패했습니다.`);
+                    console.error(`[첨부] ${upFail}개 업로드 실패`);
+                    await showWarning(`저장은 끝났지만 첨부파일 ${upFail}개를 올리지 못했습니다.\n추가 창에서 다시 올려 주세요.`);
                 } else if (pending.length > 0) {
                     await showSuccess(`저장되었습니다. (첨부 ${pending.length}개 포함)`);
                 } else {
@@ -943,7 +959,7 @@ async function saveCompetency(type) {
         await showSuccess(isEdit ? '수정되었습니다.' : '저장되었습니다.');
     } catch (e) {
         console.error(`[${type}] 저장 실패`, e);
-        await showError('저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+        await showSaveFailure('내용');
     }
 }
 
@@ -960,7 +976,7 @@ async function deleteCompetency(type, idx) {
         const res = await fetch(`${cfg.apiPath}/${idx}`, { method: 'DELETE' });
 
         if (res.status === 403) {
-            await showWarning('본인 또는 관리자만 삭제할 수 있습니다.');
+            await showPermissionDenied('이 항목 삭제');
             return;
         }
         if (!res.ok) throw new Error();
@@ -969,7 +985,7 @@ async function deleteCompetency(type, idx) {
         await showSuccess('삭제되었습니다.');
     } catch (e) {
         console.error(`[${type}] 삭제 실패`, e);
-        await showError('삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+        await showDeleteFailure('항목');
     }
 }
 
@@ -1446,8 +1462,8 @@ async function loadCurrentUserProfile() {
         if (userAddressInput) userAddressInput.value = user.empAddress || '';
 
     } catch (error) {
-        console.error('사용자 정보 로드 오류:', error);
-        await showError('사용자 정보를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.');
+        console.error('[사용자 정보 로드]', error);
+        await showLoadFailure('사용자 정보');
     }
 }
 
@@ -1902,18 +1918,23 @@ async function uploadAttachments(type, parentIdx, inputEl) {
             formData.append('file', renamed);
             const res = await fetch(cfg.uploadUrl(parentIdx), { method: 'POST', body: formData });
             if (res.status === 403) {
-                await showWarning('본인만 업로드할 수 있습니다.');
+                await showPermissionDenied('첨부파일 올리기');
                 break;
             }
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                await showError(data.error || `${file.name}: 업로드 실패`);
+                if (data && data.error) {
+                    await showError(data.error);
+                } else {
+                    console.error(`[첨부] ${file.name} 업로드 응답 실패:`, res.status, data);
+                    await showUploadFailure(file.name);
+                }
                 continue;
             }
             success++;
         } catch (e) {
-            console.error('[첨부] 업로드 오류', e);
-            await showError(`${file.name}: 업로드 중 오류가 발생했습니다.`);
+            console.error('[첨부] 업로드 오류', file.name, e);
+            await showUploadFailure(file.name);
         }
     }
 
@@ -1946,11 +1967,12 @@ async function deleteAttachment(type, attachmentIdx) {
     try {
         const res = await fetch(cfg.deleteUrl(attachmentIdx), { method: 'DELETE' });
         if (res.status === 403) {
-            await showWarning('본인만 삭제할 수 있습니다.');
+            await showPermissionDenied('첨부파일 삭제');
             return;
         }
         if (!res.ok) {
-            await showError('삭제에 실패했습니다.');
+            console.error('[첨부] 삭제 응답 실패:', res.status);
+            await showDeleteFailure('첨부파일');
             return;
         }
 
@@ -1965,7 +1987,7 @@ async function deleteAttachment(type, attachmentIdx) {
         await showSuccess('첨부파일이 삭제되었습니다.');
     } catch (e) {
         console.error('[첨부] 삭제 오류', e);
-        await showError('삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+        await showDeleteFailure('첨부파일');
     }
 }
 
@@ -2036,7 +2058,12 @@ async function saveMilitaryService() {
 
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            await showError(data.error || '병적사항 저장에 실패했습니다.');
+            if (data && data.error) {
+                await showError(data.error);
+            } else {
+                console.error('[병적사항] 저장 응답 실패:', res.status, data);
+                await showSaveFailure('병적사항');
+            }
             return;
         }
 
@@ -2044,6 +2071,6 @@ async function saveMilitaryService() {
         await showSuccess('병적사항이 저장되었습니다.');
     } catch (e) {
         console.error('[병적사항] 저장 오류', e);
-        await showError('병적사항 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+        await showSaveFailure('병적사항');
     }
 }

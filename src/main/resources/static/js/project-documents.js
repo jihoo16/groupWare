@@ -327,11 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const end = new Date(endDateInput.value);
 
         if (start > end) {
-            Swal.fire({
-                icon: 'error',
-                title: '잘못된 날짜 범위',
-                text: '시작일은 종료일보다 이전이어야 합니다.'
-            });
+            showWarning('시작일은 종료일보다 이전이어야 합니다.', '날짜 확인');
             return;
         }
 
@@ -575,12 +571,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 정렬 아이콘 초기화
                 updateSortIcons();
             } else {
-                console.error('문서 로드 실패:', response.status, response.statusText);
-                showError('문서 목록을 불러올 수 없습니다.');
+                console.error('[문서 목록 로드] status=' + response.status + ' ' + response.statusText);
+                showError('문서 목록을 표시할 수 없습니다. 페이지를 새로고침(F5)해 주세요.');
             }
         } catch (error) {
-            console.error('문서 로드 중 오류:', error);
-            showError('문서 목록을 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[문서 목록 로드]', error);
+            showError('문서 목록을 표시할 수 없습니다. 페이지를 새로고침(F5)해 주세요.');
         }
     }
 
@@ -1499,7 +1495,17 @@ let text;
             await loadAllDocuments();
             Swal.fire({ icon: 'success', title: '저장 완료', text: '첨부파일이 저장되었습니다.', timer: 1800, showConfirmButton: false });
         } catch (err) {
-            Swal.fire({ ...swalAboveModal, icon: 'error', title: '저장 실패', text: '저장에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
+            console.error('[첨부파일 저장]', err);
+            Swal.fire({
+                ...swalAboveModal,
+                title: '첨부파일을(를) 저장하지 못했습니다',
+                html: '서버와 잠시 연결되지 않아 저장이 완료되지 않았습니다.<br>' +
+                      '선택하신 파일은 그대로 남아 있으니 <b>다시 저장 버튼</b>을 눌러 주세요.<br>' +
+                      '같은 문제가 계속되면 관리자에게 문의해 주세요.',
+                icon: 'warning',
+                confirmButtonText: '확인',
+                confirmButtonColor: '#ff9800'
+            });
         } finally {
             const btn = document.getElementById('modalSaveBtn');
             if (btn) { btn.disabled = false; btn.textContent = '저장'; }
@@ -1516,7 +1522,17 @@ let text;
         try {
             const response = await fetch(url);
             if (!response.ok) {
-                Swal.fire({ ...swalAboveModal, icon: 'error', title: '다운로드 실패', text: `파일을 찾을 수 없습니다: ${filename}` });
+                console.error('[파일 다운로드] 파일을 찾지 못함: ' + filename + ' status=' + response.status);
+                Swal.fire({
+                    ...swalAboveModal,
+                    title: '파일을(를) 내려받지 못했습니다',
+                    html: `<b>${filename}</b> 파일을 서버에서 찾을 수 없습니다.<br>` +
+                          '파일이 삭제되었거나 이동되었을 수 있습니다.<br>' +
+                          '목록을 새로고침해 확인해 주세요.',
+                    icon: 'warning',
+                    confirmButtonText: '확인',
+                    confirmButtonColor: '#ff9800'
+                });
                 return;
             }
             const blob = await response.blob();
@@ -1529,7 +1545,16 @@ let text;
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
         } catch (err) {
-            Swal.fire({ ...swalAboveModal, icon: 'error', title: '다운로드 오류', text: `파일 다운로드 중 오류가 발생했습니다: ${filename}` });
+            console.error('[파일 다운로드]', filename, err);
+            Swal.fire({
+                ...swalAboveModal,
+                title: '파일을(를) 내려받지 못했습니다',
+                html: '서버와 잠시 연결되지 않아 내려받기가 완료되지 않았습니다.<br>' +
+                      '인터넷 연결을 확인한 뒤 <b>다시 내려받기 버튼</b>을 눌러 주세요.',
+                icon: 'warning',
+                confirmButtonText: '확인',
+                confirmButtonColor: '#ff9800'
+            });
         }
     }
 

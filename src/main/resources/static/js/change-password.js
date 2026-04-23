@@ -368,8 +368,8 @@ if (!empAddressInput.value.trim()) {
             setTimeout(() => { window.location.href = '/home'; }, 2000);
 
         } catch (error) {
-            console.error('Form submit error:', error);
-            showAlert('처리 중 오류가 발생했습니다.\n다시 시도해주세요.', 'error');
+            console.error('[비밀번호 변경] 비밀번호', error);
+            showUpdateFailure('비밀번호');
             changePasswordBtn.classList.remove('loading');
             changePasswordBtn.disabled = false;
         }
