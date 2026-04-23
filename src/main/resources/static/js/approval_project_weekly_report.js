@@ -1258,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     renderApproverTree(projectMembers);
                     renderTempReferences();
                 } catch (error) {
-                    showError('프로젝트 참여인원을 불러오는 중 오류가 발생했습니다.');
+                    showError('프로젝트 참여인원을 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
                 }
             }
         });
@@ -1609,7 +1609,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return true;
         } catch (error) {
             console.error('파일 업로드 오류:', error);
-            showError('파일 업로드 중 오류가 발생했습니다: ' + error.message);
+            showError('파일 업로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             return false;
         }
     }
@@ -1801,7 +1801,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (error) {
             console.error('보고서 로드 오류:', error);
-            showError('보고서를 불러오는 중 오류가 발생했습니다: ' + error.message);
+            showError('보고서를 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             popupAwareRedirect('/project/documents');
         }
     }
@@ -2035,7 +2035,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 Swal.close();
                 console.error('API 호출 오류:', error);
-                showError('저장 중 오류가 발생했습니다: ' + error.message);
+                showError('저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             }
         });
     }

@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 페이징 관련 변수
     let currentPage = 1;
-    const itemsPerPage = 9; // 프로젝트 문서 행당 내용이 많아 높이가 큰 편이므로 9건씩
+    const itemsPerPage = 10;
     let filteredRows = []; // 필터링된 행들
 
     // 프로젝트 관련 문서 타입 정의
@@ -580,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('문서 로드 중 오류:', error);
-            showError('문서 목록을 불러오는 중 오류가 발생했습니다.');
+            showError('문서 목록을 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 
@@ -1499,7 +1499,7 @@ let text;
             await loadAllDocuments();
             Swal.fire({ icon: 'success', title: '저장 완료', text: '첨부파일이 저장되었습니다.', timer: 1800, showConfirmButton: false });
         } catch (err) {
-            Swal.fire({ ...swalAboveModal, icon: 'error', title: '저장 실패', text: err.message });
+            Swal.fire({ ...swalAboveModal, icon: 'error', title: '저장 실패', text: '저장에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
         } finally {
             const btn = document.getElementById('modalSaveBtn');
             if (btn) { btn.disabled = false; btn.textContent = '저장'; }

@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('수정 오류:', error);
-            showError('수정 중 오류가 발생했습니다.');
+            showError('수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 
@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 } catch (error) {
                     console.error('삭제 오류:', error);
-                    showError('삭제 중 오류가 발생했습니다.');
+                    showError('삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
                 }
             });
 
@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.hidePageLoadingOverlay();
         } catch (error) {
             console.error('주간업무보고 상세 로드 오류:', error);
-            showError('주간업무보고를 불러오는 중 오류가 발생했습니다.');
+            showError('주간업무보고를 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             window.hidePageLoadingOverlay();
             // history.back() 대신 목록 페이지로 이동하여 무한 루프 방지
             setTimeout(() => {

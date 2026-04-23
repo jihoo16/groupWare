@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
             applyFilters();
         } catch (error) {
             console.error('문서 목록 조회 오류:', error);
-            showError('데이터를 불러오는 중 오류가 발생했습니다.');
+            showError('데이터를 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 
@@ -389,7 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadDocuments();
         } catch (error) {
             console.error('삭제 오류:', error);
-            Swal.fire({ icon: 'error', title: '삭제 실패', text: error.message });
+            Swal.fire({ icon: 'error', title: '삭제 실패', text: '삭제에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
         }
     };
 
@@ -582,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (err) {
             console.error('관리자 대리 업로드 실패:', err);
-            Swal.fire({ icon: 'error', title: '업로드 실패', text: '네트워크 오류가 발생했습니다.' });
+            Swal.fire({ icon: 'error', title: '업로드 실패', text: '네트워크 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
         }
     }
 

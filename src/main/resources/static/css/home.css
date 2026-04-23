@@ -119,6 +119,13 @@ html.popup-mode .main-content {
     background-color: rgba(255, 255, 255, 0.5) !important;
 }
 
+.menu-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 8px 12px;
+    list-style: none;
+}
+
 .menu-item {
     position: relative;
     margin: 5px 0;
@@ -241,16 +248,30 @@ html.popup-mode .main-content {
 }
 
 .submenu-item:not(.submenu-parent):hover a::before {
-    content: '→';
+    content: '';
     position: absolute;
-    left: 38px;
+    left: 36px;
+    width: 3px;
+    height: 16px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #667eea, #764ba2);
+    box-shadow: 0 0 6px rgba(102, 126, 234, 0.5);
+    top: 50%;
+    transform: translateY(-50%);
     opacity: 1;
 }
 
 .submenu-parent:hover .submenu-toggle-btn::before {
-    content: '→';
+    content: '';
     position: absolute;
-    left: 38px;
+    left: 36px;
+    width: 3px;
+    height: 16px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #667eea, #764ba2);
+    box-shadow: 0 0 6px rgba(102, 126, 234, 0.5);
+    top: 50%;
+    transform: translateY(-50%);
     opacity: 1;
 }
 
@@ -847,6 +868,11 @@ html.popup-mode .main-content {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+.shortcut-section + .shortcut-section {
+    border-left: 1px solid #e2e8f0;
+    padding-left: 16px;
 }
 
 .shortcut-title {

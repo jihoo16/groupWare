@@ -61,7 +61,7 @@
             loadProjectData(projectId);
         }).catch(async error => {
             console.error('초기 데이터 로드 실패:', error);
-            await showError('페이지 로드 중 오류가 발생했습니다.');
+            await showError('페이지 로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         });
     });
 
@@ -96,7 +96,7 @@
             return true;
         } catch (error) {
             console.error('권한 확인 오류:', error);
-            await showError('권한 확인 중 오류가 발생했습니다.');
+            await showError('권한 확인 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             location.href = '/project';
             return false;
         }
@@ -1530,7 +1530,7 @@
 
         } catch (error) {
             console.error('Error updating project:', error);
-            await showError('프로젝트 수정 중 오류가 발생했습니다.');
+            await showError('프로젝트 수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 
@@ -2054,7 +2054,7 @@
             })
             .catch(async (error) => {
                 console.error('프로젝트 삭제 실패:', error);
-                await showError('프로젝트 삭제에 실패했습니다.\n' + error.message);
+                await showError('프로젝트 삭제에 실패했습니다.\n잠시 후 다시 시도해주세요.');
                 deleteProjectBtn.disabled = false;
                 deleteProjectBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
             });

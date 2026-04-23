@@ -394,7 +394,13 @@ public class SignatureServiceImpl implements SignatureService {
 
     @Override
     public long countPendingForUser(Long userIdx) {
-        return documentSignatureRepository.countPendingBySignerUserIdx(userIdx);
+        // 삭제된 문서 제외 — list와 동일한 기준
+        return documentSignatureRepository.findPendingBySignerUserIdx(userIdx).stream()
+                .filter(ds -> {
+                    ApprovalDocument doc = approvalDocumentRepository.findById(ds.getDocumentIdx()).orElse(null);
+                    return doc != null && doc.getDeletedAt() == null;
+                })
+                .count();
     }
 
     @Override
@@ -429,6 +435,39 @@ public class SignatureServiceImpl implements SignatureService {
             item.put("signatureSlotLabel", slotLabel);
             item.put("drafterName", drafterName);
             item.put("requestedAt", ds.getRequestedAt());
+            // 문서 상태
+            String statusCode = doc.getStatus() != null ? doc.getStatus() : "C0501";
+            String statusName;
+            try { statusName = CodeConstants.DocumentStatus.fromCode(statusCode).getName(); }
+            catch (Exception e) { statusName = statusCode; }
+            item.put("statusCode", statusCode);
+            item.put("statusName", statusName);
+
+            // 전체 서명 현황
+            List<DocumentSignature> allSigs = documentSignatureRepository
+                    .findByDocumentIdxOrderBySignatureOrderAscIdxAsc(ds.getDocumentIdx());
+            long total = allSigs.stream().filter(s -> s.getLinkedSignatureIdx() == null).count();
+            long signed = allSigs.stream().filter(s -> s.getLinkedSignatureIdx() == null
+                    && ("C1402".equals(s.getStatus()) || "C1403".equals(s.getStatus()))).count();
+            item.put("progress", total > 0 ? signed + "/" + total : "-");
+
+            List<Map<String, Object>> signerDetails = new ArrayList<>();
+            for (DocumentSignature sig : allSigs) {
+                if (sig.getLinkedSignatureIdx() != null) continue;
+                String sName = userRepository.findById(sig.getSignerUserIdx())
+                        .map(User::getEmpName).orElse("알 수 없음");
+                String sSlot = codeRepository.findByCode(sig.getSignatureSlot())
+                        .map(Code::getCodeName).orElse(sig.getSignatureSlot());
+                Map<String, Object> sd = new HashMap<>();
+                sd.put("signerName", sName);
+                sd.put("slotLabel", sSlot);
+                sd.put("signed", "C1402".equals(sig.getStatus()) || "C1403".equals(sig.getStatus()));
+                sd.put("requestedAt", sig.getRequestedAt());
+                sd.put("signedAt", sig.getSignedAt());
+                signerDetails.add(sd);
+            }
+            item.put("signers", signerDetails);
+
             result.add(item);
         }
         return result;
@@ -465,6 +504,12 @@ public class SignatureServiceImpl implements SignatureService {
             item.put("signatureSlotLabel", slotLabel);
             item.put("drafterName", drafterName);
             item.put("signedAt", ds.getSignedAt());
+            String statusCode = doc.getStatus() != null ? doc.getStatus() : "C0501";
+            String statusName;
+            try { statusName = CodeConstants.DocumentStatus.fromCode(statusCode).getName(); }
+            catch (Exception e) { statusName = statusCode; }
+            item.put("statusCode", statusCode);
+            item.put("statusName", statusName);
             result.add(item);
         }
         return result;
@@ -526,5 +571,70 @@ public class SignatureServiceImpl implements SignatureService {
         }
 
         return applied;
+    }
+
+    // ============================================================
+    // 내가 요청한 서명 목록
+    // ============================================================
+
+    @Override
+    public List<Map<String, Object>> getRequestedListForUser(Long userIdx) {
+        // 내가 만든 문서(createdUserIdx) 중 서명 요청이 있는 것
+        List<ApprovalDocument> myDocs = approvalDocumentRepository.findAll().stream()
+                .filter(d -> userIdx.equals(d.getCreatedUserIdx()) && d.getDeletedAt() == null
+                        && d.getStatus() != null)
+                .toList();
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (ApprovalDocument doc : myDocs) {
+            List<DocumentSignature> sigs = documentSignatureRepository
+                    .findByDocumentIdxOrderBySignatureOrderAscIdxAsc(doc.getIdx());
+            if (sigs.isEmpty()) continue;
+
+            long total = sigs.stream().filter(s -> s.getLinkedSignatureIdx() == null).count();
+            long signed = sigs.stream().filter(s -> s.getLinkedSignatureIdx() == null
+                    && ("C1402".equals(s.getStatus()) || "C1403".equals(s.getStatus()))).count();
+
+            String docTypeName = codeRepository.findByCode(doc.getDocumentType())
+                    .map(Code::getCodeName).orElse(doc.getDocumentType());
+            String statusCode = doc.getStatus();
+            String statusName;
+            try { statusName = CodeConstants.DocumentStatus.fromCode(statusCode).getName(); }
+            catch (Exception e) { statusName = statusCode; }
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("documentIdx", doc.getIdx());
+            item.put("documentNo", doc.getDocumentNo());
+            item.put("documentTitle", doc.getTitle());
+            item.put("documentType", doc.getDocumentType());
+            item.put("documentTypeName", docTypeName);
+            item.put("statusCode", statusCode);
+            item.put("statusName", statusName);
+            item.put("signedCount", signed);
+            item.put("totalCount", total);
+            item.put("progress", total > 0 ? signed + "/" + total : "-");
+            item.put("createdAt", doc.getCreatedAt());
+
+            // 서명자별 상세 현황
+            List<Map<String, Object>> signerDetails = new ArrayList<>();
+            for (DocumentSignature sig : sigs) {
+                if (sig.getLinkedSignatureIdx() != null) continue;
+                String sName = userRepository.findById(sig.getSignerUserIdx())
+                        .map(User::getEmpName).orElse("알 수 없음");
+                String sSlot = codeRepository.findByCode(sig.getSignatureSlot())
+                        .map(Code::getCodeName).orElse(sig.getSignatureSlot());
+                Map<String, Object> sd = new HashMap<>();
+                sd.put("signerName", sName);
+                sd.put("slotLabel", sSlot);
+                sd.put("signed", "C1402".equals(sig.getStatus()) || "C1403".equals(sig.getStatus()));
+                sd.put("requestedAt", sig.getRequestedAt());
+                sd.put("signedAt", sig.getSignedAt());
+                signerDetails.add(sd);
+            }
+            item.put("signers", signerDetails);
+
+            result.add(item);
+        }
+        return result;
     }
 }

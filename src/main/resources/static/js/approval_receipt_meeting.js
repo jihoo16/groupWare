@@ -533,10 +533,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             return `${String(newHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         }
 
-        function subtractHours(timeString, hours) {
-            return addHours(timeString, -hours);
-        }
-
         // 참석자 중복 검증 재실행 함수 (시간 변경 시)
         async function recheckAttendees() {
             // 참석자가 없으면 스킵
@@ -555,16 +551,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        // 시작 시간 변경 시 종료 시간 자동 조절 및 min 값 설정
+        // 시작 시간 변경 시 종료 시간 기본값(+3시간) 설정 및 min 값 업데이트
         if (commonStartTime) {
             commonStartTime.addEventListener('change', async function() {
                 if (this.value && commonEndTime) {
-                    // 종료 시간의 최소값 = 시작 시간 + 1시간
-                    const minEndTime = addHours(this.value, 1);
-                    commonEndTime.setAttribute('min', minEndTime);
+                    // 종료 시간의 최소값 = 시작 시간 (시작보다 빠르지만 않으면 됨)
+                    commonEndTime.setAttribute('min', this.value);
 
-                    // 종료 시간 = 시작 시간 + 1시간
-                    commonEndTime.value = minEndTime;
+                    // 종료 시간 기본값 = 시작 시간 + 3시간 (사용자가 자유롭게 조정 가능)
+                    commonEndTime.value = addHours(this.value, 3);
 
                     // 종료 시간이 변경되었으므로 자동 채우기 트리거
                     commonEndTime.dispatchEvent(new Event('input'));
@@ -583,33 +578,25 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // 페이지 로드 시 초기 min 값 설정
             if (commonStartTime.value && commonEndTime) {
-                const minEndTime = addHours(commonStartTime.value, 1);
-                commonEndTime.setAttribute('min', minEndTime);
+                commonEndTime.setAttribute('min', commonStartTime.value);
             }
         }
 
-        // 종료 시간 변경 시 시작 시간 자동 조절
+        // 종료 시간 변경 시 유효성 검증 (시작 시간보다 빠를 수 없음)
         if (commonEndTime) {
             commonEndTime.addEventListener('change', async function() {
-                if (this.value && commonStartTime) {
-                    // 시작 시간 = 종료 시간 - 1시간
-                    const newStartTime = subtractHours(this.value, 1);
-
-                    // 시작 시간이 최소값(06:00)보다 작으면 조정
-                    if (newStartTime < '06:00') {
-                        commonStartTime.value = '06:00';
-                        // 시작 시간이 조정되었으므로 종료 시간도 재조정
-                        this.value = addHours('06:00', 1);
-                    } else {
-                        commonStartTime.value = newStartTime;
-                    }
-
-                    // 종료 시간의 최소값 업데이트
-                    const minEndTime = addHours(commonStartTime.value, 1);
-                    this.setAttribute('min', minEndTime);
-
-                    // 시작 시간이 변경되었으므로 자동 채우기 트리거
-                    commonStartTime.dispatchEvent(new Event('input'));
+                if (this.value && commonStartTime?.value && this.value < commonStartTime.value) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: '종료 시간 오류',
+                        html: `종료 시간이 시작 시간(<strong>${commonStartTime.value}</strong>)보다 빠를 수 없습니다.<br>다시 입력해주세요.`,
+                        confirmButtonText: '확인',
+                        confirmButtonColor: '#667eea'
+                    });
+                    // 기본값으로 되돌림: 시작 시간 + 3시간
+                    this.value = addHours(commonStartTime.value, 3);
+                    this.dispatchEvent(new Event('input'));
+                    return;
                 }
 
                 // 종료 시간 변경 시 참석자 목록 초기화 (기존 데이터 로딩 중이 아닐 때만)
@@ -2472,7 +2459,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
         } catch (e) {
-            Swal.fire({ icon: 'error', title: '다운로드 오류', text: '파일 다운로드 중 오류가 발생했습니다.' });
+            Swal.fire({ icon: 'error', title: '다운로드 오류', text: '파일 다운로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
         }
     };
 
@@ -2547,9 +2534,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // 사용자에게 계속 진행할지 물어봄
                     const confirmed = await showConfirm(
                         `참석자 중복 검증 중 오류가 발생했습니다.<br><br>` +
-                        `오류 내용: ${error.message}<br><br>` +
                         `중복 검증 없이 계속 진행하시겠습니까?`,
-                        '중복 검증 오류',
+                        '중복 검증 안내',
                         {
                             icon: 'warning',
                             confirmText: '계속 진행',
@@ -2868,7 +2854,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             } catch (error) {
                 console.error('저장 오류:', error);
-                showError('회의록 저장 중 오류가 발생했습니다.');
+                showError('회의록 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             }
         });
     }
@@ -3666,7 +3652,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                                 tempSelectedAttendees.find(a => parseInt(a.id) === attendeeId);
                 const attendeeName = attendee ? attendee.name : `ID ${attendeeId}`;
                 // 검증 실패 시 에러를 throw하여 상위에서 처리
-                throw new Error(`참석자 중복 검증 실패 (참석자: ${attendeeName}, 오류: ${error.message})`);
+                throw new Error(`참석자 "${attendeeName}"의 중복 검증에 실패했습니다.\n잠시 후 다시 시도해주세요.`);
             }
         }
 
@@ -3715,7 +3701,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             } catch (error) {
                 console.error('[참석자 선택 중 중복 검증 오류]', error);
-                await showError(`중복 검증 중 오류가 발생했습니다.<br>${error.message}<br><br>다시 시도해주세요.`);
+                await showError('중복 검증 중 오류가 발생했습니다.<br>잠시 후 다시 시도해주세요.');
                 return;
             }
         }
@@ -4498,7 +4484,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         } catch (error) {
             console.error('외부인력 등록 오류:', error);
-            showError('외부인력 등록 중 오류가 발생했습니다.');
+            showError('외부인력 등록 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     };
 
@@ -4968,9 +4954,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     console.error('[중복 검증 오류]', error);
                     const confirmed = await showConfirm(
                         `참석자 중복 검증 중 오류가 발생했습니다.<br><br>` +
-                        `오류 내용: ${error.message}<br><br>` +
                         `중복 검증 없이 계속 진행하시겠습니까?`,
-                        '중복 검증 오류',
+                        '중복 검증 안내',
                         {
                             icon: 'warning',
                             confirmText: '계속 진행',
@@ -5107,7 +5092,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 showError(errorData.error || '회의록 수정에 실패했습니다.');
             } catch (error) {
                 console.error('수정 오류:', error);
-                showError('회의록 수정 중 오류가 발생했습니다.');
+                showError('회의록 수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             }
         });
     }
@@ -5180,7 +5165,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 showError(errorData.error || '회의록 삭제에 실패했습니다.');
             } catch (error) {
                 console.error('삭제 오류:', error);
-                showError('회의록 삭제 중 오류가 발생했습니다.');
+                showError('회의록 삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             }
         });
     }

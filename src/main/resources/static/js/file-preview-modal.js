@@ -204,7 +204,7 @@
 
         try {
             const res = await fetch(f.url);
-            if (!res.ok) throw new Error(`서버 응답 오류 (${res.status})`);
+            if (!res.ok) throw new Error('파일을 불러올 수 없습니다.');
             const blob = await res.blob();
 
             if (requestedIndex !== currentIndex) return; // 사용자가 그 사이 다른 파일로 이동함
@@ -224,7 +224,7 @@
                 <div class="file-preview-unsupported">
                     <i class="fas fa-exclamation-triangle"></i>
                     <p>파일을 불러올 수 없습니다.</p>
-                    <p class="file-preview-hint">${escapeHtml(err.message || '')}</p>
+                    <p class="file-preview-hint">잠시 후 다시 시도해주세요.</p>
                 </div>
             `;
         }

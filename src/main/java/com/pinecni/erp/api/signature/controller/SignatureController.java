@@ -187,6 +187,16 @@ public class SignatureController {
     }
 
     /**
+     * 내가 요청한 서명 목록 (내가 만든 문서의 서명 현황)
+     */
+    @GetMapping("/requested-list")
+    public ResponseEntity<List<Map<String, Object>>> getRequestedList(HttpSession session) {
+        Long userIdx = (Long) session.getAttribute("userIdx");
+        if (userIdx == null) return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(signatureService.getRequestedListForUser(userIdx));
+    }
+
+    /**
      * 일괄 서명 적용 (첫 번째 서명 이미지를 나머지에 적용)
      */
     @PostMapping("/bulk-apply")

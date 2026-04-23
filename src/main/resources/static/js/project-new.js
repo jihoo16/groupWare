@@ -1362,7 +1362,7 @@
 
         } catch (error) {
             console.error('Error creating project:', error);
-            await showError('프로젝트 등록 중 오류가 발생했습니다.');
+            await showError('프로젝트 등록 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 

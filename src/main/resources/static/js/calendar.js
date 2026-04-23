@@ -987,7 +987,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('일정 삭제 중 오류:', error);
-                showAlert('일정 삭제 중 오류가 발생했습니다.', 'error');
+                showAlert('일정 삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.', 'error');
             }
         }
     });
@@ -1575,7 +1575,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('일정 추가 중 오류:', error);
-            showAlert('일정 추가 중 오류가 발생했습니다.', 'error');
+            showAlert('일정 추가 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.', 'error');
         }
     }
 
@@ -2553,7 +2553,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/api/teams?active=Y');
             if (!response.ok) {
                 console.warn('[팀 목록 로드] API 응답 실패:', response.status, response.statusText);
-                throw new Error(`팀 목록 로드 실패 (${response.status})`);
+                throw new Error('팀 목록을 불러올 수 없습니다.');
             }
 
             const teams = await response.json();
@@ -2765,7 +2765,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(`/api/teams/${teamIdx}/members?active=Y`);
 
             if (!response.ok) {
-                throw new Error(`팀 멤버 목록 로드 실패 (${response.status})`);
+                throw new Error('팀 멤버 목록을 불러올 수 없습니다.');
             }
 
             const members = await response.json();

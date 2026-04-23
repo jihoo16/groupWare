@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('API 호출 오류:', error);
-                showError('저장 중 오류가 발생했습니다: ' + error.message);
+                showError('저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             }
         });
     }

@@ -103,4 +103,9 @@ public interface SignatureService {
      * @return 적용된 건수
      */
     int bulkApplySignature(Long userIdx, List<Long> documentSignatureIdxList, String signatureImageBase64);
+
+    /**
+     * 내가 요청한 서명 목록 (내가 만든 문서의 서명 진행 현황)
+     */
+    List<Map<String, Object>> getRequestedListForUser(Long userIdx);
 }

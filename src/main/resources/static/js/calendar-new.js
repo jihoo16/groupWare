@@ -1298,7 +1298,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('일정 추가 중 오류:', error);
-            await showError('일정 추가 중 오류가 발생했습니다.');
+            await showError('일정 추가 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             saveBtn.disabled = false;
             saveBtn.innerHTML = '<i class="fas fa-check"></i> 저장';
         }

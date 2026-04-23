@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             } catch (error) {
                 console.error('비밀번호 변경 오류:', error);
-                await showError('비밀번호 변경 중 오류가 발생했습니다.');
+                await showError('비밀번호 변경 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             }
         });
     }
@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             } catch (error) {
                 console.error('프로필 업데이트 오류:', error);
-                await showError('프로필 업데이트 중 오류가 발생했습니다.');
+                await showError('프로필 업데이트 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             }
         });
     }
@@ -943,7 +943,7 @@ async function saveCompetency(type) {
         await showSuccess(isEdit ? '수정되었습니다.' : '저장되었습니다.');
     } catch (e) {
         console.error(`[${type}] 저장 실패`, e);
-        await showError('저장 중 오류가 발생했습니다.');
+        await showError('저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
     }
 }
 
@@ -969,7 +969,7 @@ async function deleteCompetency(type, idx) {
         await showSuccess('삭제되었습니다.');
     } catch (e) {
         console.error(`[${type}] 삭제 실패`, e);
-        await showError('삭제 중 오류가 발생했습니다.');
+        await showError('삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
     }
 }
 
@@ -1447,7 +1447,7 @@ async function loadCurrentUserProfile() {
 
     } catch (error) {
         console.error('사용자 정보 로드 오류:', error);
-        await showError('사용자 정보를 불러오는데 오류가 발생했습니다.');
+        await showError('사용자 정보를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.');
     }
 }
 
@@ -1965,7 +1965,7 @@ async function deleteAttachment(type, attachmentIdx) {
         await showSuccess('첨부파일이 삭제되었습니다.');
     } catch (e) {
         console.error('[첨부] 삭제 오류', e);
-        await showError('삭제 중 오류가 발생했습니다.');
+        await showError('삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
     }
 }
 
@@ -2044,6 +2044,6 @@ async function saveMilitaryService() {
         await showSuccess('병적사항이 저장되었습니다.');
     } catch (e) {
         console.error('[병적사항] 저장 오류', e);
-        await showError('병적사항 저장 중 오류가 발생했습니다.');
+        await showError('병적사항 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
     }
 }

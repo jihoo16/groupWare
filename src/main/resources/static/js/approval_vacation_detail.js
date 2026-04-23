@@ -360,7 +360,7 @@ async function deleteDocument(documentIdx) {
         window.location.href = '/approval';
     } catch (error) {
         console.error('삭제 오류:', error);
-        showError('삭제 처리 중 오류가 발생했습니다: ' + error.message);
+        showError('삭제 처리 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
     }
 }
 

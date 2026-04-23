@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         } catch (error) {
             console.error('직원 데이터 로드 오류:', error);
-            showError('직원 데이터를 불러오는데 오류가 발생했습니다.');
+            showError('직원 데이터를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.');
         }
     }
 
@@ -3094,7 +3094,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             } catch (error) {
                 console.error('저장 오류:', error);
-                showError('출장 저장 중 오류가 발생했습니다.');
+                showError('출장 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             }
         });
     }
@@ -3288,7 +3288,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             } catch (error) {
                 console.error('PDF 생성 오류:', error);
                 if (loadingModal) loadingModal.classList.remove('active');
-                showError('PDF 생성 중 오류가 발생했습니다.\n' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
+                showError('문서 생성 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             } finally {
                 if (allDivs && originalDisplays.length > 0) {
                     allDivs.forEach((div, index) => {
@@ -4486,7 +4486,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             } catch (error) {
                 console.error('수정 오류:', error);
-                showError('출장 수정 중 오류가 발생했습니다.');
+                showError('출장 수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             }
         });
     }
@@ -4517,7 +4517,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             } catch (error) {
                 console.error('삭제 오류:', error);
-                showError('출장 삭제 중 오류가 발생했습니다.');
+                showError('출장 삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
             }
         });
     }

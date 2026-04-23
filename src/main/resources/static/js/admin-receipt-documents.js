@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const res = await fetch(`/api/approval/documents/admin/receipts?year=${year}&month=${month}`);
             if (!res.ok) {
-                throw new Error('데이터 조회 실패: ' + res.status);
+                throw new Error('데이터를 불러오지 못했습니다.');
             }
             allDocuments = await res.json();
             // 카드사용일자 내림차순 (서버에서도 정렬되지만 안전하게 한 번 더)
@@ -539,7 +539,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (err) {
             console.error(err);
-            Swal.fire({ icon: 'error', title: '다운로드 실패', text: err.message || '오류가 발생했습니다.' });
+            Swal.fire({ icon: 'error', title: '다운로드 실패', text: '파일 다운로드에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
         } finally {
             if (triggerEl) {
                 triggerEl.classList.remove('downloading');
