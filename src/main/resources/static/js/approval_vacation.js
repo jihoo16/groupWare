@@ -131,8 +131,8 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('사용자 연차 정보 로드 완료:', data);
             return data;
         } catch (error) {
-            console.error('사용자 연차 정보 조회 실패:', error);
-            showError('사용자 정보를 불러오는데 실패했습니다. 다시 로그인해주세요.');
+            console.error('[불러오기 실패] 사용자 연차 정보', error);
+            showError('로그인이 끊어져 내 연차 정보를 불러오지 못했습니다.<br>다시 로그인해 주세요.', '로그인이 필요합니다');
             // 로그인 페이지로 리다이렉트
             window.location.href = '/login';
             return null;
@@ -1298,11 +1298,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // 사유 필수 검증 (모든 연차 유형)
         const reason = reasonInput ? reasonInput.value.trim() : '';
         if (!reason) {
-            let errorMessage = '휴가 신청 사유를 입력해주세요.';
             if (vacationType === '기타') {
-                errorMessage = '기타 휴가는 사유를 반드시 입력해야 합니다.\n\n무급/유급 여부와 휴가 사유를 구체적으로 작성해주세요.\n\n예시: "09~11시 무급휴가 - 통원 치료 등"';
+                await Swal.fire({
+                    title: '휴가 사유를 입력해 주세요',
+                    html: '기타 휴가는 <b>무급/유급 여부와 사유</b>를 구체적으로 적어 주세요.<br>' +
+                          '예) "09~11시 무급휴가 - 통원 치료"',
+                    icon: 'info',
+                    confirmButtonText: '확인',
+                    confirmButtonColor: '#667eea'
+                });
+            } else {
+                await showRequiredMissing('휴가 신청 사유');
             }
-            await showError(errorMessage);
             // 사유 입력 필드로 포커스 이동
             if (reasonInput) {
                 reasonInput.focus();
@@ -1380,9 +1387,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!result.signatureReady) {
                     await Swal.fire({
                         icon: 'warning',
-                        title: '저장 완료 (서명 준비 필요)',
-                        html: '연차 신청서는 저장되었으나<br>전자서명 설정 중 오류가 발생했습니다.<br><br>상세 페이지에서 서명을 진행해주세요.',
-                        confirmButtonText: '상세 페이지로 이동'
+                        title: '저장은 완료되었습니다',
+                        html: '연차 신청서는 저장되었습니다.<br>다만 전자서명을 바로 준비하지 못했습니다.<br>상세 페이지에서 서명을 진행해 주세요.',
+                        confirmButtonText: '상세 페이지로 이동',
+                        confirmButtonColor: '#ff9800'
                     });
                     window.location.href = detailUrl;
                     return;
@@ -1425,15 +1433,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.href = detailUrl;
                 }
             } else {
-                // 서버에서 온 사용자 친화적인 에러 메시지 표시
+                // 서버에서 온 사용자 친화적인 에러 메시지는 우선 노출, 없으면 표준 안내
                 Swal.close();
-                showError(result.message || '연차 신청서 저장에 실패했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[저장 실패] 연차 신청서', result);
+                if (result && result.message) {
+                    showError(result.message, '저장하지 못했습니다');
+                } else {
+                    showSaveFailure('연차 신청서');
+                }
             }
         } catch (error) {
-            // 네트워크 오류 등 예상치 못한 에러
-            console.error('연차 신청서 저장 중 오류:', error);
+            console.error('[저장 실패] 연차 신청서', error);
             Swal.close();
-            showError('네트워크 오류가 발생했습니다.\n인터넷 연결을 확인하고 다시 시도해주세요.');
+            showServerUnavailable();
         }
     });
 

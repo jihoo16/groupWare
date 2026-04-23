@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const documentIdx = urlParams.get('documentIdx');
 
     if (!documentIdx) {
-        showError('문서 ID가 없습니다.');
+        showError('주소가 올바르지 않아 보고서를 열 수 없습니다.<br>목록에서 다시 선택해 주세요.', '보고서를 열 수 없습니다');
         history.back();
         return;
     }
@@ -54,8 +54,8 @@ async function loadReportData(documentIdx) {
         // 로딩 오버레이 숨김
         window.hidePageLoadingOverlay();
     } catch (error) {
-        console.error('보고서 로드 오류:', error);
-        showError('보고서를 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+        console.error('[불러오기 실패] 프로젝트 주간 보고서 상세', error);
+        showLoadFailure('프로젝트 주간 보고서');
         window.hidePageLoadingOverlay();
         // history.back() 대신 목록 페이지로 이동하여 무한 루프 방지
         setTimeout(() => {
@@ -213,12 +213,12 @@ async function downloadFile(fileIdx, originalFilename) {
         const response = await fetch(`/api/files/download/${fileIdx}`);
 
         if (!response.ok) {
+            console.error('[내려받기 실패] 파일', response.status, response.statusText, originalFilename);
             if (response.status === 404) {
-                showError(`❌ 파일을 찾을 수 없습니다.\n\n파일: ${originalFilename}\n\n파일이 삭제되었거나 저장 위치가 변경되었을 수 있습니다.\n관리자에게 문의해주세요.`);
+                showError(`파일을 찾을 수 없습니다.<br>파일 이름: <b>${originalFilename}</b><br>파일이 삭제되었거나 저장 위치가 변경되었을 수 있으니 관리자에게 문의해 주세요.`, '파일이 없습니다');
             } else {
-                showError(`❌ 파일 다운로드 중 오류가 발생했습니다.\n\n파일: ${originalFilename}\n\n잠시 후 다시 시도해주세요.`);
+                showDownloadFailure(originalFilename);
             }
-            console.error('파일 다운로드 실패:', response.status, response.statusText);
             return;
         }
 
@@ -234,8 +234,8 @@ async function downloadFile(fileIdx, originalFilename) {
         document.body.removeChild(a);
 
     } catch (error) {
-        console.error('파일 다운로드 오류:', error);
-        showError(`❌ 파일 다운로드 중 오류가 발생했습니다.\n\n파일: ${originalFilename}\n\n네트워크 연결을 확인하거나 관리자에게 문의해주세요.`);
+        console.error('[내려받기 실패] 파일', error, originalFilename);
+        showDownloadFailure(originalFilename);
     }
 }
 
@@ -301,11 +301,11 @@ async function deleteReport(documentIdx) {
             await showSuccess('보고서가 삭제되었습니다.');
             popupAwareRedirect('/project/documents');
         } else {
-            throw new Error('삭제 실패');
+            throw new Error('DELETE_FAILED');
         }
     } catch (error) {
-        console.error('삭제 오류:', error);
-        showError('보고서 삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+        console.error('[삭제 실패] 프로젝트 주간 보고서', error);
+        showDeleteFailure('프로젝트 주간 보고서');
     }
 }
 

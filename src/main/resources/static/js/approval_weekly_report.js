@@ -469,12 +469,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 } else {
                     const error = await response.text();
-                    console.error('저장 실패:', error);
-                    showError('저장에 실패했습니다.');
+                    console.error('[저장 실패] 주간 보고서', response.status, error);
+                    showSaveFailure('주간 보고서');
                 }
             } catch (error) {
-                console.error('API 호출 오류:', error);
-                showError('저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[저장 실패] 주간 보고서', error);
+                showSaveFailure('주간 보고서');
             }
         });
     }

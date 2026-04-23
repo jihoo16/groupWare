@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const idx = params.get('idx');
 
     if (!idx) {
-        Swal.fire({ icon: 'error', title: '오류', text: '문서 정보가 없습니다.' })
+        showError('주소가 올바르지 않아 문서를 열 수 없습니다.<br>목록에서 다시 선택해 주세요.', '문서를 열 수 없습니다')
             .then(() => history.back());
         return;
     }
@@ -76,15 +76,15 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
         if (res.status === 404) {
-            Swal.fire({ icon: 'error', title: '없는 문서', text: '삭제되었거나 존재하지 않는 문서입니다.' })
+            showError('이미 삭제되었거나 존재하지 않는 문서입니다.<br>목록에서 다시 확인해 주세요.', '문서를 찾을 수 없습니다')
                 .then(() => history.back());
             return;
         }
-        if (!res.ok) throw new Error('서버 오류');
+        if (!res.ok) throw new Error('SERVER_ERROR');
         doc = await res.json();
     } catch (e) {
-        Swal.fire({ icon: 'error', title: '오류', text: '문서를 불러오는 데 실패했습니다.' })
-            .then(() => history.back());
+        console.error('[불러오기 실패] 지출 결의서 상세', e);
+        showLoadFailure('지출 결의서').then(() => history.back());
         return;
     }
 
@@ -251,10 +251,12 @@ document.addEventListener('DOMContentLoaded', async function () {
                     if (res.ok) {
                         item.remove();
                     } else {
-                        Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+                        console.error('[삭제 실패] 첨부파일', res.status);
+                        showDeleteFailure('첨부파일');
                     }
-                } catch (_) {
-                    Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+                } catch (err) {
+                    console.error('[삭제 실패] 첨부파일', err);
+                    showDeleteFailure('첨부파일');
                 }
             });
 
@@ -334,9 +336,13 @@ document.addEventListener('DOMContentLoaded', async function () {
                                 if (res.ok) {
                                     Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1000, showConfirmButton: false })
                                         .then(() => location.reload());
+                                } else {
+                                    console.error('[삭제 실패] 항목 영수증', res.status);
+                                    showDeleteFailure('영수증');
                                 }
-                            } catch (_) {
-                                Swal.fire({ icon: 'error', title: '삭제 실패' });
+                            } catch (err) {
+                                console.error('[삭제 실패] 항목 영수증', err);
+                                showDeleteFailure('영수증');
                             }
                         });
                     });
@@ -384,10 +390,12 @@ document.addEventListener('DOMContentLoaded', async function () {
                 Swal.fire({ icon: 'success', title: '업로드 완료', timer: 1000, showConfirmButton: false })
                     .then(() => location.reload());
             } else {
-                Swal.fire({ icon: 'error', title: '업로드 실패', text: '잠시 후 다시 시도해 주세요.' });
+                console.error('[업로드 실패] 항목 영수증', res.status);
+                showUploadFailure('영수증');
             }
-        } catch (_) {
-            Swal.fire({ icon: 'error', title: '업로드 실패', text: '파일 업로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
+        } catch (err) {
+            console.error('[업로드 실패] 항목 영수증', err);
+            showUploadFailure('영수증');
         }
     }
 
@@ -531,11 +539,12 @@ document.addEventListener('DOMContentLoaded', async function () {
                 method: 'POST',
                 body: formData
             });
-            if (!res.ok) throw new Error();
+            if (!res.ok) throw new Error('UPLOAD_FAILED');
             const updatedAttachments = await res.json();
             renderServerAttachments(updatedAttachments);
-        } catch (_) {
-            Swal.fire({ icon: 'error', title: '업로드 실패', text: '파일 업로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
+        } catch (err) {
+            console.error('[업로드 실패] 문서 첨부파일', err);
+            showUploadFailure('첨부파일');
         }
     }
 
@@ -683,10 +692,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                     });
                     window.location.href = '/approval';
                 } else {
-                    throw new Error();
+                    throw new Error('DELETE_FAILED');
                 }
-            } catch (_) {
-                Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+            } catch (err) {
+                console.error('[삭제 실패] 지출 결의서', err);
+                showDeleteFailure('지출 결의서');
             }
         });
     }

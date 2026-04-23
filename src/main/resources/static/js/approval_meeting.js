@@ -161,12 +161,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else {
                 const errorText = await response.text();
-                console.error('회의록 저장 실패:', errorText);
-                showError('회의록 저장에 실패했습니다.');
+                console.error('[저장 실패] 회의록', response.status, errorText);
+                showSaveFailure('회의록');
             }
         } catch (error) {
-            console.error('회의록 저장 오류:', error);
-            showError('회의록 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[저장 실패] 회의록', error);
+            showSaveFailure('회의록');
         }
     }
 

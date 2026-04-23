@@ -487,7 +487,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 결재라인 업데이트 함수 (결재 서명 셀에 데이터 속성 설정)
     function updateApprovalLine() {
         // 결재 셀에 데이터 속성 설정
-        const signCells = document.querySelectorAll('.approval-sign-cell');
+        const signCells = document.querySelectorAll('.doc-approval-sign');
 
         selectedApprovers.forEach((approver, index) => {
             if (signCells[index]) {
@@ -1258,7 +1258,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     renderApproverTree(projectMembers);
                     renderTempReferences();
                 } catch (error) {
-                    showError('프로젝트 참여인원을 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                    console.error('[불러오기 실패] 프로젝트 참여인원', error);
+                    showLoadFailure('프로젝트 참여인원');
                 }
             }
         });
@@ -1608,8 +1609,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             return true;
         } catch (error) {
-            console.error('파일 업로드 오류:', error);
-            showError('파일 업로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[업로드 실패] 첨부파일', error);
+            showUploadFailure('첨부파일');
             return false;
         }
     }
@@ -1682,7 +1683,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch(`/api/document/weekly-report/${reportId}`);
 
             if (!response.ok) {
-                showError('보고서를 불러올 수 없습니다.');
+                console.error('[불러오기 실패] 프로젝트 주간 보고서', response.status);
+                showLoadFailure('프로젝트 주간 보고서');
                 popupAwareRedirect('/project/documents');
                 return;
             }
@@ -1800,8 +1802,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         } catch (error) {
-            console.error('보고서 로드 오류:', error);
-            showError('보고서를 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[불러오기 실패] 프로젝트 주간 보고서', error);
+            showLoadFailure('프로젝트 주간 보고서');
             popupAwareRedirect('/project/documents');
         }
     }
@@ -1823,7 +1825,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 필수 항목 유효성 검사
             // 프로젝트 선택 확인
             if (!selectedProject || !selectedProjectIdx.value) {
-                showError('프로젝트를 선택해주세요.');
+                showRequiredMissing('프로젝트');
                 // 프로젝트 입력 필드 강조
                 if (projectInput) {
                     projectInput.classList.add('required-missing');
@@ -1833,12 +1835,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             if (!reportPeriod.trim()) {
-                showError('보고 기간을 선택해주세요.');
+                showRequiredMissing('보고 기간');
                 return;
             }
 
             if (!mainTasks.trim()) {
-                showError('필수 입력 항목\n\n금주 주요 업무를 입력해주세요.');
+                showRequiredMissing('금주 주요 업무');
                 const firstInput = document.querySelector('.main-task-input');
                 if (firstInput) {
                     firstInput.focus();
@@ -1986,7 +1988,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const uploadSuccess = await uploadFilesToServer(responseData.documentIdx);
 
                         if (!uploadSuccess) {
-                            await showWarning('보고서는 저장되었으나 파일 업로드에 실패했습니다.');
+                            await showWarning('보고서는 저장되었으나 첨부파일이 업로드되지 않았습니다.<br>상세 페이지에서 파일을 다시 올려 주세요.', '일부 저장되지 않았습니다');
                             popupAwareRedirect('/project/documents');
                             return;
                         }
@@ -2029,13 +2031,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     Swal.close();
                     const error = await response.text();
-                    console.error('저장 실패:', error);
-                    showError('저장에 실패했습니다.');
+                    console.error('[저장 실패] 프로젝트 주간 보고서', response.status, error);
+                    showSaveFailure('프로젝트 주간 보고서');
                 }
             } catch (error) {
                 Swal.close();
-                console.error('API 호출 오류:', error);
-                showError('저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[저장 실패] 프로젝트 주간 보고서', error);
+                showSaveFailure('프로젝트 주간 보고서');
             }
         });
     }

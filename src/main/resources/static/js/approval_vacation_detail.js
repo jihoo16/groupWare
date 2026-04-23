@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const documentIdx = urlParams.get('documentIdx');
 
     if (!documentIdx) {
-        showError('문서 ID가 없습니다.');
+        showError('주소가 올바르지 않아 문서를 열 수 없습니다.<br>목록에서 다시 선택해 주세요.', '문서를 열 수 없습니다');
         history.back();
         return;
     }
@@ -40,8 +40,8 @@ async function loadDocumentDetail(documentIdx) {
         // 로딩 오버레이 숨김
         window.hidePageLoadingOverlay();
     } catch (error) {
-        console.error('문서 조회 오류:', error);
-        showError('문서를 불러오는데 실패했습니다.');
+        console.error('[불러오기 실패] 연차 신청서 상세', error);
+        showLoadFailure('연차 신청서');
         window.hidePageLoadingOverlay();
         // history.back() 대신 목록 페이지로 이동하여 무한 루프 방지
         setTimeout(() => {
@@ -359,8 +359,8 @@ async function deleteDocument(documentIdx) {
         await showSuccess('연차신청서가 삭제되었습니다.');
         window.location.href = '/approval';
     } catch (error) {
-        console.error('삭제 오류:', error);
-        showError('삭제 처리 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+        console.error('[삭제 실패] 연차 신청서', error);
+        showDeleteFailure('연차 신청서');
     }
 }
 

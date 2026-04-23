@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const idx = params.get('idx');
 
     if (!idx) {
-        Swal.fire({ icon: 'error', title: '오류', text: '문서 정보가 없습니다.' })
+        showError('주소가 올바르지 않아 문서를 열 수 없습니다.<br>목록에서 다시 선택해 주세요.', '문서를 열 수 없습니다')
             .then(() => history.back());
         return;
     }
@@ -77,15 +77,15 @@ document.addEventListener('DOMContentLoaded', async function () {
             return;
         }
         if (res.status === 404) {
-            Swal.fire({ icon: 'error', title: '없는 문서', text: '삭제되었거나 존재하지 않는 문서입니다.' })
+            showError('이미 삭제되었거나 존재하지 않는 문서입니다.<br>목록에서 다시 확인해 주세요.', '문서를 찾을 수 없습니다')
                 .then(() => history.back());
             return;
         }
-        if (!res.ok) throw new Error('서버 오류');
+        if (!res.ok) throw new Error('SERVER_ERROR');
         doc = await res.json();
     } catch (e) {
-        Swal.fire({ icon: 'error', title: '오류', text: '문서를 불러오는 데 실패했습니다.' })
-            .then(() => history.back());
+        console.error('[불러오기 실패] 품의서 상세', e);
+        showLoadFailure('품의서').then(() => history.back());
         return;
     }
 
@@ -213,10 +213,11 @@ document.addEventListener('DOMContentLoaded', async function () {
                     await Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1200, showConfirmButton: false });
                     window.location.href = '/approval';
                 } else {
-                    throw new Error();
+                    throw new Error('DELETE_FAILED');
                 }
-            } catch (_) {
-                Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+            } catch (err) {
+                console.error('[삭제 실패] 품의서', err);
+                showDeleteFailure('품의서');
             }
         });
     }
