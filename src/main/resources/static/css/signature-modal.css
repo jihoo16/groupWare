@@ -345,136 +345,14 @@
 }
 
 /* ============================================================
- * 서명 셀 상태 스타일 (모든 문서 공통)
- * .approval-sign-cell + .doc-approval-sign 양쪽 대응
+ * 서명 셀 상태 스타일은 signature-cell.css (전역)로 이관됨
+ * 여기서는 QR 모달 관련 인쇄 스타일만 유지
  * ============================================================ */
-.approval-sign-cell.can-sign,
-.doc-approval-sign.can-sign {
-    cursor: pointer;
-    border: 2px dashed #1565c0;
-    background: #e3f2fd;
-    transition: background 0.15s, border-color 0.15s;
-    animation: sig-cell-pulse 2s ease-in-out infinite;
-}
-
-@keyframes sig-cell-pulse {
-    0%, 100% { border-color: #1565c0; }
-    50% { border-color: #90caf9; }
-}
-
-.approval-sign-cell.can-sign .sign-area::after,
-.doc-approval-sign.can-sign .sign-area::after {
-    content: '서명하기';
-    font-size: 11px;
-    font-weight: 600;
-    color: #1565c0;
-}
-
-.approval-sign-cell.can-sign .sign-placeholder,
-.doc-approval-sign.can-sign .sign-placeholder {
-    display: none;
-}
-
-.approval-sign-cell.can-sign:hover,
-.doc-approval-sign.can-sign:hover {
-    background: #bbdefb;
-    border-color: #0d47a1;
-}
-
-.approval-sign-cell.signed,
-.doc-approval-sign.signed {
-    background: #fff;
-}
-
-.approval-sign-cell.signed .sign-placeholder,
-.doc-approval-sign.signed .sign-placeholder {
-    display: none;
-}
-
-.approval-sign-cell.waiting .sign-area::after,
-.doc-approval-sign.waiting .sign-area::after {
-    content: '서명 대기';
-    font-size: 10px;
-    color: #aaa;
-}
-
-.approval-sign-cell.waiting .sign-placeholder,
-.doc-approval-sign.waiting .sign-placeholder {
-    display: none;
-}
-
-.approval-sign-cell.signature-offline .sign-area::after,
-.doc-approval-sign.signature-offline .sign-area::after {
-    content: '서면 결재';
-    font-size: 10px;
-    color: #999;
-}
-
-.approval-sign-cell.signature-offline .sign-placeholder,
-.doc-approval-sign.signature-offline .sign-placeholder {
-    display: none;
-}
-
-.sign-image {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    display: block;
-}
-
-/* 참석자 테이블 등 행 높이가 고정된 셀 — 서명 이미지를 행 높이에 맞춰 가운데 배치 */
-td[data-slot] .sign-area {
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-td[data-slot] .sign-image {
-    max-height: 40px;
-    width: auto;
-    margin: 0 auto;
-}
-
-/* 인쇄 시 서명 UI 처리 (모든 문서 공통) */
 @media print {
     .sig-modal {
         display: none !important;
     }
-
-    /* 서명 가능/대기 상태 UI 제거 */
-    .approval-sign-cell.can-sign,
-    .doc-approval-sign.can-sign {
-        border: 1px solid #333 !important;
-        background: white !important;
-        animation: none !important;
-    }
-    .approval-sign-cell.can-sign .sign-area::after,
-    .doc-approval-sign.can-sign .sign-area::after,
-    .approval-sign-cell.waiting .sign-area::after,
-    .doc-approval-sign.waiting .sign-area::after {
-        display: none !important;
-    }
-    .approval-sign-cell.waiting,
-    .doc-approval-sign.waiting {
-        background: white !important;
-    }
-
-    /* 서명 이미지 인쇄 크기 */
-    .sign-image {
-        max-width: 100px !important;
-        max-height: 60px !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    /* 상태 배너 숨김 */
     .approval-status-banner {
-        display: none !important;
-    }
-
-    /* 오프라인 서명칸 텍스트 숨김 */
-    .signature-offline .sign-area::after {
         display: none !important;
     }
 }

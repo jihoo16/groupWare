@@ -1,0 +1,142 @@
+/* ============================================================
+ * 전자서명 셀 상태 스타일 (모든 결재 문서 공통)
+ *
+ * 적용 대상:
+ *   [data-slot] 속성이 있는 모든 요소 (class 무관)
+ *   - .doc-approval-sign (표준 결재 셀)
+ *   - 동적 생성 참석자 td (C1601, 클래스 없음)
+ *
+ * 상태:
+ *   .can-sign          → 본인이 지금 서명할 차례 (파란 점선 + "서명하기")
+ *   .waiting           → 다른 사람 서명 대기 중 (회색 "서명 대기")
+ *   .signature-offline → 오프라인 수기 (대표이사 — "서면 결재")
+ *   .signed            → 서명 완료 (이미지 표시)
+ *
+ * 로드 위치: fragments/layout.html (전역)
+ * ============================================================ */
+
+/* ---------- 공통 sign-area/placeholder 기본 레이아웃 ---------- */
+[data-slot] .sign-area {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+[data-slot] .sign-placeholder {
+    font-size: 11px;
+    color: #999;
+    user-select: none;
+}
+
+[data-slot] .sign-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* 참석자 테이블 등 행 높이 고정 셀 — 서명 이미지 가운데 정렬 */
+td[data-slot] .sign-image {
+    max-height: 40px;
+    width: auto;
+    margin: 0 auto;
+}
+
+/* ---------- .can-sign : 본인이 지금 서명할 차례 ---------- */
+[data-slot].can-sign {
+    cursor: pointer;
+    border: 2px dashed #1565c0 !important;
+    background: #e3f2fd;
+    transition: background 0.15s, border-color 0.15s;
+    animation: sig-cell-pulse 2s ease-in-out infinite;
+}
+
+@keyframes sig-cell-pulse {
+    0%, 100% { border-color: #1565c0; }
+    50%      { border-color: #90caf9; }
+}
+
+[data-slot].can-sign .sign-area::after {
+    content: '서명하기';
+    font-size: 11px;
+    font-weight: 600;
+    color: #1565c0;
+}
+
+[data-slot].can-sign .sign-placeholder {
+    display: none;
+}
+
+[data-slot].can-sign:hover {
+    background: #bbdefb;
+    border-color: #0d47a1 !important;
+}
+
+/* ---------- .waiting : 다른 사람 서명 대기 중 ---------- */
+[data-slot].waiting .sign-area::after {
+    content: '서명 대기';
+    font-size: 10px;
+    color: #aaa;
+}
+
+[data-slot].waiting .sign-placeholder {
+    display: none;
+}
+
+/* ---------- .signature-offline : 대표이사 오프라인 수기 ---------- */
+[data-slot].signature-offline .sign-area::after,
+.signature-offline .sign-area::after {
+    content: '서면 결재';
+    font-size: 10px;
+    color: #999;
+}
+
+[data-slot].signature-offline .sign-placeholder,
+.signature-offline .sign-placeholder {
+    display: none;
+}
+
+/* ---------- .signed : 서명 완료 (이미지 표시) ---------- */
+[data-slot].signed {
+    background: #fff;
+}
+
+[data-slot].signed .sign-placeholder {
+    display: none;
+}
+
+/* ============================================================
+ * footer-signature (하단 signature 영역 — C0402/C0413 등)
+ * td가 아닌 div 기반, 별도 레이아웃
+ * ============================================================ */
+.footer-signature[data-slot] .signature-seal .sign-image {
+    height: 40px;
+    max-height: 40px;
+}
+
+/* ============================================================
+ * 인쇄 시 상태 UI 제거 (테두리 원복 + 라벨 숨김)
+ * ============================================================ */
+@media print {
+    [data-slot].can-sign,
+    [data-slot].waiting {
+        border: 1px solid #333 !important;
+        background: white !important;
+        animation: none !important;
+    }
+    [data-slot].can-sign .sign-area::after,
+    [data-slot].waiting .sign-area::after,
+    [data-slot].signature-offline .sign-area::after,
+    .signature-offline .sign-area::after {
+        display: none !important;
+    }
+    [data-slot] .sign-image {
+        max-width: 100px !important;
+        max-height: 60px !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

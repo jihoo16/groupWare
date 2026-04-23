@@ -1242,7 +1242,7 @@ div:focus {
     min-width: 80px;
 }
 
-.approval-sign-cell {
+.doc-approval-sign {
     height: 70px;
     width: 80px;
     padding: 4px;
@@ -1264,7 +1264,7 @@ div:focus {
     user-select: none;
 }
 
-.approval-sign-cell.signed .sign-placeholder {
+.doc-approval-sign.signed .sign-placeholder {
     display: none;
 }
 
