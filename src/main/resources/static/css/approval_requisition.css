@@ -592,6 +592,18 @@ select.form-input {
     text-align: center;
 }
 
+/* 하단 (인) 셀 — 작은 도장 박스, 결재란과 linked 서명 */
+.doc-approval-sign.req-inkan-cell {
+    width: 36px;
+    height: 36px;
+    padding: 2px;
+    vertical-align: middle;
+}
+.doc-approval-sign.req-inkan-cell .sign-placeholder {
+    font-size: 12px;
+    color: #333;
+}
+
 /* 제목 (expense-doc-title 동일) */
 .req-doc-title {
     font-size: 28px;
