@@ -2317,7 +2317,17 @@ div h2{
         margin: 10mm;
     }
 
-    /* 인쇄 시 숨길 요소 */
+    /* 인쇄 시 숨기기 — 편집 UI 전부 제거 */
+    .sidebar,
+    .header,
+    .template-sidebar,
+    .common-info-section,
+    .attachment-section,
+    .document-preview-toggle,
+    .modal,
+    [class*="modal"] {
+        display: none !important;
+    }
 
     /* 모든 컨테이너 all:unset */
     .container,
