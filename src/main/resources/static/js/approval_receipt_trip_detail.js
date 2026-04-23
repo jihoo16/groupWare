@@ -110,7 +110,7 @@ async function setupButtons(data) {
         deleteBtn.addEventListener('click', async () => {
             const result = await Swal.fire({
                 title: '문서를 삭제하시겠습니까?',
-                html: '삭제된 문서는 <strong>복구할 수 없습니다.</strong>',
+                html: '서명 내역을 포함한 모든 기록이 함께 삭제되며,<br><strong>되돌릴 수 없습니다.</strong>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: '삭제',
@@ -129,12 +129,13 @@ async function setupButtons(data) {
                         timer: 1500,
                         showConfirmButton: false,
                     });
-                    window.location.href = '/approval/receipt';
+                    window.location.href = '/project/documents';
                 } else {
                     throw new Error();
                 }
-            } catch (_) {
-                Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+            } catch (e) {
+                console.error('[삭제 실패] 출장 증빙', e);
+                showDeleteFailure('출장 증빙');
             }
         });
     }
@@ -212,26 +213,38 @@ async function loadProjectManager(projectIdx) {
 }
 
 function renderTripPersons(attendees) {
-    const tbody = document.getElementById('proposalPersonBody');
-    if (!tbody) return;
+    // tripPersonHeaderRow 바로 아래에 인원 행을 삽입.
+    // tbody 래퍼를 쓰면 rowspan이 tbody 경계에 막혀 출장지/기간/목적 셀이 1행만 차지.
+    const anchorRow = document.getElementById('tripPersonHeaderRow');
+    if (!anchorRow) return;
 
-    let html = '';
+    // 기존 동적 삽입 인원 행 제거
+    document.querySelectorAll('tr.trip-person-row').forEach(row => row.remove());
+
     const maxRows = Math.max(attendees.length, 1);
 
+    // 출장지/기간/목적 rowspan = 헤더행 1 + 인원 행 N
+    ['proposalLocationCell', 'proposalDateCell', 'proposalPurposeCell'].forEach(id => {
+        const cell = document.getElementById(id);
+        if (cell) cell.rowSpan = 1 + maxRows;
+    });
+
+    let insertAfter = anchorRow;
     for (let i = 0; i < maxRows; i++) {
         const a = attendees[i];
+        const tr = document.createElement('tr');
+        tr.className = 'trip-person-row';
         if (a) {
-            html += `<tr>
+            tr.innerHTML = `
                 <td style="text-align:center;">${a.department || ''}</td>
                 <td style="text-align:center;">${a.position || ''}</td>
-                <td style="text-align:center;">${a.name || ''}</td>
-            </tr>`;
+                <td style="text-align:center;">${a.name || ''}</td>`;
         } else {
-            html += `<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`;
+            tr.innerHTML = `<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>`;
         }
+        insertAfter.parentNode.insertBefore(tr, insertAfter.nextSibling);
+        insertAfter = tr;
     }
-
-    tbody.innerHTML = html;
 }
 
 function renderDailyExpenses(expenses, totalFee) {

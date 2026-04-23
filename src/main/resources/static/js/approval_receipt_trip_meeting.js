@@ -110,12 +110,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }));
                 console.log('직원 데이터 로드 완료:', employees.length + '명');
             } else {
-                console.error('직원 데이터 로드 실패:', response.status);
-                showError('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
+                console.error('[불러오기 실패] 직원 목록 HTTP', response.status);
+                showLoadFailure('직원 목록');
             }
         } catch (error) {
-            console.error('직원 데이터 로드 오류:', error);
-            showError('직원 데이터를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[불러오기 실패] 직원 목록', error);
+            showLoadFailure('직원 목록');
         }
     }
 
@@ -1246,7 +1246,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 sigBody.innerHTML = sortedAll.map(attendee => {
                     const type = attendee.isExternal ? '외부' : '내부';
                     const dept = attendee.isExternal ? (attendee.dept || '') : '파인씨앤아이';
-                    const sigAttr = !attendee.isExternal && attendee.idx ? ` data-slot="C1601" data-signer-idx="${attendee.idx}"` : '';
+                    // 외부인도 서명 가능 — data-external="true"로 구분해 외부 경로로 라우팅
+                    const sigAttr = attendee.idx
+                        ? ` data-slot="C1601"${attendee.isExternal ? ' data-external="true"' : ''} data-signer-idx="${attendee.idx}"`
+                        : '';
                     return `<tr style="height: 50px;">
                         <td style="text-align: center;">${type}</td>
                         <td style="text-align: center;">${dept}</td>
@@ -3567,7 +3570,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 if (!response.ok) {
                     const err = await response.json().catch(() => ({}));
-                    throw new Error(err.error || '저장에 실패했습니다.');
+                    console.error('[저장 실패] 출장·회의 증빙 서버 응답', response.status, err);
+                    throw new Error('SAVE_FAILED');
                 }
                 const result = await response.json();
                 if (window.SignatureRender) {
@@ -3589,7 +3593,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     popupAwareRedirect('/project/documents');
                 }
             } catch (e) {
-                showWarning('저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[저장 실패] 출장·회의 증빙', e);
+                showSaveFailure('출장·회의 증빙');
             }
         });
     }
@@ -3621,7 +3626,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateProgress(0, '준비 중...');
 
                 if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    showWarning('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
+                    Swal.fire({
+                        title: '잠시만 기다려 주세요',
+                        html: 'PDF 만들기에 필요한 기능을 준비 중입니다.<br>잠시 뒤 <b>다시 버튼을 눌러 주세요.</b>',
+                        icon: 'info',
+                        confirmButtonText: '확인',
+                        confirmButtonColor: '#667eea'
+                    });
                     if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
@@ -3871,7 +3882,8 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 console.error('PDF 생성 오류:', error);
                 if (loadingModal) loadingModal.classList.remove('active');
-                showError('문서 생성 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[만들기 실패] PDF 문서');
+                showGenerateFailure('PDF 문서');
             } finally {
                 if (allDivs && originalDisplays.length > 0) {
                     allDivs.forEach((div, index) => {
@@ -4527,8 +4539,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 showError('외부인력 등록에 실패했습니다.');
             }
         } catch (e) {
-            console.error('외부인력 등록 오류:', e);
-            showError('외부인력 등록 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[저장 실패] 외부 인력 등록', e);
+            showSaveFailure('외부 인력');
         }
     };
 
@@ -5667,8 +5679,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 SignatureRender.load(sigDocIdx);
             }
         } catch (error) {
-            console.error('데이터 로드 오류:', error);
-            showError('데이터를 불러오는데 실패했습니다.');
+            console.error('[불러오기 실패] 출장·회의 증빙 상세', error);
+            showLoadFailure('출장·회의 증빙 내용');
             window.hidePageLoadingOverlay();
         }
     }
@@ -6389,7 +6401,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 if (!response.ok) {
                     const err = await response.json().catch(() => ({}));
-                    throw new Error(err.error || '수정에 실패했습니다.');
+                    console.error('[수정 실패] 출장·회의 증빙 서버 응답', response.status, err);
+                    throw new Error('UPDATE_FAILED');
                 }
                 await Swal.fire({
                     icon: 'success',
@@ -6402,7 +6415,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 popupAwareRedirect('/project/documents');
             } catch (e) {
-                showWarning('수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[수정 실패] 출장·회의 증빙', e);
+                showUpdateFailure('출장·회의 증빙');
             }
         });
     }
@@ -6431,7 +6445,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const response = await fetch(`/api/receipt-trip-meetings/${id}`, { method: 'DELETE' });
                 if (!response.ok) {
                     const err = await response.json().catch(() => ({}));
-                    throw new Error(err.error || '삭제에 실패했습니다.');
+                    console.error('[삭제 실패] 출장·회의 증빙 서버 응답', response.status, err);
+                    throw new Error('DELETE_FAILED');
                 }
                 await Swal.fire({
                     icon: 'success',
@@ -6441,7 +6456,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 popupAwareRedirect('/project/documents');
             } catch (e) {
-                showWarning('삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[삭제 실패] 출장·회의 증빙', e);
+                showDeleteFailure('출장·회의 증빙');
             }
         });
     }

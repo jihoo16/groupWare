@@ -113,7 +113,7 @@ async function setupButtons(data) {
         deleteBtn.addEventListener('click', async () => {
             const result = await Swal.fire({
                 title: '문서를 삭제하시겠습니까?',
-                html: '삭제된 문서는 <strong>복구할 수 없습니다.</strong>',
+                html: '서명 내역을 포함한 모든 기록이 함께 삭제되며,<br><strong>되돌릴 수 없습니다.</strong>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: '삭제',
@@ -132,12 +132,13 @@ async function setupButtons(data) {
                         timer: 1500,
                         showConfirmButton: false,
                     });
-                    window.location.href = '/approval/receipt';
+                    window.location.href = '/project/documents';
                 } else {
                     throw new Error();
                 }
-            } catch (_) {
-                Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+            } catch (e) {
+                console.error('[삭제 실패] 회의 증빙', e);
+                showDeleteFailure('회의 증빙');
             }
         });
     }
@@ -196,31 +197,40 @@ function renderDocument(data) {
 }
 
 function renderProposalAttendees(attendees) {
-    const tbody = document.getElementById('proposalAttendeeBody');
-    if (!tbody) return;
+    // meeting_purpose_row 바로 아래에 .attendee-row들을 삽입.
+    // tbody 래퍼를 쓰면 rowspan="6"이 tbody 경계에 막히므로 형제 <tr>로 둠.
+    const anchorRow = document.getElementById('meeting_purpose_row');
+    const purposeHeader = document.getElementById('meeting_purpose_header');
+    const purposeCell = document.querySelector('.meeting-purpose-cell');
+    if (!anchorRow) return;
 
-    // 기존 placeholder 행 제거
-    const existingRows = document.querySelectorAll('.attendee-row');
-    existingRows.forEach(row => row.remove());
+    // 기존 attendee-row 전부 제거
+    document.querySelectorAll('.attendee-row').forEach(row => row.remove());
 
-    let html = '';
     const maxRows = Math.max(attendees.length, 5);
 
+    // 회의 목적 rowspan = 1(meeting_purpose_row 자체) + 참석자 행 수
+    const totalRowspan = 1 + maxRows;
+    if (purposeHeader) purposeHeader.setAttribute('rowspan', totalRowspan);
+    if (purposeCell)   purposeCell.setAttribute('rowspan', totalRowspan);
+
+    let insertAfter = anchorRow;
     for (let i = 0; i < maxRows; i++) {
         const a = attendees[i];
+        const tr = document.createElement('tr');
+        tr.className = 'attendee-row';
         if (a) {
             const typeLabel = a.isExternal ? '외부' : '내부';
-            html += `<tr class="attendee-row">
+            tr.innerHTML = `
                 <td style="text-align:center;">${typeLabel}</td>
                 <td style="text-align:center;">${a.department || ''}</td>
-                <td style="text-align:center;">${a.name || ''}</td>
-            </tr>`;
+                <td style="text-align:center;">${a.name || ''}</td>`;
         } else {
-            html += `<tr class="attendee-row"><td colspan="3">&nbsp;</td></tr>`;
+            tr.innerHTML = `<td colspan="3">&nbsp;</td>`;
         }
+        insertAfter.parentNode.insertBefore(tr, insertAfter.nextSibling);
+        insertAfter = tr;
     }
-
-    tbody.innerHTML = html;
 }
 
 function renderAllAttendeesText(attendees) {
@@ -248,12 +258,14 @@ function renderAttendeeSignatureTable(attendees) {
     let html = '';
     attendees.forEach(a => {
         const typeLabel = a.isExternal ? '외부' : '내부';
-        const sigAttr = !a.isExternal && a.userIdx
-            ? ` data-slot="C1601" data-signer-idx="${a.userIdx}"`
-            : '';
-        const sigInner = !a.isExternal && a.userIdx
-            ? '<div class="sign-area"><span class="sign-placeholder"></span></div>'
-            : '';
+        // 외부인도 서명 가능 (사번 인증 스킵 경로)
+        let sigAttr = '';
+        let sigInner = '';
+        if (a.userIdx) {
+            const ext = a.isExternal ? ' data-external="true"' : '';
+            sigAttr = ` data-slot="C1601"${ext} data-signer-idx="${a.userIdx}"`;
+            sigInner = '<div class="sign-area"><span class="sign-placeholder"></span></div>';
+        }
         html += `<tr style="height: 70px;">
             <td style="text-align:center;">${typeLabel}</td>
             <td style="text-align:center;">${a.department || ''}</td>

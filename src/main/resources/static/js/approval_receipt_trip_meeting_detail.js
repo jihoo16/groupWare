@@ -113,7 +113,7 @@ async function setupButtons(data) {
         deleteBtn.addEventListener('click', async () => {
             const result = await Swal.fire({
                 title: '문서를 삭제하시겠습니까?',
-                html: '삭제된 문서는 <strong>복구할 수 없습니다.</strong>',
+                html: '서명 내역을 포함한 모든 기록이 함께 삭제되며,<br><strong>되돌릴 수 없습니다.</strong>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: '삭제',
@@ -133,12 +133,13 @@ async function setupButtons(data) {
                         timer: 1500,
                         showConfirmButton: false,
                     });
-                    window.location.href = '/approval/receipt';
+                    window.location.href = '/project/documents';
                 } else {
                     throw new Error();
                 }
-            } catch (_) {
-                Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+            } catch (e) {
+                console.error('[삭제 실패] 출장·회의 증빙', e);
+                showDeleteFailure('출장·회의 증빙');
             }
         });
     }
@@ -229,30 +230,39 @@ async function loadProjectInfo(projectIdx, data) {
 }
 
 function renderTripPersons(attendees, data) {
-    const tbody = document.getElementById('proposalPersonBody');
-    if (!tbody) return;
+    // tripPersonHeaderRow 바로 아래에 인원 행을 삽입.
+    // tbody 래퍼를 쓰면 rowspan이 tbody 경계에 막혀 출장지/기간/목적 셀이 1행만 차지.
+    const anchorRow = document.getElementById('tripPersonHeaderRow');
+    if (!anchorRow) return;
 
-    let html = '';
+    document.querySelectorAll('tr.trip-person-row').forEach(row => row.remove());
+
     const maxRows = Math.max(attendees.length, 1);
 
+    ['proposalLocationCell', 'proposalDateCell', 'proposalPurposeCell'].forEach(id => {
+        const cell = document.getElementById(id);
+        if (cell) cell.rowSpan = 1 + maxRows;
+    });
+
+    let insertAfter = anchorRow;
     for (let i = 0; i < maxRows; i++) {
         const a = attendees[i];
+        const tr = document.createElement('tr');
+        tr.className = 'trip-person-row';
         if (a) {
-            html += `<tr>
+            tr.innerHTML = `
                 <td style="text-align:center;">${a.department || ''}</td>
                 <td style="text-align:center;">${a.position || ''}</td>
-                <td style="text-align:center;">${a.name || ''}</td>
-            </tr>`;
+                <td style="text-align:center;">${a.name || ''}</td>`;
         } else {
-            html += `<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`;
+            tr.innerHTML = `<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>`;
         }
+        insertAfter.parentNode.insertBefore(tr, insertAfter.nextSibling);
+        insertAfter = tr;
     }
-
-    tbody.innerHTML = html;
 
     // 복명자 설정
     if (attendees.length > 0) {
-        // drafterUserIdx에 해당하는 인원 찾기
         const drafter = attendees.find(a => data.drafterUserIdx && Number(a.userIdx) === Number(data.drafterUserIdx));
         setText('doc_reporter', drafter ? drafter.name : attendees[0].name || '');
     }
@@ -446,12 +456,14 @@ function renderAttendeeRows(attendees) {
     let html = '';
     attendees.forEach(a => {
         const typeLabel = a.isExternal ? '외부' : '내부';
-        const sigAttr = !a.isExternal && a.userIdx
-            ? ` data-slot="C1601" data-signer-idx="${a.userIdx}"`
-            : '';
-        const sigInner = !a.isExternal && a.userIdx
-            ? '<div class="sign-area"><span class="sign-placeholder"></span></div>'
-            : '';
+        // 외부인도 서명 가능 (사번 인증 스킵 경로)
+        let sigAttr = '';
+        let sigInner = '';
+        if (a.userIdx) {
+            const ext = a.isExternal ? ' data-external="true"' : '';
+            sigAttr = ` data-slot="C1601"${ext} data-signer-idx="${a.userIdx}"`;
+            sigInner = '<div class="sign-area"><span class="sign-placeholder"></span></div>';
+        }
         html += `<tr style="height: 40px;">
             <td style="text-align:center;">${typeLabel}</td>
             <td style="text-align:center;">${escapeHtml(a.department || '')}</td>

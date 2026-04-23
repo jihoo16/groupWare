@@ -71,12 +71,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }));
                 console.log('직원 데이터 로드 완료:', employees.length + '명');
             } else {
-                console.error('직원 데이터 로드 실패:', response.status);
-                showError('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
+                console.error('[불러오기 실패] 직원 목록 HTTP', response.status);
+                showLoadFailure('직원 목록');
             }
         } catch (error) {
-            console.error('직원 데이터 로드 오류:', error);
-            showError('직원 데이터를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[불러오기 실패] 직원 목록', error);
+            showLoadFailure('직원 목록');
         }
     }
 
@@ -645,8 +645,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
         } catch (error) {
-            console.error('기존 데이터 로드 실패:', error);
-            showError('야근식대 데이터를 불러오는데 실패했습니다.');
+            console.error('[불러오기 실패] 야근 증빙 기존 데이터', error);
+            showLoadFailure('야근 증빙');
             // 에러 시에도 콘텐츠 표시
             const container = document.querySelector('.container');
             if (container) container.classList.add('data-loaded');
@@ -721,12 +721,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 await Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1500, showConfirmButton: false });
                 popupAwareRedirect('/project/documents');
             } else {
-                const error = await response.json();
-                showError(error.error || '삭제 중 오류가 발생했습니다.');
+                const errBody = await response.json().catch(() => ({}));
+                console.error('[삭제 실패] 야근 증빙 서버 응답', response.status, errBody);
+                showDeleteFailure('야근 증빙');
             }
         } catch (error) {
-            console.error('야근식대 삭제 실패:', error);
-            showError('삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[삭제 실패] 야근 증빙', error);
+            showDeleteFailure('야근 증빙');
         }
     }
 
@@ -1979,7 +1980,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             for (let i = 0; i < rowCount; i++) {
                 const person = i < overtimePersons.length ? overtimePersons[i] : null;
                 const personTask = person ? ((person.task !== null && person.task !== undefined && person.task !== '') ? person.task : globalTask) : '';
-                const sigAttr = person && person.idx ? ` data-slot="C1601" data-signer-idx="${person.idx}"` : '';
+                const sigAttr = person && person.idx
+                    ? ` data-slot="C1601"${person.isExternal ? ' data-external="true"' : ''} data-signer-idx="${person.idx}"`
+                    : '';
                 html += `<tr class="ot-person-row">
                     <td style="text-align: center;">${i + 1}</td>
                     <td style="text-align: center;">${person ? (person.name || '') : '&nbsp;'}</td>
@@ -2489,7 +2492,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
         } catch (e) {
-            Swal.fire({ icon: 'error', title: '다운로드 오류', text: '파일 다운로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
+            console.error('[내려받기 실패] 첨부 파일', e);
+            showDownloadFailure('첨부 파일');
         }
     };
 
@@ -2651,34 +2655,42 @@ document.addEventListener('DOMContentLoaded', async function() {
             const amountStr = otAmount?.value?.replace(/,/g, '') || '0';
             const amount = parseInt(amountStr) || 0;
 
-            // 저장 직전 중복 참석자 최종 검증
+            // 저장 직전 중복 야근인원 최종 검증
             try {
                 const attendeeIds = overtimePersons.map(p => p.id);
-                console.log('[중복 검증 시작] 검증할 참석자 IDs:', attendeeIds);
                 const duplicates = await checkDuplicateBeforeSave(attendeeIds);
 
                 if (duplicates.length > 0) {
-                    const duplicate = duplicates[0];
-                    const docs = duplicate.documents || [];
-                    const docInfo = docs.map(d => `${d.typeName} (${d.startTime}~${d.endTime})`).join('<br>');
-                    showError(
-                        `<b>${duplicate.attendeeName}</b>님은 이미 다른 문서에 등록되어 있습니다.<br><br>` +
-                        `${docInfo}<br><br>` +
-                        `야근인원을 확인해주세요.`
+                    const lines = duplicates.map(d => {
+                        const docs = (d.documents || []).map(doc => {
+                            const pname = doc.projectName ? `[${doc.projectName}] ` : '';
+                            const tname = doc.typeName || '문서';
+                            const date = doc.documentDate ? `${doc.documentDate} ` : '';
+                            const timeRange = (doc.startTime && doc.endTime)
+                                ? `${doc.startTime}~${doc.endTime}`
+                                : '';
+                            return `${pname}${tname} (${date}${timeRange})`.trim();
+                        }).join(', ');
+                        return `• <strong>${d.attendeeName}</strong> 님 — ${docs}`;
+                    }).join('<br>');
+
+                    const intro = duplicates.length === 1
+                        ? '아래 인원이 같은 시간에 이미 다른 문서에 등록되어 있어 저장할 수 없습니다.'
+                        : '아래 인원들이 같은 시간에 이미 다른 문서에 등록되어 있어 저장할 수 없습니다.';
+
+                    await showWarning(
+                        `${intro}<br><br>${lines}<br><br>해당 인원을 야근인원에서 제외하고 다시 저장해 주세요.`,
+                        '저장할 수 없습니다'
                     );
                     return;
                 }
-                console.log('[중복 검증 완료] 중복 없음');
             } catch (error) {
-                console.error('[중복 검증 오류]', error);
-                const continueAnyway = await showConfirm(
-                    `참석자 중복 검증 중 오류가 발생했습니다.<br><br>` +
-                    `중복 검증 없이 계속 진행하시겠습니까?`,
-                    '중복 검증 안내'
+                console.error('[저장 차단] 야근인원 시간 중복 조회 실패', error);
+                await showWarning(
+                    '야근인원의 일정 정보를 확인하지 못했습니다.<br>페이지를 새로고침하거나 야근인원을 확인한 뒤 다시 저장해 주세요.',
+                    '저장할 수 없습니다'
                 );
-                if (!continueAnyway) {
-                    return;
-                }
+                return;
             }
 
             // 활동비 초과 여부 확인 (경고만, 차단 없음)
@@ -2793,12 +2805,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                         }, 2000);
                     }
                 } else {
-                    const error = await response.json();
-                    showError(error.error || '저장 중 오류가 발생했습니다.');
+                    const errBody = await response.json().catch(() => ({}));
+                    console.error('[저장 실패] 야근 증빙 서버 응답', response.status, errBody);
+                    showSaveFailure('야근 증빙');
                 }
             } catch (error) {
-                console.error('야근식대 저장 실패:', error);
-                showError('저장 중 오류가 발생했습니다.\n관리자에게 문의해주세요.');
+                console.error('[저장 실패] 야근 증빙', error);
+                showSaveFailure('야근 증빙');
             }
         });
     }

@@ -66,12 +66,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     dept: user.empDept || '부서 미지정'
                 }));
             } else {
-                console.error('직원 데이터 로드 실패:', response.status);
-                showError('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
+                console.error('[불러오기 실패] 직원 목록 HTTP', response.status);
+                showLoadFailure('직원 목록');
             }
         } catch (error) {
-            console.error('직원 데이터 로드 오류:', error);
-            showError('직원 데이터를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[불러오기 실패] 직원 목록', error);
+            showLoadFailure('직원 목록');
         }
     }
 
@@ -1011,7 +1011,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ? `<span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-plane"></i> 출장 참여중</span>`
                 : '';
 
-            // 중복 출장 경고 뱃지
+            // 시간 중복 (선택 불가)
             const isDuplicate = duplicateTripPersonsInfo[person.id];
             let duplicateBadge = '';
             if (isDuplicate) {
@@ -1019,8 +1019,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (isDuplicate.startTime && isDuplicate.endTime) {
                     tooltipText += ` (${isDuplicate.startTime} ~ ${isDuplicate.endTime})`;
                 }
-                tooltipText += '이 있습니다.';
-                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`;
+                tooltipText += '이 있어 선택할 수 없습니다.';
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
             }
 
             // 참여기간 외 검증
@@ -1030,11 +1030,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const tip = `참여기간: ${formatMemberPeriod(person)}`;
                 inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
             }
-            const lockedStyle = isInactive ? 'opacity:0.55; cursor:not-allowed;' : '';
-            const onclickAttr = isInactive ? '' : `onclick="selectReporter(${person.id}, '${person.name.replace(/'/g, "\\'")}', '${(person.position || '').replace(/'/g, "\\'")}', '${(person.dept || '').replace(/'/g, "\\'")}', '${(person.positionCode || '').replace(/'/g, "\\'")}')"`;
+            const isLocked = isInactive || !!isDuplicate;
+            const lockedStyle = isLocked ? 'opacity:0.55; cursor:not-allowed;' : '';
+            const onclickAttr = isLocked ? '' : `onclick="selectReporter(${person.id}, '${person.name.replace(/'/g, "\\'")}', '${(person.position || '').replace(/'/g, "\\'")}', '${(person.dept || '').replace(/'/g, "\\'")}', '${(person.positionCode || '').replace(/'/g, "\\'")}')"`;
 
             return `
-                <div class="employee-item ${selectedClass}" data-id="${person.id}" data-inactive="${isInactive}" ${onclickAttr} style="${lockedStyle}">
+                <div class="employee-item ${selectedClass}" data-id="${person.id}" data-dup="${!!isDuplicate}" data-inactive="${isInactive}" ${onclickAttr} style="${lockedStyle}">
                     <div class="employee-info">
                         <div class="employee-name">${person.name}${attendeeBadge}${inactiveBadge}${duplicateBadge}</div>
                         <div class="employee-details">${person.dept} · ${person.position}</div>
@@ -1080,27 +1081,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        // 중복 출장 경고
-        const dupInfo = duplicateTripPersonsInfo[reporterId];
-        if (dupInfo) {
-            let detailText = `이미 ${dupInfo.date}에 <strong>[${dupInfo.projectName}]</strong> 프로젝트 ${dupInfo.type}`;
-            if (dupInfo.startTime && dupInfo.endTime) {
-                detailText += ` (${dupInfo.startTime} ~ ${dupInfo.endTime})`;
-            }
-            detailText += '이 있습니다.';
-
-            const result = await Swal.fire({
-                icon: 'warning',
-                title: '출장 중복 경고',
-                html: `<strong>${reporterName}</strong>님은 해당 날짜에 출장 일정이 중복됩니다.<br><br>${detailText}<br><br>그래도 작성자로 선택하시겠습니까?`,
-                showCancelButton: true,
-                confirmButtonText: '계속 진행',
-                cancelButtonText: '취소',
-                confirmButtonColor: '#ff9800'
-            });
-
-            if (!result.isConfirmed) return;
-        }
+        // 시간 중복 인원은 선택 불가 (렌더링 단계에서 이미 disabled 처리됨 — 방어용)
+        if (duplicateTripPersonsInfo[reporterId]) return;
 
         // 이전 작성자를 출장인원에서 제거 (새 작성자와 다른 경우)
         const previousReporterId = tripReporter ? tripReporter.getAttribute('data-reporter-id') : null;
@@ -3093,8 +3075,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     showError(errorMessage);
                 }
             } catch (error) {
-                console.error('저장 오류:', error);
-                showError('출장 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[저장 실패] 출장 증빙', error);
+                showSaveFailure('출장 증빙');
             }
         });
     }
@@ -3125,7 +3107,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 updateProgress(0, '준비 중...');
 
                 if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-                    showWarning('PDF 라이브러리를 로드하는 중입니다. 잠시 후 다시 시도해주세요.');
+                    Swal.fire({
+                        title: '잠시만 기다려 주세요',
+                        html: 'PDF 만들기에 필요한 기능을 준비 중입니다.<br>잠시 뒤 <b>다시 버튼을 눌러 주세요.</b>',
+                        icon: 'info',
+                        confirmButtonText: '확인',
+                        confirmButtonColor: '#667eea'
+                    });
                     if (loadingModal) loadingModal.classList.remove('active');
                     return;
                 }
@@ -3288,7 +3276,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             } catch (error) {
                 console.error('PDF 생성 오류:', error);
                 if (loadingModal) loadingModal.classList.remove('active');
-                showError('문서 생성 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[만들기 실패] PDF 문서', arguments?.[0]);
+                showGenerateFailure('PDF 문서');
             } finally {
                 if (allDivs && originalDisplays.length > 0) {
                     allDivs.forEach((div, index) => {
@@ -3792,8 +3781,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             return data;
         } catch (error) {
-            console.error('데이터 로드 오류:', error);
-            showError('데이터를 불러오는데 실패했습니다.');
+            console.error('[불러오기 실패] 출장 증빙 상세', error);
+            showLoadFailure('출장 증빙 내용');
             window.hidePageLoadingOverlay();
         }
     }
@@ -4482,11 +4471,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
                     window.location.reload();
                 } else {
-                    showError('출장 수정에 실패했습니다.');
+                    console.error('[수정 실패] 출장 증빙 HTTP', response?.status);
+                    showUpdateFailure('출장 증빙');
                 }
             } catch (error) {
-                console.error('수정 오류:', error);
-                showError('출장 수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[수정 실패] 출장 증빙', error);
+                showUpdateFailure('출장 증빙');
             }
         });
     }
@@ -4513,11 +4503,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     await Swal.fire({ icon: 'success', title: '삭제 완료', timer: 1500, showConfirmButton: false });
                     popupAwareRedirect('/project/documents');
                 } else {
-                    showError('출장 삭제에 실패했습니다.');
+                    console.error('[삭제 실패] 출장 증빙 HTTP', response?.status);
+                    showDeleteFailure('출장 증빙');
                 }
             } catch (error) {
-                console.error('삭제 오류:', error);
-                showError('출장 삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[삭제 실패] 출장 증빙', error);
+                showDeleteFailure('출장 증빙');
             }
         });
     }

@@ -2459,7 +2459,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.body.removeChild(a);
             URL.revokeObjectURL(blobUrl);
         } catch (e) {
-            Swal.fire({ icon: 'error', title: '다운로드 오류', text: '파일 다운로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
+            console.error('[내려받기 실패] 첨부 파일', e);
+            showDownloadFailure('첨부 파일');
         }
     };
 
@@ -2505,49 +2506,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                         const duplicates = await checkDuplicateAttendees(attendeeIds);
 
                         if (duplicates.length > 0) {
-                            const duplicate = duplicates[0];
-                            const meeting = duplicate.meeting;
-                            const meetingDate = meeting.documentDate || '';
-                            const projectName = meeting.projectName || '알 수 없는 프로젝트';
-                            const documentTypePrefix = meeting.type || 'RCM';
-                            const documentTypeName = meeting.typeName || documentTypePrefix;
-                            const dateLabel = documentTypePrefix === 'RCM' ? '회의' : '야근';
-
-                            let message = `저장할 수 없습니다.<br><br>`;
-                            message += `동일 날짜에 이미 다른 ${documentTypeName}에 참석 중인 인원이 있습니다.<br><br>`;
-                            message += `${dateLabel} 날짜: ${meetingDate}<br>`;
-
-                            if (meeting.startTime && meeting.endTime) {
-                                const timeRange = `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`;
-                                message += `${dateLabel} 시간: ${timeRange}<br>`;
-                            }
-
-                            message += `프로젝트: <strong>[${projectName}]</strong>`;
-
-                            await showWarning(message);
+                            await showWarning(
+                                formatDuplicateAttendeeMessage(duplicates, internalAttendeesForSave),
+                                '저장할 수 없습니다'
+                            );
                             return;
                         }
                     }
                 } catch (error) {
-                    console.error('[중복 검증 오류]', error);
-
-                    // 사용자에게 계속 진행할지 물어봄
-                    const confirmed = await showConfirm(
-                        `참석자 중복 검증 중 오류가 발생했습니다.<br><br>` +
-                        `중복 검증 없이 계속 진행하시겠습니까?`,
-                        '중복 검증 안내',
-                        {
-                            icon: 'warning',
-                            confirmText: '계속 진행',
-                            cancelText: '취소',
-                            confirmColor: '#ff9800'
-                        }
+                    console.error('[저장 차단] 참석자 시간 중복 조회 실패', error);
+                    await showWarning(
+                        '참여 인원의 일정 정보를 확인하지 못했습니다.<br>페이지를 새로고침하거나 참여 인원을 확인한 뒤 다시 저장해 주세요.',
+                        '저장할 수 없습니다'
                     );
-
-                    if (!confirmed) {
-                        return;
-                    }
-                    console.log('[저장 계속] 중복 검증 스킵하고 진행');
+                    return;
                 }
             }
 
@@ -2853,8 +2825,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     showError(errorMessage);
                 }
             } catch (error) {
-                console.error('저장 오류:', error);
-                showError('회의록 저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[저장 실패] 회의 증빙', error);
+                showSaveFailure('회의 증빙');
             }
         });
     }
@@ -3546,6 +3518,33 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // 중복 참석자 메시지 포맷터 (저장·수정·추가 공용)
+    //  - duplicates: [{ attendeeId, meeting }]
+    //  - attendeesSource: 이름 조회용 배열 (currentAttendees / tempSelectedAttendees 등)
+    function formatDuplicateAttendeeMessage(duplicates, attendeesSource) {
+        const typeLabel = m => m?.typeName
+            || (m?.type === 'RCM' ? '회의'
+              : m?.type === 'RCO' ? '야근'
+              : m?.type === 'RCT' ? '출장'
+              : m?.type === 'RCTM' ? '출장·회의'
+              : '문서');
+        const lines = duplicates.map(d => {
+            const attendee = attendeesSource.find(a => parseInt(a.id) === d.attendeeId);
+            const name = attendee ? attendee.name : '참석자';
+            const m = d.meeting || {};
+            const projectName = m.projectName || '다른 프로젝트';
+            const date = m.documentDate || '';
+            const timeRange = (m.startTime && m.endTime)
+                ? ` ${m.startTime.substring(0,5)}~${m.endTime.substring(0,5)}`
+                : '';
+            return `• <strong>${name}</strong> 님 — [${projectName}] ${typeLabel(m)} (${date}${timeRange})`;
+        }).join('<br>');
+        const intro = duplicates.length === 1
+            ? '아래 인원이 같은 시간에 이미 다른 문서에 등록되어 있어 저장할 수 없습니다.'
+            : '아래 인원들이 같은 시간에 이미 다른 문서에 등록되어 있어 저장할 수 없습니다.';
+        return `${intro}<br><br>${lines}<br><br>해당 인원을 참석자에서 제외하고 다시 저장해 주세요.`;
+    }
+
     // 중복 참석자 검증 함수
     async function checkDuplicateAttendees(attendeeIds) {
         const dateInput = document.getElementById('common_date');
@@ -3646,13 +3645,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
                 }
             } catch (error) {
-                console.error(`중복 검증 중 오류 (attendeeId: ${attendeeId}):`, error);
-                // 참석자 이름 찾기
-                const attendee = currentAttendees.find(a => a.id === attendeeId) ||
-                                tempSelectedAttendees.find(a => parseInt(a.id) === attendeeId);
-                const attendeeName = attendee ? attendee.name : `ID ${attendeeId}`;
-                // 검증 실패 시 에러를 throw하여 상위에서 처리
-                throw new Error(`참석자 "${attendeeName}"의 중복 검증에 실패했습니다.\n잠시 후 다시 시도해주세요.`);
+                // 한 명 실패해도 전체 중단 금지 — 그 멤버는 중복 여부 미결. 저장 단에서 최종 방어.
+                console.error('[중복 확인 실패] 참석자 시간 중복 조회 실패', { attendeeId, error });
             }
         }
 
@@ -3673,35 +3667,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             try {
                 const duplicates = await checkDuplicateAttendees(attendeeIdsToCheck);
                 if (duplicates.length > 0) {
-                    const duplicate = duplicates[0];
-                    const meeting = duplicate.meeting;
-                    const meetingDate = meeting.documentDate || '';
-                    const projectName = meeting.projectName || '알 수 없는 프로젝트';
-                    const documentTypeCode = meeting.type || 'RCM';
-                    const documentTypeName = meeting.typeName || getDocumentTypeName(documentTypeCode);
-
-                    // 중복된 참석자 이름 찾기
-                    const duplicateAttendee = tempSelectedAttendees.find(a => parseInt(a.id) === duplicate.attendeeId);
-                    const attendeeName = duplicateAttendee ? duplicateAttendee.name : `ID ${duplicate.attendeeId}`;
-
-                    let message = `<strong>참석자: ${attendeeName}</strong><br>`;
-                    message += `동일 날짜/시간에 이미 다른 문서에 참석 중입니다.<br><br>`;
-                    message += `문서 타입: <strong>${documentTypeName}</strong><br>`;
-                    message += `날짜: ${meetingDate}<br>`;
-
-                    if (meeting.startTime && meeting.endTime) {
-                        const timeRange = `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`;
-                        message += `시간: ${timeRange}<br>`;
-                    }
-
-                    message += `프로젝트: <strong>[${projectName}]</strong>`;
-
-                    await showWarning(message);
+                    const msg = formatDuplicateAttendeeMessage(duplicates, tempSelectedAttendees)
+                        .replace('해당 인원을 참석자에서 제외하고 다시 저장해 주세요.', '해당 인원의 선택을 해제한 뒤 다시 추가해 주세요.');
+                    await showWarning(msg, '참석자로 추가할 수 없습니다');
                     return;
                 }
             } catch (error) {
-                console.error('[참석자 선택 중 중복 검증 오류]', error);
-                await showError('중복 검증 중 오류가 발생했습니다.<br>잠시 후 다시 시도해주세요.');
+                console.error('[참석자 추가 차단] 시간 중복 조회 실패', error);
+                await showWarning(
+                    '참여 인원의 일정 정보를 확인하지 못했습니다.<br>페이지를 새로고침하거나 참석자 목록을 확인한 뒤 다시 추가해 주세요.',
+                    '참석자로 추가할 수 없습니다'
+                );
                 return;
             }
         }
@@ -4069,14 +4045,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ? `<span style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;"><i class="fas fa-user-check"></i> 참석중</span>`
                 : '';
 
-            // 시간 중복 정보 표시
+            // 시간 중복 (선택 불가)
             const isDuplicate = duplicateInfo[person.id];
             let duplicateBadge = '';
             if (isDuplicate) {
                 const projectName = isDuplicate.projectName;
                 const timeRange = `${isDuplicate.startTime}~${isDuplicate.endTime}`;
-                const tooltipText = `${projectName} 프로젝트 회의 (${timeRange})`;
-                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-exclamation-triangle"></i> 시간 중복</span>`;
+                const tooltipText = `${projectName} 프로젝트 회의 (${timeRange})에 이미 참석 중이라 선택할 수 없습니다.`;
+                duplicateBadge = `<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; white-space: nowrap;" data-tip="${tooltipText}"><i class="fas fa-ban"></i> 시간 중복</span>`;
             }
 
             // 참여기간 외 검증 (회의 날짜 기준)
@@ -4087,7 +4063,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 inactiveBadge = `<span style="background:#e5e7eb; color:#4b5563; padding:2px 8px; border-radius:4px; font-size:11px; margin-left:8px; white-space:nowrap;" data-tip="${tip}"><i class="fas fa-calendar-times"></i> 참여기간 외</span>`;
             }
 
-            const isLocked = isInactive;
+            const isLocked = isInactive || !!isDuplicate;
             const lockedStyle = isLocked ? 'opacity:0.55; cursor:not-allowed;' : '';
             const onclickAttr = isLocked ? '' : `onclick="selectAuthor(${person.id})"`;
 
@@ -4120,63 +4096,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return;
             }
 
-            // 시간 중복 체크
-            const dateInput = document.getElementById('common_date');
-            const startTimeInput = document.getElementById('common_start_time');
-            const endTimeInput = document.getElementById('common_end_time');
-            const projectIdxInput = document.getElementById('selectedProjectIdx');
-
-            if (dateInput?.value && startTimeInput?.value && endTimeInput?.value && projectIdxInput?.value) {
-                const date = dateInput.value;
-                const currentStartTime = startTimeInput.value;
-                const currentEndTime = endTimeInput.value;
-                const projectIdx = projectIdxInput.value;
-
-                try {
-                    let url = `/api/receipt-common/check-duplicate?date=${date}&attendeeIdx=${personId}&projectIdx=${projectIdx}&startTime=${currentStartTime}&endTime=${currentEndTime}`;
-                    if (currentReceiptMeetingIdx) {
-                        url += `&excludeReceiptIdx=${currentReceiptMeetingIdx}&excludeDocumentType=RCM`;
-                    }
-                    const response = await fetch(url);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (Array.isArray(data) && data.length > 0) {
-                            for (const meeting of data) {
-                                const meetingStartTime = meeting.startTime?.substring(0, 5);
-                                const meetingEndTime = meeting.endTime?.substring(0, 5);
-
-                                if (meetingStartTime && meetingEndTime) {
-                                    if (isTimeOverlap(meetingStartTime, meetingEndTime, currentStartTime, currentEndTime)) {
-                                        // 중복이 있으면 경고 표시
-                                        const projectName = meeting.projectName || '알 수 없는 프로젝트';
-                                        const timeRange = `${meetingStartTime} ~ ${meetingEndTime}`;
-
-                                        const result = await Swal.fire({
-                                            icon: 'warning',
-                                            title: '시간 중복 경고',
-                                            html: `<strong>${person.name}</strong>님은 해당 시간대에<br>이미 다른 회의에 참석 중입니다.<br><br>` +
-                                                  `회의 시간: ${timeRange}<br>` +
-                                                  `프로젝트: <strong>[${projectName}]</strong><br><br>` +
-                                                  `그래도 작성자로 선택하시겠습니까?`,
-                                            showCancelButton: true,
-                                            confirmButtonText: '계속 진행',
-                                            cancelButtonText: '취소',
-                                            confirmButtonColor: '#ff9800'
-                                        });
-
-                                        if (!result.isConfirmed) {
-                                            return; // 취소하면 작성자 선택 중단
-                                        }
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('작성자 중복 체크 오류:', error);
-                }
-            }
+            // 시간 중복 인원은 선택 불가 (렌더링 단계에서 이미 disabled 처리됨 — DOM 기반 방어)
+            const authorItemEl = document.querySelector(`#authorList .employee-item[data-id="${person.id}"]`);
+            if (authorItemEl?.getAttribute('data-has-conflict') === 'true') return;
 
             // 기존 작성자 ID 가져오기
             const previousAuthorId = document.getElementById('common_author_id').value;
@@ -4483,8 +4405,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 showError('외부인력 등록에 실패했습니다.');
             }
         } catch (error) {
-            console.error('외부인력 등록 오류:', error);
-            showError('외부인력 등록 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[저장 실패] 외부 인력 등록', error);
+            showSaveFailure('외부 인력');
         }
     };
 
@@ -4926,47 +4848,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                             });
 
                             if (otherDuplicates.length > 0) {
-                                const duplicate = otherDuplicates[0];
-                                const meeting = duplicate.meeting;
-                                const meetingDate = meeting.documentDate || '';
-                                const projectName = meeting.projectName || '알 수 없는 프로젝트';
-                                const documentTypePrefix = meeting.type || 'RCM';
-                                const documentTypeName = meeting.typeName || documentTypePrefix;
-                                const dateLabel = documentTypePrefix === 'RCM' ? '회의' : '야근';
-
-                                let message = `수정할 수 없습니다.<br><br>`;
-                                message += `동일 날짜에 이미 다른 ${documentTypeName}에 참석 중인 인원이 있습니다.<br><br>`;
-                                message += `${dateLabel} 날짜: ${meetingDate}<br>`;
-
-                                if (meeting.startTime && meeting.endTime) {
-                                    const timeRange = `${meeting.startTime.substring(0, 5)} ~ ${meeting.endTime.substring(0, 5)}`;
-                                    message += `${dateLabel} 시간: ${timeRange}<br>`;
-                                }
-
-                                message += `프로젝트: <strong>[${projectName}]</strong>`;
-
-                                await showWarning(message);
+                                const msg = formatDuplicateAttendeeMessage(otherDuplicates, internalAttendeesForUpdate)
+                                    .replace('다시 저장해 주세요.', '다시 수정해 주세요.');
+                                await showWarning(msg, '수정할 수 없습니다');
                                 return;
                             }
                         }
                     }
                 } catch (error) {
-                    console.error('[중복 검증 오류]', error);
-                    const confirmed = await showConfirm(
-                        `참석자 중복 검증 중 오류가 발생했습니다.<br><br>` +
-                        `중복 검증 없이 계속 진행하시겠습니까?`,
-                        '중복 검증 안내',
-                        {
-                            icon: 'warning',
-                            confirmText: '계속 진행',
-                            cancelText: '취소',
-                            confirmColor: '#ff9800'
-                        }
+                    console.error('[수정 차단] 참석자 시간 중복 조회 실패', error);
+                    await showWarning(
+                        '참여 인원의 일정 정보를 확인하지 못했습니다.<br>페이지를 새로고침하거나 참여 인원을 확인한 뒤 다시 수정해 주세요.',
+                        '수정할 수 없습니다'
                     );
-                    if (!confirmed) {
-                        return;
-                    }
-                    console.log('[수정 계속] 중복 검증 스킵하고 진행');
+                    return;
                 }
             }
 
@@ -5091,8 +4986,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const errorData = await response.json().catch(() => ({}));
                 showError(errorData.error || '회의록 수정에 실패했습니다.');
             } catch (error) {
-                console.error('수정 오류:', error);
-                showError('회의록 수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[수정 실패] 회의 증빙', error);
+                showUpdateFailure('회의 증빙');
             }
         });
     }
@@ -5164,8 +5059,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const errorData = await response.json().catch(() => ({}));
                 showError(errorData.error || '회의록 삭제에 실패했습니다.');
             } catch (error) {
-                console.error('삭제 오류:', error);
-                showError('회의록 삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[삭제 실패] 회의 증빙', error);
+                showDeleteFailure('회의 증빙');
             }
         });
     }
