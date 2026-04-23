@@ -627,8 +627,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             Swal.close();
         } catch (err) {
-            console.error(err);
-            Swal.fire({ icon: 'error', title: '다운로드 실패', text: '파일 다운로드에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
+            console.error('[역량 평가 자료 내려받기 실패]', err);
+            showDownloadFailure('역량 평가 자료');
         }
     }
 
@@ -719,9 +719,9 @@ document.addEventListener('DOMContentLoaded', function () {
             // 모달 테이블도 재렌더
             renderRoleMgmtTable();
         } catch (err) {
-            console.error(err);
+            console.error('[역량 열람 권한 변경 실패]', err);
             checkbox.checked = !grant; // 원복
-            Swal.fire({ icon: 'error', title: '권한 변경 실패', text: '권한 변경에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
+            showUpdateFailure('역량 열람 권한');
         }
     }
 
@@ -886,8 +886,8 @@ document.addEventListener('DOMContentLoaded', function () {
             closeModal(bulkTrainingModal);
             loadOverview(); // 목록 갱신
         } catch (err) {
-            console.error(err);
-            Swal.fire({ icon: 'error', title: '등록 실패', text: '일괄 등록에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
+            console.error('[법정교육 일괄 등록 실패]', err);
+            showSaveFailure('법정교육 일괄 등록');
         }
     }
 
