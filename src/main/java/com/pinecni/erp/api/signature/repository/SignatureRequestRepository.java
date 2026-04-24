@@ -37,4 +37,9 @@ public interface SignatureRequestRepository extends JpaRepository<SignatureReque
     @Query("UPDATE SignatureRequest sr SET sr.isCompleted = true, sr.completedAt = CURRENT_TIMESTAMP " +
            "WHERE sr.documentSignatureIdx = :documentSignatureIdx")
     void markCompletedByDocumentSignatureIdx(@Param("documentSignatureIdx") Long documentSignatureIdx);
+
+    /**
+     * 해당 document_signature 로 생성된 요청이 이미 있는지 확인 (중복 방지)
+     */
+    boolean existsByDocumentSignatureIdx(Long documentSignatureIdx);
 }

@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.signature.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.audit.service.AuditLogService;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.externalperson.repository.ExternalPersonRepository;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
@@ -53,6 +54,7 @@ public class SignatureServiceImpl implements SignatureService {
     private final ProjectRepository projectRepository;
     private final CodeRepository codeRepository;
     private final ExternalPersonRepository externalPersonRepository;
+    private final AuditLogService auditLogService;
 
     // ============================================================
     // 결재라인 기반 서명 요청 생성
@@ -232,6 +234,23 @@ public class SignatureServiceImpl implements SignatureService {
 
         log.info("서명 요청 생성 완료: documentIdx={}, docType={}, createdRows={}",
                 documentIdx, documentType, createdRows.size());
+
+        // 감사 로그: 문서 생성 + 서명 요청 (requesterUserIdx 기준)
+        // 모든 문서 유형이 이 메서드를 호출하므로 한 곳에서 일괄 기록.
+        // HttpServletRequest 는 이 계층에 없음 — ClientIpResolver 가 null 을 처리 (IP = 0.0.0.0 placeholder)
+        if (requesterUserIdx != null) {
+            auditLogService.logDocument(requesterUserIdx,
+                    CodeConstants.AuditAction.CREATE,
+                    documentIdx,
+                    "문서 생성 및 서명 요청 (docType=" + documentType
+                            + ", signerRows=" + createdRows.size() + ")",
+                    null);
+            auditLogService.log(requesterUserIdx,
+                    CodeConstants.AuditTargetType.SIGNATURE,
+                    CodeConstants.AuditAction.REQUEST_SIGNATURE,
+                    null, documentIdx,
+                    "서명 요청 " + createdRows.size() + "건 생성", null);
+        }
     }
 
     /**
@@ -318,72 +337,98 @@ public class SignatureServiceImpl implements SignatureService {
     @Override
     @Transactional
     public void advanceToNextOrder(Long documentIdx, Integer currentOrder) {
-        // 현재 단계의 linked 없는 행이 전원 완료인지 확인
-        List<DocumentSignature> currentOrderRows = documentSignatureRepository
-                .findByDocumentIdxAndSignatureOrderExcludingLinked(documentIdx, currentOrder);
+        // 자가복구형(reconcile) 전략 — 전체 order 를 한 번에 재평가해 활성화가
+        // 누락된 단계를 복구한다. 단순 currentOrder+1 만 건드리면:
+        //   - 과거 버그/경합으로 activate 가 누락된 상위 order 는 영구 정체
+        //   - 업데이트로 DS 행이 추가/변동됐을 때 누락분 미처리
+        // 매 서명마다 호출되므로 전체 재평가의 비용은 무시할 수 있다.
 
-        log.info("advanceToNextOrder 시작: documentIdx={}, order={}, rows={}",
-                documentIdx, currentOrder, currentOrderRows.size());
-        for (DocumentSignature ds : currentOrderRows) {
-            log.info("  → dsIdx={}, signerUserIdx={}, status={}", ds.getIdx(), ds.getSignerUserIdx(), ds.getStatus());
+        List<DocumentSignature> allRows = documentSignatureRepository
+                .findByDocumentIdxOrderBySignatureOrderAscIdxAsc(documentIdx);
+
+        // linked 제외 + order 별 그룹화 (TreeMap 으로 오름차순 자동 정렬)
+        java.util.TreeMap<Integer, List<DocumentSignature>> byOrder = new java.util.TreeMap<>();
+        for (DocumentSignature ds : allRows) {
+            if (ds.getLinkedSignatureIdx() != null) continue;
+            byOrder.computeIfAbsent(ds.getSignatureOrder(), k -> new ArrayList<>()).add(ds);
         }
 
-        boolean allDone = currentOrderRows.stream().allMatch(ds ->
-                CodeConstants.DocumentSignatureStatus.COMPLETED.getCode().equals(ds.getStatus())
-                        || CodeConstants.DocumentSignatureStatus.SKIPPED.getCode().equals(ds.getStatus()));
-
-        if (!allDone) {
-            log.warn("현재 단계 미완료로 전진 중단: documentIdx={}, order={}", documentIdx, currentOrder);
+        if (byOrder.isEmpty()) {
+            log.info("advanceToNextOrder: 활성 DS 행 없음 (linked 제외), documentIdx={}", documentIdx);
             return;
         }
 
-        // 문서 상태 → 서명진행중 (첫 서명 완료 시)
-        updateDocumentStatus(documentIdx, CodeConstants.DocumentStatus.SIGN_IN_PROGRESS.getCode());
+        log.info("advanceToNextOrder 재평가: documentIdx={}, 시작 order={}, order그룹={}",
+                documentIdx, currentOrder, byOrder.keySet());
 
-        // 다음 단계 행 찾기
-        Integer nextOrder = currentOrder + 1;
-        List<DocumentSignature> nextRows = documentSignatureRepository
-                .findByDocumentIdxAndSignatureOrderExcludingLinked(documentIdx, nextOrder);
-
-        if (nextRows.isEmpty()) {
-            // 전자서명 전체 완료 → 서명완료 상태
-            updateDocumentStatus(documentIdx, CodeConstants.DocumentStatus.SIGN_COMPLETE.getCode());
-            log.info("전자서명 전체 완료: documentIdx={}", documentIdx);
-            return;
-        }
-
-        // 다음 단계 활성화 (requested_at이 NULL인 것만, idempotent)
-        LocalDateTime now = LocalDateTime.now();
         ApprovalDocument document = approvalDocumentRepository.findById(documentIdx).orElse(null);
         Long requesterIdx = document != null
                 ? (document.getCreatedUserIdx() != null
                     ? document.getCreatedUserIdx() : document.getDrafterUserIdx())
                 : null;
 
-        for (DocumentSignature row : nextRows) {
-            if (row.getRequestedAt() == null) {
-                row.setRequestedAt(now);
-                documentSignatureRepository.save(row);
+        LocalDateTime now = LocalDateTime.now();
+        boolean prevAllComplete = true;   // 첫 order 는 무조건 활성 자격
+        boolean anyCompleted = false;
+        boolean allRowsComplete = true;
 
-                // 외부인은 로그인 대상 아니라 알림 요청 스킵 (숫자 충돌 방지)
-                if (Boolean.TRUE.equals(row.getIsExternal())) {
-                    log.info("다음 단계 외부인 활성화 (알림 스킵): documentIdx={}, signerUserIdx={}",
-                            documentIdx, row.getSignerUserIdx());
-                    continue;
+        for (Map.Entry<Integer, List<DocumentSignature>> entry : byOrder.entrySet()) {
+            Integer order = entry.getKey();
+            List<DocumentSignature> rows = entry.getValue();
+
+            boolean orderComplete = true;
+            for (DocumentSignature row : rows) {
+                boolean done = CodeConstants.DocumentSignatureStatus.COMPLETED.getCode().equals(row.getStatus())
+                        || CodeConstants.DocumentSignatureStatus.SKIPPED.getCode().equals(row.getStatus());
+                if (done) {
+                    anyCompleted = true;
+                } else {
+                    orderComplete = false;
+                    allRowsComplete = false;
                 }
-
-                // signature_requests 생성 (중복 방지: 기존 없는 경우만)
-                SignatureRequest sr = SignatureRequest.builder()
-                        .documentIdx(documentIdx)
-                        .documentSignatureIdx(row.getIdx())
-                        .requesterUserIdx(requesterIdx != null ? requesterIdx : row.getSignerUserIdx())
-                        .signerUserIdx(row.getSignerUserIdx())
-                        .isCompleted(false)
-                        .build();
-                signatureRequestRepository.save(sr);
-                log.info("다음 단계 활성화: documentIdx={}, order={}, signerUserIdx={}",
-                        documentIdx, nextOrder, row.getSignerUserIdx());
             }
+
+            // 이전 order 전원 완료 상태면 이 order 를 활성화 (requested_at 누락분 보정)
+            if (prevAllComplete) {
+                for (DocumentSignature row : rows) {
+                    if (row.getRequestedAt() == null) {
+                        row.setRequestedAt(now);
+                        documentSignatureRepository.save(row);
+                        log.info("단계 활성화: documentIdx={}, order={}, dsIdx={}, signerUserIdx={}, external={}",
+                                documentIdx, order, row.getIdx(), row.getSignerUserIdx(),
+                                Boolean.TRUE.equals(row.getIsExternal()));
+
+                        // 외부인은 로그인 대상 아니라 알림 스킵 (external_person.idx ↔ users.idx 충돌 방지)
+                        if (Boolean.TRUE.equals(row.getIsExternal())) continue;
+
+                        // signature_requests 중복 방지 — 같은 document_signature_idx 로 이미 있으면 건너뜀
+                        if (signatureRequestRepository
+                                .existsByDocumentSignatureIdx(row.getIdx())) {
+                            log.debug("signature_request 이미 존재: dsIdx={}", row.getIdx());
+                            continue;
+                        }
+
+                        SignatureRequest sr = SignatureRequest.builder()
+                                .documentIdx(documentIdx)
+                                .documentSignatureIdx(row.getIdx())
+                                .requesterUserIdx(requesterIdx != null ? requesterIdx : row.getSignerUserIdx())
+                                .signerUserIdx(row.getSignerUserIdx())
+                                .isCompleted(false)
+                                .build();
+                        signatureRequestRepository.save(sr);
+                    }
+                }
+            }
+
+            prevAllComplete = prevAllComplete && orderComplete;
+        }
+
+        // 문서 상태 반영
+        if (allRowsComplete) {
+            updateDocumentStatus(documentIdx, CodeConstants.DocumentStatus.SIGN_COMPLETE.getCode());
+            log.info("전자서명 전체 완료: documentIdx={}", documentIdx);
+        } else if (anyCompleted) {
+            updateDocumentStatus(documentIdx, CodeConstants.DocumentStatus.SIGN_IN_PROGRESS.getCode());
         }
     }
 
@@ -557,13 +602,13 @@ public class SignatureServiceImpl implements SignatureService {
             List<Map<String, Object>> signerDetails = new ArrayList<>();
             for (DocumentSignature sig : allSigs) {
                 if (sig.getLinkedSignatureIdx() != null) continue;
-                String sName = userRepository.findById(sig.getSignerUserIdx())
-                        .map(User::getEmpName).orElse("알 수 없음");
+                String sName = resolveSignerName(sig);
                 String sSlot = codeRepository.findByCode(sig.getSignatureSlot())
                         .map(Code::getCodeName).orElse(sig.getSignatureSlot());
                 Map<String, Object> sd = new HashMap<>();
                 sd.put("signerName", sName);
                 sd.put("slotLabel", sSlot);
+                sd.put("isExternal", Boolean.TRUE.equals(sig.getIsExternal()));
                 sd.put("signed", "C1402".equals(sig.getStatus()) || "C1403".equals(sig.getStatus()));
                 sd.put("requestedAt", sig.getRequestedAt());
                 sd.put("signedAt", sig.getSignedAt());
@@ -574,6 +619,20 @@ public class SignatureServiceImpl implements SignatureService {
             result.add(item);
         }
         return result;
+    }
+
+    /**
+     * 내부/외부 서명자 이름 해석.
+     * 외부행(is_external=true)은 signer_user_idx 가 external_person.idx 라
+     * users 조회 시 "알 수 없음" 폴백으로 떨어지는 버그를 막기 위한 헬퍼.
+     */
+    private String resolveSignerName(DocumentSignature sig) {
+        if (Boolean.TRUE.equals(sig.getIsExternal())) {
+            return externalPersonRepository.findById(sig.getSignerUserIdx())
+                    .map(ExternalPerson::getName).orElse("외부 인원");
+        }
+        return userRepository.findById(sig.getSignerUserIdx())
+                .map(User::getEmpName).orElse("알 수 없음");
     }
 
     @Override
@@ -722,13 +781,13 @@ public class SignatureServiceImpl implements SignatureService {
             List<Map<String, Object>> signerDetails = new ArrayList<>();
             for (DocumentSignature sig : sigs) {
                 if (sig.getLinkedSignatureIdx() != null) continue;
-                String sName = userRepository.findById(sig.getSignerUserIdx())
-                        .map(User::getEmpName).orElse("알 수 없음");
+                String sName = resolveSignerName(sig);
                 String sSlot = codeRepository.findByCode(sig.getSignatureSlot())
                         .map(Code::getCodeName).orElse(sig.getSignatureSlot());
                 Map<String, Object> sd = new HashMap<>();
                 sd.put("signerName", sName);
                 sd.put("slotLabel", sSlot);
+                sd.put("isExternal", Boolean.TRUE.equals(sig.getIsExternal()));
                 sd.put("signed", "C1402".equals(sig.getStatus()) || "C1403".equals(sig.getStatus()));
                 sd.put("requestedAt", sig.getRequestedAt());
                 sd.put("signedAt", sig.getSignedAt());
