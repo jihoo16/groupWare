@@ -147,7 +147,8 @@ function renderDocument(data) {
 
     // 기본 정보
     setText('doc_approval_date', approvalDate);
-    setText('doc_applicant', data.authorUserName || '');
+    // 신청자는 SignatureRender 가 서명 API 응답의 DRAFTER signerName 으로 채움
+    // (.approver-name[data-role="담당"] 자동 바인딩 — 별도 쿼리 없음)
     setText('doc_title', data.documentTitle || '');
     setText('doc_content', data.documentContent || '');
 

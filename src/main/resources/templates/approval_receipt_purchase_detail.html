@@ -73,7 +73,12 @@
                             </tr>
                             <tr>
                                 <th>신 청 자</th>
-                                <td colspan="6" style="text-align: center;"><span id="doc_applicant"></span></td>
+                                <td colspan="6" style="text-align: center;">
+                                    <!-- 신청자 이름은 SignatureRender 가 /api/signature/document 응답에서
+                                         DRAFTER(C1602) 슬롯의 signerName 을 .approver-name[data-role="담당"] 에 자동 주입.
+                                         별도 쿼리 없이 기존 서명 조회 결과를 재사용. -->
+                                    <span class="approver-name" data-role="담당" id="doc_applicant">-</span>
+                                </td>
                             </tr>
                             <tr>
                                 <th>품 의 명</th>
