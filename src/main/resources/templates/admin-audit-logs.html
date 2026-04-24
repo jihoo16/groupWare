@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('GROUPWARE 시스템 - 감사 로그', '/css/admin-audit-logs.css')}"></head>
+<body>
+<div class="container">
+    <!-- 좌측 네비게이션 -->
+    <div th:replace="~{fragments/sidebar :: sidebar('admin-audit-logs')}"></div>
+
+    <!-- 메인 콘텐츠 -->
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="page-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    감사 로그
+                </h1>
+                <p class="page-subtitle">시스템에서 발생한 모든 주요 행위를 시간순으로 기록·조회합니다</p>
+            </div>
+            <div class="header-right">
+                <button class="btn-export" id="exportCsvBtn">
+                    <i class="fas fa-file-download"></i>
+                    CSV 내보내기
+                </button>
+            </div>
+        </header>
+
+        <div class="audit-content">
+
+            <!-- 필터 영역 -->
+            <section class="filter-panel">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="filterStart">시작일</label>
+                        <input type="date" id="filterStart" class="filter-date">
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterEnd">종료일</label>
+                        <input type="date" id="filterEnd" class="filter-date">
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterTargetType">대상 유형</label>
+                        <select id="filterTargetType" class="filter-select">
+                            <option value="">전체</option>
+                            <option value="C1701">문서</option>
+                            <option value="C1702">서명</option>
+                            <option value="C1703">서명 세션</option>
+                            <option value="C1704">사용자</option>
+                            <option value="C1705">파일</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterAction">행위</label>
+                        <select id="filterAction" class="filter-select">
+                            <option value="">전체</option>
+                            <option value="C1801">생성</option>
+                            <option value="C1802">수정</option>
+                            <option value="C1803">삭제</option>
+                            <option value="C1804">서명</option>
+                            <option value="C1805">서명 요청</option>
+                            <option value="C1806">QR 생성</option>
+                            <option value="C1807">QR 스캔</option>
+                            <option value="C1808">본인 인증</option>
+                            <option value="C1809">서명 제출</option>
+                            <option value="C1810">조회</option>
+                            <option value="C1811">다운로드</option>
+                            <option value="C1812">업로드</option>
+                        </select>
+                    </div>
+                    <div class="filter-group flex-1">
+                        <label for="filterKeyword">사용자 (이름·사번)</label>
+                        <input type="text" id="filterKeyword" class="filter-input"
+                               placeholder="이름 또는 사번으로 검색 (Enter)">
+                    </div>
+                    <div class="filter-group">
+                        <label for="filterDocumentIdx">문서 IDX</label>
+                        <input type="number" id="filterDocumentIdx" class="filter-input narrow" placeholder="예: 1311">
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="btn-search" id="searchBtn">
+                            <i class="fas fa-search"></i> 조회
+                        </button>
+                        <button class="btn-reset" id="resetBtn">
+                            <i class="fas fa-undo"></i> 초기화
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 결과 메타 -->
+            <div class="result-meta">
+                <span id="totalCountText">조회 결과: <strong>0</strong> 건</span>
+                <div class="page-size-wrap">
+                    <label for="pageSize">페이지당</label>
+                    <select id="pageSize" class="page-size-select">
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <span>건</span>
+                </div>
+            </div>
+
+            <!-- 테이블 -->
+            <div class="audit-table-wrap">
+                <table class="audit-table">
+                    <colgroup>
+                        <col style="width: 160px;">   <!-- 시각 -->
+                        <col style="width: 130px;">   <!-- 행위자 -->
+                        <col style="width: 100px;">   <!-- 부서 -->
+                        <col style="width: 90px;">    <!-- 대상 유형 -->
+                        <col style="width: 110px;">   <!-- 행위 -->
+                        <col>                          <!-- 설명 -->
+                        <col style="width: 90px;">    <!-- 문서 IDX -->
+                        <col style="width: 120px;">   <!-- IP -->
+                    </colgroup>
+                    <thead>
+                    <tr>
+                        <th>시각</th>
+                        <th>행위자</th>
+                        <th>부서</th>
+                        <th>대상</th>
+                        <th>행위</th>
+                        <th>설명</th>
+                        <th>문서</th>
+                        <th>IP</th>
+                    </tr>
+                    </thead>
+                    <tbody id="auditTableBody">
+                    <!-- JS 동적 생성 -->
+                    </tbody>
+                </table>
+                <div class="empty-state" id="emptyState" style="display:none;">
+                    <i class="fas fa-inbox"></i>
+                    <p>조회 결과가 없습니다</p>
+                </div>
+            </div>
+
+            <!-- 페이지네이션 -->
+            <div class="pagination" id="pagination"></div>
+
+        </div>
+    </main>
+</div>
+
+<!-- 상세 모달 -->
+<div class="audit-detail-modal" id="auditDetailModal" role="dialog" aria-hidden="true">
+    <div class="modal-backdrop" data-close="true"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-info-circle"></i> 감사 로그 상세</h3>
+            <button class="modal-close" data-close="true" aria-label="닫기">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="auditDetailBody">
+            <!-- JS 동적 생성 -->
+        </div>
+    </div>
+</div>
+
+<script th:src="@{/js/admin-audit-logs.js}"></script>
+</body>
+</html>

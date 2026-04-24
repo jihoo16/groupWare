@@ -1,5 +1,6 @@
 package com.pinecni.erp.api.signature.controller;
 
+import com.pinecni.erp.api.audit.service.AuditLogService;
 import com.pinecni.erp.api.signature.dto.DocumentSignatureResponse;
 import com.pinecni.erp.api.signature.dto.SignatureSessionCreateRequest;
 import com.pinecni.erp.api.signature.dto.SignatureSessionResponse;
@@ -8,6 +9,7 @@ import com.pinecni.erp.api.signature.dto.SignatureVerifyRequest;
 import com.pinecni.erp.api.signature.dto.SignatureVerifyResponse;
 import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.api.signature.service.SignatureSessionService;
+import com.pinecni.erp.constant.CodeConstants.AuditAction;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -36,6 +38,7 @@ public class SignatureController {
 
     private final SignatureSessionService sessionService;
     private final SignatureService signatureService;
+    private final AuditLogService auditLogService;
 
     // ============================================================
     // 서명 세션 (QR 플로우)
@@ -58,6 +61,12 @@ public class SignatureController {
 
         String ipAddress = resolveClientIp(httpRequest);
         SignatureSessionResponse response = sessionService.createSession(request, userIdx, ipAddress);
+
+        // 감사 로그: QR 세션 생성
+        auditLogService.logSession(userIdx, AuditAction.QR_GENERATE,
+                null, request.getDocumentIdx(),
+                "QR 세션 생성 (slot=" + request.getSignatureSlot() + ")", httpRequest);
+
         return ResponseEntity.ok(response);
     }
 
@@ -89,6 +98,12 @@ public class SignatureController {
         String ipAddress = resolveClientIp(httpRequest);
         SignatureSessionResponse response = sessionService.createExternalSession(
                 documentIdx, externalPersonIdx, userIdx, ipAddress);
+
+        // 감사 로그: 외부인 QR 세션 생성
+        auditLogService.logSession(userIdx, AuditAction.QR_GENERATE,
+                null, documentIdx,
+                "외부인 QR 세션 생성 (externalPersonIdx=" + externalPersonIdx + ")", httpRequest);
+
         return ResponseEntity.ok(response);
     }
 
@@ -116,6 +131,7 @@ public class SignatureController {
                                                           HttpServletRequest httpRequest) {
         String ipAddress = resolveClientIp(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
+        // 스캔 자체는 signature_sessions.scanned_ip/agent 에 이미 기록되므로 audit_logs 중복 로그 생략.
         return ResponseEntity.ok(sessionService.scanSession(token, ipAddress, userAgent));
     }
 
@@ -127,6 +143,7 @@ public class SignatureController {
                                                            @Valid @RequestBody SignatureVerifyRequest request,
                                                            HttpServletRequest httpRequest) {
         String ipAddress = resolveClientIp(httpRequest);
+        // 인증 성공 시 감사 로그(QR_VERIFY)는 서비스 내부에서 기록 — signer_user_idx 접근 가능
         return ResponseEntity.ok(sessionService.verifySession(token, request, ipAddress));
     }
 
@@ -140,6 +157,7 @@ public class SignatureController {
         String ipAddress = resolveClientIp(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
         sessionService.submitSignature(token, request, ipAddress, userAgent);
+        // 실제 서명 완료(SIGN + SIGNATURE_SUBMIT) 감사 로그는 서비스 내부에서 signer_user_idx 기반으로 기록
         return ResponseEntity.ok().build();
     }
 
@@ -147,12 +165,18 @@ public class SignatureController {
      * 세션 취소 (PC 모달 닫기 등 — 로그인 필요)
      */
     @DeleteMapping("/session/{token}")
-    public ResponseEntity<Void> cancel(@PathVariable String token, HttpSession session) {
+    public ResponseEntity<Void> cancel(@PathVariable String token, HttpSession session,
+                                        HttpServletRequest httpRequest) {
         Long userIdx = (Long) session.getAttribute("userIdx");
         if (userIdx == null) {
             return ResponseEntity.status(401).build();
         }
         sessionService.cancelSession(token, userIdx);
+
+        // 감사 로그: 세션 취소
+        auditLogService.logSession(userIdx, AuditAction.DELETE, null, null,
+                "QR 세션 취소 (token=" + token + ")", httpRequest);
+
         return ResponseEntity.noContent().build();
     }
 

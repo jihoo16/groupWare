@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.signature.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.audit.service.AuditLogService;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.externalperson.repository.ExternalPersonRepository;
 import com.pinecni.erp.api.signature.dto.SignatureEventMessage;
@@ -55,6 +56,7 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
     private final QrCodeService qrCodeService;
     private final SignatureWebSocketNotifier wsNotifier;
     private final SignatureService signatureService;
+    private final AuditLogService auditLogService;
 
     @Value("${signature.session.ttl-seconds:300}")
     private int sessionTtlSeconds;
@@ -404,6 +406,13 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
                     .timestamp(LocalDateTime.now())
                     .build());
 
+            // 감사 로그: 본인 인증 성공
+            auditLogService.logSession(session.getSignerUserIdx(),
+                    CodeConstants.AuditAction.QR_VERIFY,
+                    session.getIdx(), session.getDocumentIdx(),
+                    "사번 2차 인증 성공 (token=" + token + ")",
+                    null /* HttpRequest 없음 — IP는 session.scanned_ip 로 보존 */);
+
             return SignatureVerifyResponse.builder()
                     .success(true)
                     .status(session.getStatus())
@@ -560,6 +569,22 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
 
         wsNotifier.sendSessionEvent(token, event);
         wsNotifier.sendDocumentEvent(documentIdx, event);
+
+        // 감사 로그: 서명 제출 + 서명 완료 (외부인 signer_user_idx 는 external_person.idx)
+        String actor = sessionIsExternal
+                ? "외부 참석자 (external_person.idx=" + signerUserIdx + ")"
+                : "사용자 idx=" + signerUserIdx;
+        if (!sessionIsExternal) {
+            auditLogService.logSession(signerUserIdx,
+                    CodeConstants.AuditAction.SIGNATURE_SUBMIT,
+                    session.getIdx(), documentIdx,
+                    "모바일 서명 제출 (slot=" + mainRow.getSignatureSlot() + ")", null);
+            auditLogService.logSignature(signerUserIdx,
+                    CodeConstants.AuditAction.SIGN,
+                    mainRow.getIdx(), documentIdx,
+                    "서명 완료: " + actor + ", slot=" + mainRow.getSignatureSlot(), null);
+        }
+        // 외부인은 audit.user_idx (NOT NULL) 제약상 기록 불가 — session 테이블에 이미 기록됨
     }
 
     // ============================================================
