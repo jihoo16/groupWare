@@ -34,7 +34,9 @@
 
     async function load(documentIdx) {
         try {
-            const resp = await fetch(`/api/signature/document/${documentIdx}`);
+            // no-store: 서명 완료 직후 브라우저가 이전 응답을 재사용해
+            // DOM에 새 서명이 즉시 반영되지 않는 문제 방지
+            const resp = await fetch(`/api/signature/document/${documentIdx}`, { cache: 'no-store' });
             if (!resp.ok) return null;
             const signatures = await resp.json();
             state.currentDocumentIdx = documentIdx;
@@ -147,36 +149,21 @@
                 if (cell.classList.contains('signed') || !cell.classList.contains('can-sign')) return;
                 if (!window.SignatureModal) return;
 
+                // 본인이 서명한 사실은 모달의 '완료' 화면에서 이미 확인됨.
+                // 별도 토스트는 중복 소음이라 onClose 콜백 생략.
                 const onCompleteCb = () => load(documentIdx);
-                const onCloseCb = (ev) => {
-                    if (ev.completed && window.Swal) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: '서명이 완료되었습니다',
-                            toast: true,
-                            position: 'top-end',
-                            timer: 2000,
-                            showConfirmButton: false,
-                            timerProgressBar: true
-                        });
-                    }
-                };
 
                 if (isExternal) {
-                    // 외부 참석자: 사번 인증 없는 별도 경로
                     SignatureModal.openExternal({
                         documentIdx: documentIdx,
                         externalPersonIdx: effective.signerUserIdx,
-                        onComplete: onCompleteCb,
-                        onClose: onCloseCb
+                        onComplete: onCompleteCb
                     });
                 } else {
-                    // 내부 참석자: 기존 경로 (main 슬롯으로 모달, linked 슬롯은 백엔드 거부)
                     SignatureModal.open({
                         documentIdx: documentIdx,
                         signatureSlot: effective.signatureSlot,
-                        onComplete: onCompleteCb,
-                        onClose: onCloseCb
+                        onComplete: onCompleteCb
                     });
                 }
             });
@@ -233,12 +220,11 @@
         if (event.eventType !== 'COMPLETED') return;
         if (!state.currentDocumentIdx) return;
 
-        // 본인이 QR 모달 열고 있는 상태면 signature-modal이 처리 (중복 토스트 방지)
+        // 본인이 QR 모달 열고 있는 상태면 signature-modal이 처리
         const modalEl = document.getElementById('signatureModal');
         const modalActive = modalEl && modalEl.classList.contains('active');
-        if (modalActive) return;
 
-        // 이전 상태에서 "내 차례"였던 슬롯 snapshot
+        // 이전 상태에서 "내 차례"였던 슬롯 snapshot (UI 리로드 전에 계산)
         const myIdx = window.CURRENT_USER && window.CURRENT_USER.idx;
         const myTurnsBefore = new Set(
             (state.lastSignatures || [])
@@ -246,19 +232,20 @@
                 .map(s => s.signatureSlot)
         );
 
-        // 최신 상태 리로드 (UI 갱신)
+        // 최신 상태 리로드 — 모달이 열려있어도 DOM은 갱신해야 서명 이미지 반영
         const signatures = await load(state.currentDocumentIdx);
         if (!signatures) return;
 
+        // 본인이 모달 안에서 방금 서명한 경우는 signature-modal 완료 화면이 피드백을 줌 — 토스트 생략
+        if (modalActive) return;
+
+        // 새로 내 차례가 된 슬롯이 있는지 확인
         const myTurnsAfter = new Set(
             signatures
                 .filter(s => s.canSign && myIdx && s.signerUserIdx === myIdx)
                 .map(s => s.signatureSlot)
         );
-
-        // 새로 내 차례가 된 슬롯이 있는지 확인
         const newMyTurn = [...myTurnsAfter].find(slot => !myTurnsBefore.has(slot));
-
         if (newMyTurn) {
             showToast({
                 icon: 'info',
@@ -266,20 +253,22 @@
                 text: '상단 결재란을 클릭해 서명해 주세요.',
                 timer: 4500
             });
-        } else {
-            const name = event.signerName || '';
-            const label = event.signatureSlotLabel || SLOT_ROLE_MAP[event.signatureSlot] || '';
-            let who;
-            if (name && label) who = `${name} (${label})`;
-            else if (name)      who = name;
-            else if (label)     who = label;
-            else                who = '서명자';
-            showToast({
-                icon: 'success',
-                title: `${who} 서명이 완료되었습니다`,
-                timer: 2500
-            });
+            return;
         }
+
+        // 이번 이벤트로 새로 완료된 서명이 외부인(모바일 참석자) 것인지 확인.
+        //   내부 사용자 서명은 본인/타인 모두 토스트 생략 — 결재란 이미지로 이미 확인 가능하고,
+        //   운영자 PC에서 실시간 알림이 유의미한 경우는 외부인이 원격으로 서명한 경우가 유일.
+        const idxSet = new Set(event.signedDocumentSignatureIdxList || []);
+        const externalDone = signatures.some(s => idxSet.has(s.idx) && s.isExternal);
+        if (!externalDone) return;
+
+        const name = event.signerName || '';
+        showToast({
+            icon: 'success',
+            title: name ? `${name} 외부 참석자 서명이 완료되었습니다` : '외부 참석자 서명이 완료되었습니다',
+            timer: 2500
+        });
     }
 
     function showToast({ icon, title, text, timer }) {
