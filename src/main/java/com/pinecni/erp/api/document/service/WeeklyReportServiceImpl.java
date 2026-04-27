@@ -50,6 +50,17 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
     public WeeklyReportDTO createWeeklyReport(WeeklyReportCreateDTO createDTO) {
         log.debug("createWeeklyReport() called - userIdx: {}", createDTO.getUserIdx());
 
+        // 같은 프로젝트·같은 주 중복 작성 방지
+        if (createDTO.getProjectIdx() != null && createDTO.getReportPeriod() != null) {
+            String weekStart = createDTO.getReportPeriod().split("~")[0].trim();
+            boolean exists = !weeklyReportRepository
+                    .findByProjectIdxAndReportPeriodStartsWith(createDTO.getProjectIdx(), weekStart)
+                    .isEmpty();
+            if (exists) {
+                throw new IllegalStateException("해당 프로젝트의 이번 주 주간보고가 이미 작성되어 있습니다.");
+            }
+        }
+
         try {
             // DTO → Entity 변환
             WeeklyReport weeklyReport = weeklyReportMapper.toEntity(createDTO);
@@ -465,6 +476,16 @@ public class WeeklyReportServiceImpl implements WeeklyReportService {
         });
 
         return dto;
+    }
+
+    @Override
+    public WeeklyReportDTO findDuplicateReport(Long projectIdx, String weekStart, Long excludeReportId) {
+        List<WeeklyReport> reports = weeklyReportRepository.findByProjectIdxAndReportPeriodStartsWith(projectIdx, weekStart);
+        return reports.stream()
+                .filter(r -> excludeReportId == null || !r.getId().equals(excludeReportId))
+                .findFirst()
+                .map(weeklyReportMapper::toDTO)
+                .orElse(null);
     }
 
 }

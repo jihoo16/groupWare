@@ -323,9 +323,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 결재자 자동 설정: 프로젝트 책임자
                 await autoSetApprovers(selectedProject);
 
-                // 주간 선택된 경우 이전주 차주계획 체크
+                // 주간 선택된 경우 이전주 차주계획 + 중복 체크
                 if (selectedWeekDates.length > 0) {
                     checkPrevWeekPlan();
+                    checkDuplicateWeeklyReport();
                 }
 
                 closeProjectModal();
@@ -691,9 +692,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         renderCalendar();
 
-        // 이전주 차주계획 체크 (프로젝트가 선택된 경우)
+        // 이전주 차주계획 + 중복 체크 (프로젝트가 선택된 경우)
         if (selectedProject) {
             checkPrevWeekPlan();
+            checkDuplicateWeeklyReport();
         }
     }
 
@@ -1976,6 +1978,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
                 }
 
+                if (response.status === 409) {
+                    Swal.close();
+                    const body = await response.json().catch(() => ({}));
+                    showError(body.error || '해당 프로젝트의 이번 주 주간보고가 이미 작성되어 있습니다.');
+                    return;
+                }
+
                 if (response.ok) {
                     const responseData = await response.json();
                     console.log('보고서 저장 성공:', responseData);
@@ -2054,6 +2063,67 @@ document.addEventListener('DOMContentLoaded', function() {
         const m = String(monday.getMonth() + 1).padStart(2, '0');
         const d = String(monday.getDate()).padStart(2, '0');
         return `${y}.${m}.${d}`;
+    }
+
+    // 중복 보고서 체크 (프로젝트 + 주간 모두 선택된 경우 호출)
+    async function checkDuplicateWeeklyReport() {
+        if (!selectedWeekDates || selectedWeekDates.length === 0 || !selectedProject) return;
+
+        const weekStart = formatDateDisplay(new Date(selectedWeekDates[0]));
+        const editingReportId = urlParams.get('id');
+        const excludeParam = editingReportId ? `&excludeId=${editingReportId}` : '';
+
+        try {
+            const response = await fetch(`/api/document/weekly-report/project/${selectedProject.idx}/exists?weekStart=${encodeURIComponent(weekStart)}${excludeParam}`);
+            if (!response.ok) return;
+
+            const data = await response.json();
+            if (!data.exists) return;
+
+            // 선택한 주의 마지막 날(금요일)이 이번 주 월요일보다 이전이면 지나간 주
+            const isPast = (() => {
+                if (!selectedWeekDates || selectedWeekDates.length === 0) return false;
+                const endDate = new Date(selectedWeekDates[selectedWeekDates.length - 1]);
+                const today = new Date();
+                const diff = today.getDay() === 0 ? -6 : 1 - today.getDay();
+                const thisMonday = new Date(today);
+                thisMonday.setDate(today.getDate() + diff);
+                thisMonday.setHours(0, 0, 0, 0);
+                return endDate < thisMonday;
+            })();
+
+            if (isPast) {
+                const pastResult = await Swal.fire({
+                    icon: 'info',
+                    title: '이미 작성된 보고서가 있습니다',
+                    html: '지나간 주의 보고서는 수정할 수 없습니다.<br>지나간 주의 보고서 페이지로 이동하시겠습니까?',
+                    showCancelButton: true,
+                    confirmButtonText: '이동',
+                    cancelButtonText: '취소',
+                    confirmButtonColor: '#6c5ce7',
+                });
+                if (pastResult.isConfirmed && data.documentIdx) {
+                    window.location.href = `/approval/project-weekly-report/detail?documentIdx=${data.documentIdx}`;
+                }
+                return;
+            }
+
+            const result = await Swal.fire({
+                icon: 'warning',
+                title: '이미 작성된 보고서가 있습니다',
+                text: '이 프로젝트의 해당 주 주간보고가 이미 작성되어 있습니다. 작성된 보고서를 불러오시겠습니까?',
+                showCancelButton: true,
+                confirmButtonText: '불러오기',
+                cancelButtonText: '취소',
+                confirmButtonColor: '#6c5ce7',
+            });
+
+            if (result.isConfirmed && data.reportId) {
+                window.location.href = `/approval/project-weekly-report?id=${data.reportId}`;
+            }
+        } catch (error) {
+            console.error('중복 체크 오류:', error);
+        }
     }
 
     // 이전주 차주계획 체크 (프로젝트 + 주간 모두 선택된 경우 호출)

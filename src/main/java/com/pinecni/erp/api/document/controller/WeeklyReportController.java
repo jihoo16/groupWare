@@ -32,11 +32,16 @@ public class WeeklyReportController {
      * POST /api/document/weekly-report
      */
     @PostMapping
-    public ResponseEntity<WeeklyReportDTO> createWeeklyReport(@Valid @RequestBody WeeklyReportCreateDTO createDTO) {
+    public ResponseEntity<?> createWeeklyReport(@Valid @RequestBody WeeklyReportCreateDTO createDTO) {
         log.debug("POST /api/document/weekly-report - createWeeklyReport()");
 
-        WeeklyReportDTO created = weeklyReportService.createWeeklyReport(createDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        try {
+            WeeklyReportDTO created = weeklyReportService.createWeeklyReport(createDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     /**
@@ -142,6 +147,29 @@ public class WeeklyReportController {
 
         weeklyReportService.deleteWeeklyReportByDocumentIdx(documentIdx);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 특정 주차 중복 여부 확인
+     * GET /api/document/weekly-report/project/{projectIdx}/exists?weekStart=YYYY.MM.DD&excludeId=
+     */
+    @GetMapping("/project/{projectIdx}/exists")
+    public ResponseEntity<Map<String, Object>> existsByProjectAndWeek(
+            @PathVariable Long projectIdx,
+            @RequestParam String weekStart,
+            @RequestParam(required = false) Long excludeId) {
+        log.debug("GET /api/document/weekly-report/project/{}/exists?weekStart={}&excludeId={}", projectIdx, weekStart, excludeId);
+
+        WeeklyReportDTO duplicate = weeklyReportService.findDuplicateReport(projectIdx, weekStart, excludeId);
+        Map<String, Object> result = new java.util.HashMap<>();
+        if (duplicate != null) {
+            result.put("exists", true);
+            result.put("reportId", duplicate.getId());
+            result.put("documentIdx", duplicate.getDocumentIdx());
+        } else {
+            result.put("exists", false);
+        }
+        return ResponseEntity.ok(result);
     }
 
     /**
