@@ -285,7 +285,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
 
             // 전자서명 요청 자동 생성
             try {
-                // 참석자 userIdx 수집 (야근식대는 전원 내부인)
+                // 야근식대는 전원 내부인 (DTO에 isExternal 필드 없음)
                 List<Long> attendeeUserIdxList = null;
                 if (createDTO.getAttendees() != null && !createDTO.getAttendees().isEmpty()) {
                     attendeeUserIdxList = createDTO.getAttendees().stream()
@@ -359,9 +359,13 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         );
 
         try {
-            // 1. 기존 야근식대 조회
-            ReceiptOvertime entity = receiptOvertimeRepository.findById(idx)
-                    .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. idx: " + idx));
+            // 1. 기존 야근식대 조회 (idx 는 receipt_overtime.idx 또는 document_idx 허용)
+            final Long requestedIdx = idx;
+            ReceiptOvertime entity = receiptOvertimeRepository.findByDocumentIdx(requestedIdx)
+                    .orElseGet(() -> receiptOvertimeRepository.findById(requestedIdx)
+                            .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. idx: " + requestedIdx)));
+            // 이후 idx 는 반드시 entity.idx 로 정규화 (하류 FK 삽입 기준)
+            idx = entity.getIdx();
 
             // 연구비증빙은 수정요청 대응을 위해 서명 후에도 수정 가능 (서명은 유지)
 
@@ -472,12 +476,7 @@ public class ReceiptOvertimeServiceImpl implements ReceiptOvertimeService {
         ReceiptOvertime entity = receiptOvertimeRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("야근식대를 찾을 수 없습니다. idx: " + idx));
 
-        // 전자서명 게이트
-        if (entity.getDocumentIdx() != null
-                && signatureService.hasAnySignatureCaptured(entity.getDocumentIdx())) {
-            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
-        }
-
+        // 연구비증빙(야근식대)은 수정요청 대응을 위해 서명 진행/완료 후에도 삭제 허용
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
         Long deletedBy = currentUserIdx != null ? currentUserIdx : entity.getAuthorIdx();
 

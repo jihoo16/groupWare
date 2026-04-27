@@ -46,15 +46,8 @@ async function loadByReceiptIdx(receiptIdx) {
 
 async function loadByDocumentIdx(documentIdx) {
     try {
-        // 전체 목록에서 documentIdx가 일치하는 건을 찾기
-        const listRes = await fetch('/api/receipt-purchases');
-        if (!listRes.ok) throw new Error('구매품의 목록 조회 실패');
-        const list = await listRes.json();
-
-        const found = list.find(item => String(item.documentIdx) === String(documentIdx));
-        if (!found) throw new Error('해당 문서를 찾을 수 없습니다.');
-
-        const response = await fetch(`/api/receipt-purchases/${found.idx}`);
+        // 백엔드 getReceiptPurchaseById 는 documentIdx/receipt idx 둘 다 polymorphic 지원
+        const response = await fetch(`/api/receipt-purchases/${documentIdx}`);
         if (!response.ok) throw new Error('구매품의 조회 실패');
         const data = await response.json();
 
@@ -110,7 +103,7 @@ async function setupButtons(data) {
         deleteBtn.addEventListener('click', async () => {
             const result = await Swal.fire({
                 title: '문서를 삭제하시겠습니까?',
-                html: '삭제된 문서는 <strong>복구할 수 없습니다.</strong>',
+                html: '서명 내역을 포함한 모든 기록이 함께 삭제되며,<br><strong>되돌릴 수 없습니다.</strong>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: '삭제',
@@ -129,12 +122,13 @@ async function setupButtons(data) {
                         timer: 1500,
                         showConfirmButton: false,
                     });
-                    window.location.href = '/approval/receipt';
+                    window.location.href = '/project/documents';
                 } else {
                     throw new Error();
                 }
-            } catch (_) {
-                Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+            } catch (e) {
+                console.error('[삭제 실패] 구매 증빙', e);
+                showDeleteFailure('구매 증빙');
             }
         });
     }
@@ -153,7 +147,8 @@ function renderDocument(data) {
 
     // 기본 정보
     setText('doc_approval_date', approvalDate);
-    setText('doc_applicant', data.authorUserName || '');
+    // 신청자는 SignatureRender 가 서명 API 응답의 DRAFTER signerName 으로 채움
+    // (.approver-name[data-role="담당"] 자동 바인딩 — 별도 쿼리 없음)
     setText('doc_title', data.documentTitle || '');
     setText('doc_content', data.documentContent || '');
 
@@ -185,16 +180,29 @@ async function loadProjectManager(projectIdx) {
 }
 
 function renderItems(items) {
-    const tbody = document.getElementById('docItemTableBody');
-    if (!tbody) return;
+    // anchor <tr> 앞에 내역 행을 삽입 (tbody 래퍼 제거 — colgroup 열계산 분할 방지)
+    const anchor = document.getElementById('docItemAnchor');
+    if (!anchor) return;
+
+    // 기존 동적 삽입 행 제거
+    document.querySelectorAll('tr.purchase-item-row').forEach(row => row.remove());
 
     let totalSupply = 0;
     let totalTax = 0;
     let totalPayment = 0;
 
-    let html = '';
+    const buildRow = (innerHtml) => {
+        const tr = document.createElement('tr');
+        tr.className = 'purchase-item-row';
+        tr.innerHTML = innerHtml;
+        return tr;
+    };
+
     if (items.length === 0) {
-        html = '<tr><td colspan="7" style="text-align:center; padding:10px;">내역 정보 없음</td></tr>';
+        anchor.parentNode.insertBefore(
+            buildRow(`<td colspan="7" style="text-align:center; padding:10px;">내역 정보 없음</td>`),
+            anchor
+        );
     } else {
         items.forEach(item => {
             const supply = item.supplyAmount ? Number(item.supplyAmount) : 0;
@@ -212,19 +220,17 @@ function renderItems(items) {
                 if (parts.length === 3) dateDisplay = parts[1] + '/' + parts[2];
             }
 
-            html += `<tr>
+            const tr = buildRow(`
                 <td style="text-align:center;">${dateDisplay}</td>
                 <td style="text-align:center;">${escapeHtml(item.itemDesc || '')}</td>
                 <td style="text-align:center;">${item.quantity || ''}</td>
                 <td style="text-align:right; padding-right:8px;">${supply.toLocaleString()}</td>
                 <td style="text-align:right; padding-right:8px;">${tax.toLocaleString()}</td>
                 <td style="text-align:right; padding-right:8px;">${payment.toLocaleString()}</td>
-                <td style="text-align:center;">${escapeHtml(item.remark || '')}</td>
-            </tr>`;
+                <td style="text-align:center;">${escapeHtml(item.remark || '')}</td>`);
+            anchor.parentNode.insertBefore(tr, anchor);
         });
     }
-
-    tbody.innerHTML = html;
 
     // 합계
     setText('doc_total_supply', totalSupply.toLocaleString());

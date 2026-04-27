@@ -46,16 +46,8 @@ async function loadByReceiptIdx(receiptIdx) {
 
 async function loadByDocumentIdx(documentIdx) {
     try {
-        // 전체 목록에서 documentIdx가 일치하는 건을 찾기
-        const listRes = await fetch('/api/receipt-trip-meetings');
-        if (!listRes.ok) throw new Error('출장+회의 목록 조회 실패');
-        const list = await listRes.json();
-
-        const found = list.find(item => String(item.documentIdx) === String(documentIdx));
-        if (!found) throw new Error('해당 문서를 찾을 수 없습니다.');
-
-        const receiptIdx = found.receiptTripMeetingIdx || found.idx;
-        const response = await fetch(`/api/receipt-trip-meetings/${receiptIdx}`);
+        // 백엔드 getReceiptTripMeetingById 는 documentIdx/receipt idx 둘 다 polymorphic 지원
+        const response = await fetch(`/api/receipt-trip-meetings/${documentIdx}`);
         if (!response.ok) throw new Error('출장+회의 조회 실패');
         const data = await response.json();
 
@@ -113,7 +105,7 @@ async function setupButtons(data) {
         deleteBtn.addEventListener('click', async () => {
             const result = await Swal.fire({
                 title: '문서를 삭제하시겠습니까?',
-                html: '삭제된 문서는 <strong>복구할 수 없습니다.</strong>',
+                html: '서명 내역을 포함한 모든 기록이 함께 삭제되며,<br><strong>되돌릴 수 없습니다.</strong>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: '삭제',
@@ -133,12 +125,13 @@ async function setupButtons(data) {
                         timer: 1500,
                         showConfirmButton: false,
                     });
-                    window.location.href = '/approval/receipt';
+                    window.location.href = '/project/documents';
                 } else {
                     throw new Error();
                 }
-            } catch (_) {
-                Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+            } catch (e) {
+                console.error('[삭제 실패] 출장·회의 증빙', e);
+                showDeleteFailure('출장·회의 증빙');
             }
         });
     }
@@ -201,8 +194,8 @@ function renderDocument(data) {
     // 출장인원 행
     renderTripPersons(data.tripAttendees || [], data);
 
-    // 일별 비용 행
-    renderDailyExpenses(data.dailyExpenses || [], totalMeetingAmount);
+    // 일별 비용 행 (회의비는 실제 회의 일자에 배분)
+    renderDailyExpenses(data.dailyExpenses || [], totalMeetingAmount, data.meetingSessions || []);
 
     // 회의 세션들 렌더링
     renderMeetingSessions(data);
@@ -229,85 +222,189 @@ async function loadProjectInfo(projectIdx, data) {
 }
 
 function renderTripPersons(attendees, data) {
-    const tbody = document.getElementById('proposalPersonBody');
-    if (!tbody) return;
+    // tripPersonHeaderRow 바로 아래에 인원 행을 삽입.
+    // tbody 래퍼를 쓰면 rowspan이 tbody 경계에 막혀 출장지/기간/목적 셀이 1행만 차지.
+    const anchorRow = document.getElementById('tripPersonHeaderRow');
+    if (!anchorRow) return;
 
-    let html = '';
+    document.querySelectorAll('tr.trip-person-row').forEach(row => row.remove());
+
     const maxRows = Math.max(attendees.length, 1);
 
+    ['proposalLocationCell', 'proposalDateCell', 'proposalPurposeCell'].forEach(id => {
+        const cell = document.getElementById(id);
+        if (cell) cell.rowSpan = 1 + maxRows;
+    });
+
+    let insertAfter = anchorRow;
     for (let i = 0; i < maxRows; i++) {
         const a = attendees[i];
+        const tr = document.createElement('tr');
+        tr.className = 'trip-person-row';
         if (a) {
-            html += `<tr>
+            tr.innerHTML = `
                 <td style="text-align:center;">${a.department || ''}</td>
                 <td style="text-align:center;">${a.position || ''}</td>
-                <td style="text-align:center;">${a.name || ''}</td>
-            </tr>`;
+                <td style="text-align:center;">${a.name || ''}</td>`;
         } else {
-            html += `<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>`;
+            tr.innerHTML = `<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>`;
         }
+        insertAfter.parentNode.insertBefore(tr, insertAfter.nextSibling);
+        insertAfter = tr;
     }
-
-    tbody.innerHTML = html;
 
     // 복명자 설정
     if (attendees.length > 0) {
-        // drafterUserIdx에 해당하는 인원 찾기
         const drafter = attendees.find(a => data.drafterUserIdx && Number(a.userIdx) === Number(data.drafterUserIdx));
         setText('doc_reporter', drafter ? drafter.name : attendees[0].name || '');
     }
 }
 
-function renderDailyExpenses(expenses, totalMeetingAmount) {
-    const proposalBody = document.getElementById('proposalExpenseBody');
-    const reportBody = document.getElementById('reportExpenseBody');
+function renderDailyExpenses(expenses, totalMeetingAmount, meetingSessions) {
+    // 품의서 측: 날짜 1행/일 7칸 (회의비 포함)
+    // 복명서 측: "정산 세부내역 / 날짜 / 구분 / 금액" 확장 구조
+    //            각 날짜당 4행 + 회의 일자엔 회의비 1행 추가 (총 5행)
+    const proposalAnchor = document.getElementById('proposalExpenseAnchor');
+    const reportAnchor = document.getElementById('reportExpenseAnchor');
 
-    let proposalHtml = '';
-    let reportHtml = '';
+    // 기존 동적 삽입 행 제거
+    document.querySelectorAll('tr.proposal-expense-row, tr.report-expense-row').forEach(row => row.remove());
 
-    if (expenses.length === 0) {
-        proposalHtml = '<tr><td colspan="7" style="text-align:center; padding:10px;">비용 정보 없음</td></tr>';
-        reportHtml = '<tr><td colspan="6" style="text-align:center; padding:10px;">비용 정보 없음</td></tr>';
-    } else {
-        expenses.forEach((exp, idx) => {
-            const date = exp.expenseDate || '';
-            const transport = exp.transportationFee ? Number(exp.transportationFee) : 0;
-            const lodging = exp.accommodationFee ? Number(exp.accommodationFee) : 0;
-            const meal = exp.mealFee ? Number(exp.mealFee) : 0;
-            const other = exp.otherFee ? Number(exp.otherFee) : 0;
-            // 회의비는 첫 행에만 표시
-            const meeting = (idx === 0) ? totalMeetingAmount : 0;
-            const dayTotal = transport + lodging + meal + other + meeting;
+    const formatDot = (iso) => {
+        if (!iso) return '';
+        const parts = iso.split('-');
+        return parts.length === 3 ? `${parts[0]}.${parts[1]}.${parts[2]}` : iso;
+    };
 
-            let dateDisplay = date;
-            if (date) {
-                const parts = date.split('-');
-                if (parts.length === 3) dateDisplay = parts[1] + '/' + parts[2];
-            }
+    // 회의 일자별 회의비 합계 — 세션에 meetingDate 가 있으면 해당 일자에 배분
+    const meetingByDate = {}; // { "2026.04.23": 30000, ... }
+    (meetingSessions || []).forEach(s => {
+        const key = formatDot(s.meetingDate || '');
+        const amt = s.meetingAmount ? Number(s.meetingAmount) : 0;
+        if (key && amt > 0) {
+            meetingByDate[key] = (meetingByDate[key] || 0) + amt;
+        }
+    });
+    const sessionMeetingTotal = Object.values(meetingByDate).reduce((a, b) => a + b, 0);
+    // 세션 정보가 없거나 합계가 0 이면 fallback: 첫 일자에 totalMeetingAmount 몰아주기
+    const useFallback = sessionMeetingTotal === 0 && totalMeetingAmount > 0;
 
-            proposalHtml += `<tr>
-                <td style="text-align:center;">${dateDisplay}</td>
-                <td style="text-align:center;">${transport.toLocaleString()}</td>
-                <td style="text-align:center;">${lodging.toLocaleString()}</td>
-                <td style="text-align:center;">${meal.toLocaleString()}</td>
-                <td style="text-align:center;">${other.toLocaleString()}</td>
-                <td style="text-align:center;">${meeting > 0 ? meeting.toLocaleString() : ''}</td>
-                <td style="text-align:center;">${dayTotal.toLocaleString()}</td>
-            </tr>`;
+    const normalized = expenses.map((exp, idx) => {
+        const dateDot = formatDot(exp.expenseDate || '');
+        const sessionMeeting = meetingByDate[dateDot] || 0;
+        const fallbackMeeting = (useFallback && idx === 0) ? totalMeetingAmount : 0;
+        return {
+            date: dateDot,
+            transport: exp.transportationFee ? Number(exp.transportationFee) : 0,
+            lodging:   exp.accommodationFee ? Number(exp.accommodationFee)   : 0,
+            meal:      exp.mealFee          ? Number(exp.mealFee)            : 0,
+            other:     exp.otherFee         ? Number(exp.otherFee)           : 0,
+            meeting:   sessionMeeting + fallbackMeeting
+        };
+    });
 
-            reportHtml += `<tr>
-                <td style="text-align:center;">${dateDisplay}</td>
-                <td style="text-align:center;">${transport.toLocaleString()}</td>
-                <td style="text-align:center;">${lodging.toLocaleString()}</td>
-                <td style="text-align:center;">${meal.toLocaleString()}</td>
-                <td style="text-align:center;">${other.toLocaleString()}</td>
-                <td style="text-align:center;">${(transport + lodging + meal + other).toLocaleString()}</td>
-            </tr>`;
-        });
+    // ==========================
+    // 품의서 소요경비 내역 (간단, 7칸)
+    // ==========================
+    if (proposalAnchor) {
+        if (normalized.length === 0) {
+            const tr = document.createElement('tr');
+            tr.className = 'proposal-expense-row';
+            tr.innerHTML = `<td colspan="7" style="text-align:center; padding:10px;">비용 정보 없음</td>`;
+            proposalAnchor.parentNode.insertBefore(tr, proposalAnchor);
+        } else {
+            normalized.forEach(d => {
+                const dayTotal = d.transport + d.lodging + d.meal + d.other + d.meeting;
+                const tr = document.createElement('tr');
+                tr.className = 'proposal-expense-row';
+                tr.innerHTML = `
+                    <td style="text-align: center; padding: 10px;">${d.date}</td>
+                    <td style="text-align: center; padding: 10px;">${d.transport.toLocaleString()}</td>
+                    <td style="text-align: center; padding: 10px;">${d.lodging.toLocaleString()}</td>
+                    <td style="text-align: center; padding: 10px;">${d.meal.toLocaleString()}</td>
+                    <td style="text-align: center; padding: 10px;">${d.other.toLocaleString()}</td>
+                    <td style="text-align: center; padding: 10px;">${d.meeting > 0 ? d.meeting.toLocaleString() : ''}</td>
+                    <td style="text-align: center; padding: 10px;">${dayTotal.toLocaleString()}</td>`;
+                proposalAnchor.parentNode.insertBefore(tr, proposalAnchor);
+            });
+        }
     }
 
-    if (proposalBody) proposalBody.innerHTML = proposalHtml;
-    if (reportBody) reportBody.innerHTML = reportHtml;
+    // ==========================
+    // 복명서 정산 세부내역 (확장 구조)
+    // ==========================
+    if (reportAnchor) {
+        if (normalized.length === 0) {
+            const tr = document.createElement('tr');
+            tr.className = 'report-expense-row';
+            tr.innerHTML = `<td colspan="6" style="text-align:center; padding:10px;">비용 정보 없음</td>`;
+            reportAnchor.parentNode.insertBefore(tr, reportAnchor);
+            return;
+        }
+
+        // 회의 일자의 회의비 행 개수 계산 (회의비 > 0 일자만)
+        const meetingDayCount = normalized.filter(d => d.meeting > 0).length;
+        // 전체 rowspan = 날짜당 4행 + 회의비 추가 행 + 헤더 1행
+        const totalRowspan = normalized.length * 4 + meetingDayCount + 1;
+
+        // 헤더: [정산세부내역(rowspan=전체)] [날짜] [구분(colspan=3)] [금액]
+        const headerRow = document.createElement('tr');
+        headerRow.className = 'report-expense-row';
+        headerRow.innerHTML = `
+            <th colspan="1" rowspan="${totalRowspan}" style="text-align: center; background: #f5f5f5;">정산<br>세부내역</th>
+            <th style="text-align: center; background: #fafafa;">날짜</th>
+            <th colspan="3" style="text-align: center; background: #fafafa;">구분</th>
+            <th style="text-align: center; background: #f0f0f0;">금액</th>`;
+        reportAnchor.parentNode.insertBefore(headerRow, reportAnchor);
+
+        normalized.forEach(d => {
+            const hasMeeting = d.meeting > 0;
+            const rowsForDay = hasMeeting ? 5 : 4;
+
+            // 교통비 — 첫 행에 날짜 rowspan
+            const transportRow = document.createElement('tr');
+            transportRow.className = 'report-expense-row';
+            transportRow.innerHTML = `
+                <td rowspan="${rowsForDay}" style="text-align: center; background: white; font-weight: 500; vertical-align: middle;">${d.date}</td>
+                <td colspan="3" style="background: white; padding: 8px; text-align: center;">교통비</td>
+                <td style="text-align: center; padding: 8px; background: white;">${d.transport.toLocaleString()}원</td>`;
+            reportAnchor.parentNode.insertBefore(transportRow, reportAnchor);
+
+            // 숙박비
+            const lodgingRow = document.createElement('tr');
+            lodgingRow.className = 'report-expense-row';
+            lodgingRow.innerHTML = `
+                <td colspan="3" style="background: white; padding: 8px; text-align: center;">숙박비</td>
+                <td style="text-align: center; padding: 8px;">${d.lodging.toLocaleString()}원</td>`;
+            reportAnchor.parentNode.insertBefore(lodgingRow, reportAnchor);
+
+            // 식비
+            const mealRow = document.createElement('tr');
+            mealRow.className = 'report-expense-row';
+            mealRow.innerHTML = `
+                <td colspan="3" style="background: white; padding: 8px; text-align: center;">식비</td>
+                <td style="text-align: center; padding: 8px;">${d.meal.toLocaleString()}원</td>`;
+            reportAnchor.parentNode.insertBefore(mealRow, reportAnchor);
+
+            // 기타(일비)
+            const otherRow = document.createElement('tr');
+            otherRow.className = 'report-expense-row';
+            otherRow.innerHTML = `
+                <td colspan="3" style="background: white; padding: 8px; text-align: center;">기타(일비)</td>
+                <td style="text-align: center; padding: 8px;">${d.other.toLocaleString()}원</td>`;
+            reportAnchor.parentNode.insertBefore(otherRow, reportAnchor);
+
+            // 회의비 (있는 날짜만)
+            if (hasMeeting) {
+                const meetingRow = document.createElement('tr');
+                meetingRow.className = 'report-expense-row';
+                meetingRow.innerHTML = `
+                    <td colspan="3" style="background: white; padding: 8px; text-align: center;">회의비</td>
+                    <td style="text-align: center; padding: 8px;">${d.meeting.toLocaleString()}원</td>`;
+                reportAnchor.parentNode.insertBefore(meetingRow, reportAnchor);
+            }
+        });
+    }
 }
 
 function renderMeetingSessions(data) {
@@ -338,6 +435,8 @@ function renderMeetingSessions(data) {
         const attendees = session.meetingAttendees || [];
         const meetingLocation = session.meetingLocation || data.location || '';
         const badgeLabel = sessions.length > 1 ? '<div style="text-align:center; margin:8px 0; color:#667eea; font-weight:600;">' + (idx + 1) + '번째 회의</div>' : '';
+        // 회의 작성자 이름 — 세션별 meetingDrafterUserName 우선, 없으면 top-level drafterUserName fallback
+        const drafterName = session.meetingDrafterUserName || data.drafterUserName || '';
 
         // 회의록
         html += `<div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 30px; max-width: 881px; margin: 0 auto 30px">
@@ -354,7 +453,7 @@ function renderMeetingSessions(data) {
                     <th style="height: 64px">과제명</th>
                     <td class="meeting-doc-project" style="text-align:center; font-size: 12px;"></td>
                     <th>작성자</th>
-                    <td style="text-align:center;"></td>
+                    <td style="text-align:center;">${escapeHtml(drafterName)}</td>
                 </tr>
                 <tr>
                     <th style="height: 64px">일시</th>
@@ -399,7 +498,7 @@ function renderMeetingSessions(data) {
                     <th style="height: 64px">과제</th>
                     <td class="meeting-doc-project" style="text-align:center; font-size: 12px;"></td>
                     <th>작성자</th>
-                    <td style="text-align:center;"></td>
+                    <td style="text-align:center;">${escapeHtml(drafterName)}</td>
                 </tr>
                 <tr>
                     <th style="height: 64px">일시</th>
@@ -431,13 +530,15 @@ function formatAttendeesText(attendees) {
     const internal = attendees.filter(a => !a.isExternal);
     const external = attendees.filter(a => a.isExternal);
 
+    const fmt = a => (a.name || '') + (a.department ? '(' + a.department + ')' : '');
+
     let text = '';
     if (internal.length > 0) {
-        text += '[내부] ' + internal.map(a => a.name + (a.department ? '(' + a.department + ')' : '')).join(', ');
+        text += '[내부] ' + internal.map(fmt).join(', ');
     }
     if (external.length > 0) {
         if (text) text += '\n';
-        text += '[외부] ' + external.map(a => a.name + (a.department ? '(' + a.department + ')' : '')).join(', ');
+        text += '[외부] ' + external.map(fmt).join(', ');
     }
     return escapeHtml(text);
 }
@@ -446,12 +547,14 @@ function renderAttendeeRows(attendees) {
     let html = '';
     attendees.forEach(a => {
         const typeLabel = a.isExternal ? '외부' : '내부';
-        const sigAttr = !a.isExternal && a.userIdx
-            ? ` data-slot="C1601" data-signer-idx="${a.userIdx}"`
-            : '';
-        const sigInner = !a.isExternal && a.userIdx
-            ? '<div class="sign-area"><span class="sign-placeholder"></span></div>'
-            : '';
+        // 외부인도 서명 가능 (사번 인증 스킵 경로)
+        let sigAttr = '';
+        let sigInner = '';
+        if (a.userIdx) {
+            const ext = a.isExternal ? ' data-external="true"' : '';
+            sigAttr = ` data-slot="C1601"${ext} data-signer-idx="${a.userIdx}"`;
+            sigInner = '<div class="sign-area"><span class="sign-placeholder"></span></div>';
+        }
         html += `<tr style="height: 40px;">
             <td style="text-align:center;">${typeLabel}</td>
             <td style="text-align:center;">${escapeHtml(a.department || '')}</td>

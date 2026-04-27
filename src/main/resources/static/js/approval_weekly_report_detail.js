@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const reportId = urlParams.get('id');
 
     if (!reportId) {
-        showError('잘못된 접근입니다.');
+        showError('주소가 올바르지 않아 보고서를 열 수 없습니다.<br>목록에서 다시 선택해 주세요.', '보고서를 열 수 없습니다');
         history.back();
         return;
     }
@@ -200,12 +200,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 location.reload();
             } else {
                 const errorText = await response.text();
-                console.error('수정 실패:', errorText);
-                showError('수정에 실패했습니다.');
+                console.error('[수정 실패] 주간 보고서', response.status, errorText);
+                showUpdateFailure('주간 보고서');
             }
         } catch (error) {
-            console.error('수정 오류:', error);
-            showError('수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[수정 실패] 주간 보고서', error);
+            showUpdateFailure('주간 보고서');
         }
     }
 
@@ -237,12 +237,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         window.location.href = '/approval';
                     } else {
                         const errorText = await response.text();
-                        console.error('삭제 실패:', errorText);
-                        showError('삭제에 실패했습니다.');
+                        console.error('[삭제 실패] 주간 보고서', response.status, errorText);
+                        showDeleteFailure('주간 보고서');
                     }
                 } catch (error) {
-                    console.error('삭제 오류:', error);
-                    showError('삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                    console.error('[삭제 실패] 주간 보고서', error);
+                    showDeleteFailure('주간 보고서');
                 }
             });
 
@@ -275,8 +275,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // 로딩 오버레이 숨김
             window.hidePageLoadingOverlay();
         } catch (error) {
-            console.error('주간업무보고 상세 로드 오류:', error);
-            showError('주간업무보고를 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[불러오기 실패] 주간 보고서 상세', error);
+            showLoadFailure('주간 보고서');
             window.hidePageLoadingOverlay();
             // history.back() 대신 목록 페이지로 이동하여 무한 루프 방지
             setTimeout(() => {

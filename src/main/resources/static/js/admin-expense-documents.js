@@ -40,8 +40,9 @@ document.addEventListener('DOMContentLoaded', function() {
             populateYearFilter();
             applyFilters();
         } catch (error) {
-            console.error('문서 목록 조회 오류:', error);
-            showError('데이터를 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[사용자 지출 내역 불러오기 실패]', error);
+            showError('사용자 지출 내역을 불러오지 못했습니다.');
+            showLoadFailure('사용자 지출 내역');
         }
     }
 
@@ -388,8 +389,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             loadDocuments();
         } catch (error) {
-            console.error('삭제 오류:', error);
-            Swal.fire({ icon: 'error', title: '삭제 실패', text: '삭제에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
+            console.error('[지출결의서 삭제 실패]', error);
+            showDeleteFailure('지출결의서');
         }
     };
 
@@ -578,11 +579,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadDocuments();
             } else {
                 const errBody = await res.json().catch(() => ({}));
-                Swal.fire({ icon: 'error', title: '업로드 실패', text: errBody.error || '권한 또는 서버 오류' });
+                console.error('[관리자 영수증 업로드 거부]', res.status, errBody);
+                if (res.status === 403) {
+                    showPermissionDenied('영수증 대리 업로드');
+                } else {
+                    showUploadFailure('영수증');
+                }
             }
         } catch (err) {
-            console.error('관리자 대리 업로드 실패:', err);
-            Swal.fire({ icon: 'error', title: '업로드 실패', text: '네트워크 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
+            console.error('[관리자 영수증 업로드 실패]', err);
+            showUploadFailure('영수증');
         }
     }
 

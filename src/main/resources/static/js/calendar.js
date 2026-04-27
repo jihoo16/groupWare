@@ -983,11 +983,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 모달 닫기
                     closeScheduleModal();
                 } else {
-                    showAlert('일정 삭제 실패: ' + data.message, 'error');
+                    console.error('[일정 삭제] 실패:', data.message);
+                    showDeleteFailure('일정');
                 }
             } catch (error) {
-                console.error('일정 삭제 중 오류:', error);
-                showAlert('일정 삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.', 'error');
+                console.error('[일정 삭제] 일정', error);
+                showDeleteFailure('일정');
             }
         }
     });
@@ -1571,11 +1572,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 모달 닫기
                 closeAddScheduleModal();
             } else {
-                showAlert('일정 추가 실패: ' + data.message, 'error');
+                console.error('[일정 추가] 실패:', data.message);
+                showSaveFailure('일정');
             }
         } catch (error) {
-            console.error('일정 추가 중 오류:', error);
-            showAlert('일정 추가 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.', 'error');
+            console.error('[일정 추가] 일정', error);
+            showSaveFailure('일정');
         }
     }
 
@@ -2810,9 +2812,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         } catch (error) {
-            console.error('[팀 멤버 로드] 오류 발생:', error);
-            await showError('팀 멤버를 불러오는 중 오류가 발생했습니다.\n참석자를 수동으로 추가해주세요.');
-            // 오류 발생 시 빈 참석자 목록으로 초기화
+            console.error('[팀 멤버 로드] 팀원 목록', error);
+            await showLoadFailure('팀원 목록');
+            // 목록을 불러오지 못한 경우 빈 참석자 목록으로 초기화
             selectedParticipants = [];
             renderParticipantsList();
         }

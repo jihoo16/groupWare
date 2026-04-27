@@ -30,7 +30,11 @@ public class ReceiptTripMeetingResponseDTO {
     private Long projectIdx;
     private Long cardIdx;
     private Long drafterUserIdx;
+    /** 출장 작성자 이름 (상세페이지 표시용) */
+    private String drafterUserName;
     private Long meetingDrafterUserIdx;
+    /** 회의 작성자 이름 (상세페이지 표시용) */
+    private String meetingDrafterUserName;
     private Boolean deleted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

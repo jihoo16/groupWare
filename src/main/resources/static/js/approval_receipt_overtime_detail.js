@@ -103,7 +103,7 @@ async function setupButtons(data) {
         deleteBtn.addEventListener('click', async () => {
             const result = await Swal.fire({
                 title: '문서를 삭제하시겠습니까?',
-                html: '삭제된 문서는 <strong>복구할 수 없습니다.</strong>',
+                html: '서명 내역을 포함한 모든 기록이 함께 삭제되며,<br><strong>되돌릴 수 없습니다.</strong>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: '삭제',
@@ -122,12 +122,13 @@ async function setupButtons(data) {
                         timer: 1500,
                         showConfirmButton: false,
                     });
-                    window.location.href = '/approval/receipt';
+                    window.location.href = '/project/documents';
                 } else {
                     throw new Error();
                 }
-            } catch (_) {
-                Swal.fire({ icon: 'error', title: '삭제 실패', text: '잠시 후 다시 시도해 주세요.' });
+            } catch (e) {
+                console.error('[삭제 실패] 야근 증빙', e);
+                showDeleteFailure('야근 증빙');
             }
         });
     }
@@ -198,7 +199,7 @@ function renderOvertimePersons(attendees) {
     let html = '';
     attendees.forEach((a, index) => {
         const sigAttr = a.userIdx
-            ? ` data-slot="C1601" data-signer-idx="${a.userIdx}"`
+            ? ` data-slot="C1601"${a.isExternal ? ' data-external="true"' : ''} data-signer-idx="${a.userIdx}"`
             : '';
         const sigInner = a.userIdx
             ? '<div class="sign-area"><span class="sign-placeholder"></span></div>'

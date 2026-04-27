@@ -60,4 +60,10 @@ public class DocumentSignatureResponse {
 
     /** 현재 사용자가 이 서명칸을 클릭/서명할 수 있는지 여부 */
     private Boolean canSign;
+
+    /** 외부인 서명 여부 (true이면 PC 사용자는 로그인만 되어 있으면 누구나 QR 발급 가능) */
+    private Boolean isExternal;
+
+    /** 외부인 소속 (isExternal=true일 때만 채워짐) */
+    private String signerCompany;
 }

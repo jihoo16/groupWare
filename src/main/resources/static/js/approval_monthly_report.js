@@ -132,12 +132,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             } else {
                 const errorText = await response.text();
-                console.error('월간업무보고 저장 실패:', errorText);
-                showError('월간업무보고 등록에 실패했습니다.');
+                console.error('[저장 실패] 월간 보고서', response.status, errorText);
+                showSaveFailure('월간 보고서');
             }
         } catch (error) {
-            console.error('월간업무보고 제출 오류:', error);
-            showError('월간업무보고 제출 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[저장 실패] 월간 보고서', error);
+            showSaveFailure('월간 보고서');
         }
     }
 });

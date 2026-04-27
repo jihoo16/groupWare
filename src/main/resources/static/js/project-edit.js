@@ -60,8 +60,8 @@
             window.showPageLoadingOverlay();
             loadProjectData(projectId);
         }).catch(async error => {
-            console.error('초기 데이터 로드 실패:', error);
-            await showError('페이지 로드 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[프로젝트 수정 초기 로드]', error);
+            await showLoadFailure('프로젝트 정보');
         });
     });
 
@@ -88,15 +88,15 @@
             );
 
             if (!currentMember || (currentMember.role !== 'PI' && currentMember.role !== 'PRACTITIONER')) {
-                await showError('프로젝트 수정 권한이 없습니다.\n연구책임자 또는 실무자만 수정할 수 있습니다.');
+                await showPermissionDenied('프로젝트 수정');
                 location.href = `/project/detail?projectId=${projectId}`;
                 return false;
             }
 
             return true;
         } catch (error) {
-            console.error('권한 확인 오류:', error);
-            await showError('권한 확인 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[프로젝트 권한 확인]', error);
+            await showLoadFailure('권한 정보');
             location.href = '/project';
             return false;
         }
@@ -316,8 +316,8 @@
                 // 로딩 오버레이 숨김
                 window.hidePageLoadingOverlay();
         } catch (error) {
-            console.error('Error loading project data:', error);
-            await showError('프로젝트 정보를 불러올 수 없습니다.');
+            console.error('[프로젝트 정보 로드]', error);
+            await showLoadFailure('프로젝트 정보');
             window.hidePageLoadingOverlay();
             location.href = '/project';
         }
@@ -513,8 +513,8 @@
                 memberSelectModal.classList.add('active');
             })
             .catch(async error => {
-                console.error('Error loading members:', error);
-                await showError('인력 목록을 불러올 수 없습니다.');
+                console.error('[인력 목록 로드]', error);
+                await showLoadFailure('인력 목록');
             });
     }
 
@@ -1494,8 +1494,9 @@
             });
 
             if (response.status === 403) {
-                const errorData = await response.json();
-                await showError(errorData.error || '프로젝트 수정 권한이 없습니다.');
+                const errorData = await response.json().catch(() => ({}));
+                console.error('[프로젝트 수정] 권한 없음:', errorData);
+                await showPermissionDenied('프로젝트 수정');
                 return;
             }
 
@@ -1529,8 +1530,8 @@
             window.location.href = '/project';
 
         } catch (error) {
-            console.error('Error updating project:', error);
-            await showError('프로젝트 수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[프로젝트 수정]', error);
+            await showUpdateFailure('프로젝트');
         }
     }
 
@@ -1730,8 +1731,8 @@
                 updateRelatedProjectCheckboxStates();
             })
             .catch(async (error) => {
-                console.error('Error loading related projects:', error);
-                await showError('프로젝트 목록을 불러올 수 없습니다.');
+                console.error('[연계 프로젝트 목록 로드]', error);
+                await showLoadFailure('프로젝트 목록');
             });
     }
 
@@ -2004,8 +2005,8 @@
                     await showSuccess('기초정보관리의 설정값을 불러왔습니다.');
                 })
                 .catch(async error => {
-                    console.error('고정경비 정책 조회 실패:', error);
-                    await showError('설정값을 불러오는데 실패했습니다.');
+                    console.error('[고정경비 정책 조회]', error);
+                    await showLoadFailure('설정값');
                 });
         });
     }
@@ -2053,8 +2054,8 @@
                 window.location.href = '/project';
             })
             .catch(async (error) => {
-                console.error('프로젝트 삭제 실패:', error);
-                await showError('프로젝트 삭제에 실패했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[프로젝트 삭제]', error);
+                await showDeleteFailure('프로젝트');
                 deleteProjectBtn.disabled = false;
                 deleteProjectBtn.innerHTML = '<i class="fas fa-trash"></i> 삭제';
             });

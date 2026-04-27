@@ -1,7 +1,9 @@
 package com.pinecni.erp.api.signature.service;
 
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
+import com.pinecni.erp.api.audit.service.AuditLogService;
 import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.api.externalperson.repository.ExternalPersonRepository;
 import com.pinecni.erp.api.signature.dto.SignatureEventMessage;
 import com.pinecni.erp.api.signature.dto.SignatureSessionCreateRequest;
 import com.pinecni.erp.api.signature.dto.SignatureSessionResponse;
@@ -49,10 +51,12 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final UserRepository userRepository;
     private final CodeRepository codeRepository;
+    private final ExternalPersonRepository externalPersonRepository;
     private final SignatureTokenUtil tokenUtil;
     private final QrCodeService qrCodeService;
     private final SignatureWebSocketNotifier wsNotifier;
     private final SignatureService signatureService;
+    private final AuditLogService auditLogService;
 
     @Value("${signature.session.ttl-seconds:300}")
     private int sessionTtlSeconds;
@@ -99,9 +103,17 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
 
         DocumentSignature docSig = docSigOpt.get();
 
-        // 3. 연동 서명 슬롯은 직접 서명 불가
+        // 3. 연동 서명 슬롯은 자동으로 메인으로 리다이렉트 (에러 대신 UX 흐름 끊지 않음)
+        //    예: 신청자=참석자 겸임 → 참석자 셀 클릭해도 신청자(메인) 슬롯으로 QR 생성
+        //    UI는 이미 메인 슬롯을 넘기도록 되어 있지만, 방어적으로 백엔드에서도 처리
         if (docSig.getLinkedSignatureIdx() != null) {
-            throw new IllegalStateException("이 칸은 다른 결재란과 연동되어 있어\n해당 결재란에서 서명하면 자동으로 반영됩니다.");
+            DocumentSignature mainRow = documentSignatureRepository.findById(docSig.getLinkedSignatureIdx())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "연동된 결재란을 찾을 수 없습니다.\n관리자에게 문의해주세요."));
+            log.info("연동 슬롯 요청 → 메인으로 자동 전환: linkedSlot={}, mainSlot={}",
+                    docSig.getSignatureSlot(), mainRow.getSignatureSlot());
+            docSig = mainRow;
+            signatureSlot = mainRow.getSignatureSlot();
         }
 
         // 4. 이미 서명 완료된 칸은 거부
@@ -152,6 +164,77 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
     }
 
     // ============================================================
+    // 외부인 세션 생성 (사번 2차 인증 스킵)
+    // ============================================================
+
+    @Override
+    @Transactional
+    public SignatureSessionResponse createExternalSession(Long documentIdx,
+                                                           Long externalPersonIdx,
+                                                           Long loginUserIdx,
+                                                           String ipAddress) {
+        // 1. 문서 존재 확인
+        ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
+                .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다: " + documentIdx));
+
+        // 2. 외부인 서명 행 조회 (is_external=true + signer_user_idx=externalPersonIdx)
+        List<DocumentSignature> rows = documentSignatureRepository
+                .findByDocumentIdxOrderBySignatureOrderAscIdxAsc(documentIdx);
+        DocumentSignature docSig = rows.stream()
+                .filter(ds -> Boolean.TRUE.equals(ds.getIsExternal())
+                        && externalPersonIdx.equals(ds.getSignerUserIdx())
+                        && ds.getLinkedSignatureIdx() == null)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "해당 외부 참석자의 서명 칸을 찾을 수 없습니다."));
+
+        // 3. 이미 서명 완료 / 차례 아님 검증
+        if (CodeConstants.DocumentSignatureStatus.COMPLETED.getCode().equals(docSig.getStatus())) {
+            throw new IllegalStateException("이미 서명이 완료된 칸입니다.");
+        }
+        if (docSig.getRequestedAt() == null) {
+            throw new IllegalStateException(
+                    "아직 서명 차례가 아닙니다.\n이전 단계 결재자의 서명이 완료되어야 합니다.");
+        }
+
+        // 4. 동일 문서+외부인의 기존 PENDING 세션 취소
+        List<SignatureSession> existingPending = signatureSessionRepository
+                .findByDocumentIdxAndSignerUserIdxAndStatus(
+                        documentIdx, externalPersonIdx,
+                        CodeConstants.SignatureSessionStatus.QR_CREATED.getCode());
+        for (SignatureSession old : existingPending) {
+            if (Boolean.TRUE.equals(old.getIsExternal())) {
+                old.setStatus(CodeConstants.SignatureSessionStatus.CANCELLED.getCode());
+            }
+        }
+
+        // 5. 외부 세션 생성 (is_external=true)
+        String token = tokenUtil.generateToken();
+        LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(sessionTtlSeconds);
+
+        SignatureSession session = SignatureSession.builder()
+                .sessionToken(token)
+                .documentIdx(documentIdx)
+                .signerUserIdx(externalPersonIdx)
+                .status(CodeConstants.SignatureSessionStatus.QR_CREATED.getCode())
+                .verifyFailCount(0)
+                .expiresAt(expiresAt)
+                .createdUserIdx(loginUserIdx)
+                .isExternal(true)
+                .build();
+
+        session = signatureSessionRepository.save(session);
+        log.info("외부인 서명 세션 생성: token={}, documentIdx={}, externalPersonIdx={}",
+                token, documentIdx, externalPersonIdx);
+
+        // 6. QR 생성 (사번 해시 필요 없음 — 외부는 인증 스킵)
+        String qrDataUrl = qrCodeService.generateSignatureQrDataUrl(token, null);
+
+        // 7. 응답
+        return buildResponse(session, document, docSig.getSignatureSlot(), qrDataUrl, false);
+    }
+
+    // ============================================================
     // 세션 정보 조회 (토큰 기반, 모바일)
     // ============================================================
 
@@ -171,11 +254,14 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
                 .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다"));
 
         // 서명 슬롯 정보 조회 (document_signatures에서 역추적)
+        // 외부/내부 세션 구분해서 매칭해야 external_person.idx ↔ users.idx 숫자 충돌 방지
+        boolean sessionIsExternal = Boolean.TRUE.equals(session.getIsExternal());
         List<DocumentSignature> docSigs = documentSignatureRepository
                 .findByDocumentIdxOrderBySignatureOrderAscIdxAsc(session.getDocumentIdx());
         String signatureSlot = docSigs.stream()
                 .filter(ds -> ds.getSignerUserIdx().equals(session.getSignerUserIdx())
-                        && ds.getLinkedSignatureIdx() == null)
+                        && ds.getLinkedSignatureIdx() == null
+                        && Boolean.TRUE.equals(ds.getIsExternal()) == sessionIsExternal)
                 .map(DocumentSignature::getSignatureSlot)
                 .findFirst()
                 .orElse(null);
@@ -202,20 +288,43 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
 
         // 이미 SCANNED/VERIFIED/COMPLETED 상태면 기존 정보 반환 (멱등성)
         if (CodeConstants.SignatureSessionStatus.QR_CREATED.getCode().equals(currentStatus)) {
-            session.setStatus(CodeConstants.SignatureSessionStatus.SCANNED.getCode());
-            session.setScannedAt(LocalDateTime.now());
+            LocalDateTime nowTs = LocalDateTime.now();
+            session.setScannedAt(nowTs);
             session.setScannedIp(ipAddress);
             session.setScannedUserAgent(userAgent);
-            signatureSessionRepository.save(session);
-            log.info("QR 스캔 처리: token={}, ip={}", token, ipAddress);
 
-            // PC에 WebSocket 이벤트 발송
-            wsNotifier.sendSessionEvent(token, SignatureEventMessage.builder()
-                    .eventType("SCANNED")
-                    .sessionToken(token)
-                    .documentIdx(session.getDocumentIdx())
-                    .timestamp(LocalDateTime.now())
-                    .build());
+            // 외부인 세션: 사번 2차 인증 스킵 — 스캔과 동시에 VERIFIED로 전이
+            if (Boolean.TRUE.equals(session.getIsExternal())) {
+                session.setStatus(CodeConstants.SignatureSessionStatus.VERIFIED.getCode());
+                session.setVerifiedAt(nowTs);
+                signatureSessionRepository.save(session);
+                log.info("외부인 QR 스캔 + 자동 인증 완료: token={}, ip={}", token, ipAddress);
+
+                // PC에 SCANNED + VERIFIED 이벤트 연속 발송 (기존 진행바 UX와 일치)
+                wsNotifier.sendSessionEvent(token, SignatureEventMessage.builder()
+                        .eventType("SCANNED")
+                        .sessionToken(token)
+                        .documentIdx(session.getDocumentIdx())
+                        .timestamp(nowTs)
+                        .build());
+                wsNotifier.sendSessionEvent(token, SignatureEventMessage.builder()
+                        .eventType("VERIFIED")
+                        .sessionToken(token)
+                        .documentIdx(session.getDocumentIdx())
+                        .timestamp(nowTs)
+                        .build());
+            } else {
+                session.setStatus(CodeConstants.SignatureSessionStatus.SCANNED.getCode());
+                signatureSessionRepository.save(session);
+                log.info("QR 스캔 처리: token={}, ip={}", token, ipAddress);
+
+                wsNotifier.sendSessionEvent(token, SignatureEventMessage.builder()
+                        .eventType("SCANNED")
+                        .sessionToken(token)
+                        .documentIdx(session.getDocumentIdx())
+                        .timestamp(nowTs)
+                        .build());
+            }
         }
 
         return getSessionByToken(token);
@@ -297,6 +406,13 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
                     .timestamp(LocalDateTime.now())
                     .build());
 
+            // 감사 로그: 본인 인증 성공
+            auditLogService.logSession(session.getSignerUserIdx(),
+                    CodeConstants.AuditAction.QR_VERIFY,
+                    session.getIdx(), session.getDocumentIdx(),
+                    "사번 2차 인증 성공 (token=" + token + ")",
+                    null /* HttpRequest 없음 — IP는 session.scanned_ip 로 보존 */);
+
             return SignatureVerifyResponse.builder()
                     .success(true)
                     .status(session.getStatus())
@@ -370,15 +486,18 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
 
         Long documentIdx = session.getDocumentIdx();
         Long signerUserIdx = session.getSignerUserIdx();
+        boolean sessionIsExternal = Boolean.TRUE.equals(session.getIsExternal());
 
         // 해당 서명자의 document_signatures 행 조회 (linked 없는 행만 메인)
+        // 외부/내부 구분 필수 — external_person.idx ↔ users.idx 숫자 충돌 방지
         List<DocumentSignature> docSigs = documentSignatureRepository
                 .findByDocumentIdxOrderBySignatureOrderAscIdxAsc(documentIdx);
 
         DocumentSignature mainRow = docSigs.stream()
                 .filter(ds -> ds.getSignerUserIdx().equals(signerUserIdx)
                         && ds.getLinkedSignatureIdx() == null
-                        && CodeConstants.DocumentSignatureStatus.PENDING.getCode().equals(ds.getStatus()))
+                        && CodeConstants.DocumentSignatureStatus.PENDING.getCode().equals(ds.getStatus())
+                        && Boolean.TRUE.equals(ds.getIsExternal()) == sessionIsExternal)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("서명할 메인 슬롯이 없습니다"));
 
@@ -390,7 +509,7 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
         mainRow.setSignatureImage(imageBytes);
         mainRow.setSignedAt(now);
         mainRow.setSignatureSessionIdx(session.getIdx());
-        documentSignatureRepository.save(mainRow);
+        documentSignatureRepository.saveAndFlush(mainRow);
         completedIdxList.add(mainRow.getIdx());
         log.info("서명 완료: documentIdx={}, slot={}, signerUserIdx={}",
                 documentIdx, mainRow.getSignatureSlot(), signerUserIdx);
@@ -403,7 +522,7 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
             linked.setSignatureImage(imageBytes);
             linked.setSignedAt(now);
             linked.setSignatureSessionIdx(session.getIdx());
-            documentSignatureRepository.save(linked);
+            documentSignatureRepository.saveAndFlush(linked);
             completedIdxList.add(linked.getIdx());
             log.info("연동 서명 자동 완료: linkedIdx={}, slot={}",
                     linked.getIdx(), linked.getSignatureSlot());
@@ -425,11 +544,24 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
 
         // 6. PC에 WebSocket "COMPLETED" 이벤트 발송
         String imageDataUrl = "data:image/png;base64," + Base64.getEncoder().encodeToString(imageBytes);
+        // 프론트 토스트 알림용 부가 정보
+        String slotLabel = codeRepository.findByGroupCodeAndCode(
+                        CodeConstants.GroupCode.SIGNATURE_SLOT.getCode(), mainRow.getSignatureSlot())
+                .map(Code::getCodeName).orElse(mainRow.getSignatureSlot());
+        // 외부/내부 분기해 서명자 이름 조회
+        String signerName = sessionIsExternal
+                ? externalPersonRepository.findById(signerUserIdx)
+                        .map(ep -> ep.getName()).orElse("")
+                : userRepository.findById(signerUserIdx)
+                        .map(User::getEmpName).orElse("");
+
         SignatureEventMessage event = SignatureEventMessage.builder()
                 .eventType("COMPLETED")
                 .sessionToken(token)
                 .documentIdx(documentIdx)
                 .signatureSlot(mainRow.getSignatureSlot())
+                .signatureSlotLabel(slotLabel)
+                .signerName(signerName)
                 .signatureImageDataUrl(imageDataUrl)
                 .signedDocumentSignatureIdxList(completedIdxList)
                 .timestamp(now)
@@ -437,6 +569,22 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
 
         wsNotifier.sendSessionEvent(token, event);
         wsNotifier.sendDocumentEvent(documentIdx, event);
+
+        // 감사 로그: 서명 제출 + 서명 완료 (외부인 signer_user_idx 는 external_person.idx)
+        String actor = sessionIsExternal
+                ? "외부 참석자 (external_person.idx=" + signerUserIdx + ")"
+                : "사용자 idx=" + signerUserIdx;
+        if (!sessionIsExternal) {
+            auditLogService.logSession(signerUserIdx,
+                    CodeConstants.AuditAction.SIGNATURE_SUBMIT,
+                    session.getIdx(), documentIdx,
+                    "모바일 서명 제출 (slot=" + mainRow.getSignatureSlot() + ")", null);
+            auditLogService.logSignature(signerUserIdx,
+                    CodeConstants.AuditAction.SIGN,
+                    mainRow.getIdx(), documentIdx,
+                    "서명 완료: " + actor + ", slot=" + mainRow.getSignatureSlot(), null);
+        }
+        // 외부인은 audit.user_idx (NOT NULL) 제약상 기록 불가 — session 테이블에 이미 기록됨
     }
 
     // ============================================================
@@ -520,16 +668,33 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
                                                     String signatureSlot,
                                                     String qrDataUrl,
                                                     boolean verified) {
-        User signer = userRepository.findById(session.getSignerUserIdx()).orElse(null);
-        String signerName = signer != null ? signer.getEmpName() : "알 수 없음";
-        String positionName = signer != null && signer.getEmpPosition() != null
-                ? codeRepository.findByGroupCodeAndCode(
-                        CodeConstants.GroupCode.POSITION.getCode(), signer.getEmpPosition())
-                        .map(Code::getCodeName).orElse("")
-                : "";
+        boolean isExternal = Boolean.TRUE.equals(session.getIsExternal());
+
+        String signerName;
+        String positionName = "";
+        String signerCompany = null;
+
+        if (isExternal) {
+            // 외부인: external_person에서 이름/소속 조회
+            var ep = externalPersonRepository.findById(session.getSignerUserIdx()).orElse(null);
+            signerName = ep != null ? ep.getName() : "외부 인원";
+            positionName = ep != null && ep.getPosition() != null ? ep.getPosition() : "";
+            signerCompany = ep != null ? ep.getCompanyName() : null;
+        } else {
+            User signer = userRepository.findById(session.getSignerUserIdx()).orElse(null);
+            signerName = signer != null ? signer.getEmpName() : "알 수 없음";
+            positionName = signer != null && signer.getEmpPosition() != null
+                    ? codeRepository.findByGroupCodeAndCode(
+                            CodeConstants.GroupCode.POSITION.getCode(), signer.getEmpPosition())
+                            .map(Code::getCodeName).orElse("")
+                    : "";
+        }
 
         String signerNameFull = signerName + (positionName.isEmpty() ? "" : " " + positionName);
-        String signerNameMasked = maskName(signerName) + (positionName.isEmpty() ? "" : " " + positionName);
+        // 외부인은 사번 인증이 없으므로 마스킹 불필요 — 풀네임 그대로 보여줘 본인 확인 돕기
+        String signerNameMasked = isExternal
+                ? signerNameFull
+                : maskName(signerName) + (positionName.isEmpty() ? "" : " " + positionName);
 
         String slotLabel = null;
         if (signatureSlot != null) {
@@ -555,9 +720,11 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
                 .signatureSlot(signatureSlot)
                 .signatureSlotLabel(slotLabel)
                 .signerNameMasked(signerNameMasked)
-                .signerNameFull(verified ? signerNameFull : null)
+                .signerNameFull((verified || isExternal) ? signerNameFull : null)
                 .verifyFailCount(session.getVerifyFailCount())
-                .verified(verified)
+                .verified(verified || isExternal)
+                .isExternal(isExternal)
+                .signerCompany(signerCompany)
                 .build();
     }
 

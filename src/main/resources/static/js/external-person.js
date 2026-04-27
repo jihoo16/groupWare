@@ -74,8 +74,8 @@ document.addEventListener('DOMContentLoaded', function() {
             closeModal();
             loadExternalPersons();
         } catch (error) {
-            showError('저장 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
-            console.error(error);
+            console.error('[외부 인력 저장]', error);
+            showSaveFailure('외부 인력');
         }
     });
 
@@ -193,8 +193,8 @@ document.addEventListener('DOMContentLoaded', function() {
             await showSuccess('삭제되었습니다.');
             loadExternalPersons();
         } catch (error) {
-            showError('삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
-            console.error(error);
+            console.error('[외부 인력 삭제]', error);
+            showDeleteFailure('외부 인력');
         }
     };
 
@@ -225,8 +225,8 @@ document.addEventListener('DOMContentLoaded', function() {
             loadTable();
             updateStats();
         } catch (error) {
-            console.error('외부인원 목록 조회 실패:', error);
-            showError('외부인원 목록을 불러오는데 실패했습니다.');
+            console.error('[외부 인력 목록 조회]', error);
+            showLoadFailure('외부 인력 목록');
         }
     }
 

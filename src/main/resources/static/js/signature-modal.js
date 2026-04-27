@@ -32,6 +32,8 @@
         sessionToken: null,
         documentIdx: null,
         signatureSlot: null,
+        externalPersonIdx: null,   // 외부 세션일 때만 set
+        mode: 'internal',           // 'internal' | 'external'
         expiresAtMs: 0,
         countdownTimer: null,
         stompClient: null,
@@ -64,8 +66,10 @@
                 return;
             }
 
+            state.mode = 'internal';
             state.documentIdx = options.documentIdx;
             state.signatureSlot = options.signatureSlot;
+            state.externalPersonIdx = null;
             state.onCompleteCallback = options.onComplete || null;
             state.onCloseCallback = options.onClose || null;
             state.completed = false;
@@ -77,11 +81,64 @@
             _createSession()
                 .then((data) => _onSessionCreated(data))
                 .catch((err) => {
-                    const msg = err.message || '다시 시도해주세요.';
+                    console.error('[서명] 세션 생성 실패', err);
+                    const msg = err.message || '';
                     const isGuide = msg.includes('서명칸') || msg.includes('차례')
                         || msg.includes('완료된') || msg.includes('연동')
                         || msg.includes('대상자') || msg.includes('서명 순서');
-                    _showErrorState(isGuide ? '서명 안내' : 'QR 생성 실패', msg);
+                    if (isGuide) {
+                        _showErrorState('서명 안내', msg);
+                    } else {
+                        _showErrorState(
+                            '서명 QR을 만들지 못했습니다',
+                            '서버와 잠시 연결되지 않아 QR 코드를 만들지 못했습니다.<br>' +
+                            '창을 닫고 <b>다시 서명 버튼</b>을 눌러 주세요.<br>' +
+                            '같은 문제가 계속되면 관리자에게 문의해 주세요.'
+                        );
+                    }
+                });
+        },
+
+        /**
+         * 외부인 서명용 모달 열기 (연구비증빙 외부 참석자 셀 클릭 시)
+         * @param {Object} options
+         * @param {number} options.documentIdx - 문서 IDX
+         * @param {number} options.externalPersonIdx - external_person.idx
+         * @param {Function} [options.onComplete]
+         * @param {Function} [options.onClose]
+         */
+        openExternal(options) {
+            if (state.isOpen) {
+                console.warn('[SignatureModal] 이미 열려있습니다');
+                return;
+            }
+            if (!options || !options.documentIdx || !options.externalPersonIdx) {
+                console.error('[SignatureModal] documentIdx, externalPersonIdx 필수');
+                return;
+            }
+
+            state.mode = 'external';
+            state.documentIdx = options.documentIdx;
+            state.externalPersonIdx = options.externalPersonIdx;
+            state.signatureSlot = 'C1601'; // 외부는 항상 참석자 슬롯
+            state.onCompleteCallback = options.onComplete || null;
+            state.onCloseCallback = options.onClose || null;
+            state.completed = false;
+            state.isOpen = true;
+
+            _showModal();
+            _setState('loading');
+
+            _createExternalSession()
+                .then((data) => _onSessionCreated(data))
+                .catch((err) => {
+                    console.error('[서명] 외부 세션 생성 실패', err);
+                    _showErrorState(
+                        '서명 QR을 만들지 못했습니다',
+                        '서버와 잠시 연결되지 않아 QR 코드를 만들지 못했습니다.<br>' +
+                        '창을 닫고 <b>다시 서명 버튼</b>을 눌러 주세요.<br>' +
+                        '같은 문제가 계속되면 관리자에게 문의해 주세요.'
+                    );
                 });
         },
 
@@ -107,7 +164,23 @@
         });
         if (!response.ok) {
             const err = await _safeJson(response);
-            throw new Error(err?.message || '서버에 연결할 수 없습니다.\n잠시 후 다시 시도해주세요.');
+            throw new Error(err?.message || 'SIGNATURE_SESSION_FAILED');
+        }
+        return response.json();
+    }
+
+    async function _createExternalSession() {
+        const response = await fetch('/api/signature/external/session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                documentIdx: state.documentIdx,
+                externalPersonIdx: state.externalPersonIdx
+            })
+        });
+        if (!response.ok) {
+            const err = await _safeJson(response);
+            throw new Error(err?.message || 'SIGNATURE_SESSION_FAILED');
         }
         return response.json();
     }

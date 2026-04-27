@@ -218,13 +218,13 @@
                 content.innerHTML = `<iframe src="${currentBlobUrl}" class="file-preview-iframe" title="${escapeHtml(f.filename)}"></iframe>`;
             }
         } catch (err) {
-            console.error('파일 미리보기 실패:', err);
+            console.error('[파일 미리보기]', err);
             if (requestedIndex !== currentIndex) return;
             content.innerHTML = `
                 <div class="file-preview-unsupported">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>파일을 불러올 수 없습니다.</p>
-                    <p class="file-preview-hint">잠시 후 다시 시도해주세요.</p>
+                    <p>파일을 표시할 수 없습니다.</p>
+                    <p class="file-preview-hint">파일을 내려받아 확인하거나, 창을 닫고 다시 열어 주세요.</p>
                 </div>
             `;
         }

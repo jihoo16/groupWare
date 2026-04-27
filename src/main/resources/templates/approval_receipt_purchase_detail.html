@@ -73,7 +73,12 @@
                             </tr>
                             <tr>
                                 <th>신 청 자</th>
-                                <td colspan="6" style="text-align: center;"><span id="doc_applicant"></span></td>
+                                <td colspan="6" style="text-align: center;">
+                                    <!-- 신청자 이름은 SignatureRender 가 /api/signature/document 응답에서
+                                         DRAFTER(C1602) 슬롯의 signerName 을 .approver-name[data-role="담당"] 에 자동 주입.
+                                         별도 쿼리 없이 기존 서명 조회 결과를 재사용. -->
+                                    <span class="approver-name" data-role="담당" id="doc_applicant">-</span>
+                                </td>
                             </tr>
                             <tr>
                                 <th>품 의 명</th>
@@ -101,10 +106,8 @@
                                 <th style="text-align: center; width: 100px;">합계</th>
                                 <th style="text-align: center; width: 80px;">비고</th>
                             </tr>
-                            <tbody id="docItemTableBody">
-                            <!-- 동적으로 채워지는 내역서 행 -->
-                            </tbody>
-                            <tr>
+                            <!-- 내역서 행은 JS 가 docItemAnchor 앞에 동적 삽입. -->
+                            <tr id="docItemAnchor">
                                 <td colspan="3" style="text-align: center; font-weight: bold; background: #f9f9f9;">계</td>
                                 <td style="text-align: right; font-weight: bold; padding-right: 8px;"><span id="doc_total_supply"></span></td>
                                 <td style="text-align: right; font-weight: bold; padding-right: 8px;"><span id="doc_total_tax"></span></td>

@@ -101,7 +101,7 @@ async function loadPendingList() {
         if (!res.ok) throw new Error();
         pendingItems = await res.json();
         const badge = document.getElementById('tabPendingCount');
-        if (badge) badge.textContent = pendingItems.length > 0 ? pendingItems.length : '';
+        if (badge) badge.textContent = pendingItems.length;
         applyFilters();
     } catch (e) {
         document.getElementById('emptyPending').style.display = '';
@@ -114,7 +114,7 @@ async function loadCompletedList() {
         if (!res.ok) throw new Error();
         completedItems = await res.json();
         const completedBadge = document.getElementById('tabCompletedCount');
-        if (completedBadge) completedBadge.textContent = completedItems.length > 0 ? completedItems.length : '';
+        if (completedBadge) completedBadge.textContent = completedItems.length;
         applyFilters();
     } catch (e) {
         document.getElementById('emptyCompleted').style.display = '';
@@ -183,9 +183,9 @@ function applyFilters() {
     const pendingBadge = document.getElementById('tabPendingCount');
     const requestedBadge = document.getElementById('tabRequestedCount');
     const completedBadge = document.getElementById('tabCompletedCount');
-    if (pendingBadge) pendingBadge.textContent = filteredPending.length > 0 ? filteredPending.length : '';
-    if (requestedBadge) requestedBadge.textContent = filteredRequested.length > 0 ? filteredRequested.length : '';
-    if (completedBadge) completedBadge.textContent = filteredCompleted.length > 0 ? filteredCompleted.length : '';
+    if (pendingBadge) pendingBadge.textContent = filteredPending.length;
+    if (requestedBadge) requestedBadge.textContent = filteredRequested.length;
+    if (completedBadge) completedBadge.textContent = filteredCompleted.length;
 
     pendingPage = 1;
     completedPage = 1;
@@ -308,7 +308,7 @@ async function loadRequestedList() {
         if (!res.ok) throw new Error();
         requestedItems = await res.json();
         const badge = document.getElementById('tabRequestedCount');
-        if (badge) badge.textContent = requestedItems.length > 0 ? requestedItems.length : '';
+        if (badge) badge.textContent = requestedItems.length;
         applyFilters();
     } catch (e) {
         document.getElementById('emptyRequested').style.display = '';

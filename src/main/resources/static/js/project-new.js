@@ -370,8 +370,8 @@
                 memberSelectModal.classList.add('active');
             })
             .catch(async error => {
-                console.error('Error loading members:', error);
-                await showError('인력 목록을 불러올 수 없습니다.');
+                console.error('[인력 목록 로드]', error);
+                await showLoadFailure('인력 목록');
             });
     }
 
@@ -1361,8 +1361,8 @@
             window.location.href = '/project';
 
         } catch (error) {
-            console.error('Error creating project:', error);
-            await showError('프로젝트 등록 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[프로젝트 등록]', error);
+            await showSaveFailure('프로젝트');
         }
     }
 
@@ -1507,8 +1507,8 @@
                 updateRelatedProjectCheckboxStates();
             })
             .catch(async error => {
-                console.error('Error loading related projects:', error);
-                await showError('프로젝트 목록을 불러올 수 없습니다.');
+                console.error('[연계 프로젝트 목록 로드]', error);
+                await showLoadFailure('프로젝트 목록');
             });
     }
 
@@ -2125,8 +2125,8 @@
                     await showSuccess('기초정보관리의 설정값을 불러왔습니다.');
                 })
                 .catch(async error => {
-                    console.error('고정경비 정책 조회 실패:', error);
-                    await showError('설정값을 불러오는데 실패했습니다.');
+                    console.error('[고정경비 정책 조회]', error);
+                    await showLoadFailure('설정값');
                 });
         });
     }

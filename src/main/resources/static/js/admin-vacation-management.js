@@ -257,14 +257,10 @@ document.addEventListener('DOMContentLoaded', function() {
             renderTable();
             updateStatistics();
         } catch (error) {
-            console.error('데이터 로드 실패:', error);
+            console.error('[연차 정보 불러오기 실패]', error);
             hideLoading();
             noData.style.display = 'block';
-            Swal.fire({
-                icon: 'error',
-                title: '데이터 로드 실패',
-                text: '데이터를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.'
-            });
+            showLoadFailure('연차 정보');
         }
     }
 
@@ -707,9 +703,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('leaveHistoryList').innerHTML =
                 historyHtml || '<p style="text-align:center;color:#999;">연차 사용 이력이 없습니다</p>';
         } catch (error) {
-            console.error('연차 사용 이력 조회 실패:', error);
+            console.error('[연차 사용 이력 불러오기 실패]', error);
             document.getElementById('leaveHistoryList').innerHTML =
-                '<p style="text-align:center;color:#e74c3c;">이력 조회 중 오류가 발생했습니다</p>';
+                '<p style="text-align:center;color:#e74c3c;">연차 사용 이력을 불러오지 못했습니다.<br>잠시 뒤 다시 열어 주세요.</p>';
         }
 
         detailModal.classList.add('show');

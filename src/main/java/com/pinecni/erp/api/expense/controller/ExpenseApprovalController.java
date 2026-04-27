@@ -13,6 +13,7 @@ import com.pinecni.erp.entity.ExpenseApprovalAttachment;
 import com.pinecni.erp.entity.ExpenseDetail;
 import com.pinecni.erp.api.expense.service.ExpenseApprovalService;
 import com.pinecni.erp.constant.CodeConstants;
+import com.pinecni.erp.exception.ApiErrorResponse;
 import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -95,11 +96,13 @@ public class ExpenseApprovalController {
 
             List<ExpenseApprovalAttachmentDTO> attachments = expenseApprovalService.getAttachments(created.getIdx());
             return ResponseEntity.status(HttpStatus.CREATED).body(mapToDTO(created, attachments));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("[지출승인서 생성 - 검증 오류] userIdx: {}, reason: {}", loginUserIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiErrorResponse.of(e));
         } catch (Exception e) {
-            log.error("지출승인서 생성 실패: {}", e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            log.error("[지출승인서 생성 실패] userIdx: {}", loginUserIdx, e);
+            return ResponseEntity.internalServerError().body(
+                    ApiErrorResponse.of("지출승인서 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
         }
     }
 
@@ -174,11 +177,13 @@ public class ExpenseApprovalController {
 
             List<ExpenseApprovalAttachmentDTO> attachments = expenseApprovalService.getAttachments(idx);
             return ResponseEntity.ok(mapToDTO(updated, attachments));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("[지출승인서 수정 - 검증 오류] idx: {}, reason: {}", idx, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiErrorResponse.of(e));
         } catch (Exception e) {
-            log.error("지출승인서 수정 실패: {}", e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            log.error("[지출승인서 수정 실패] idx: {}", idx, e);
+            return ResponseEntity.internalServerError().body(
+                    ApiErrorResponse.of("지출승인서 수정 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."));
         }
     }
 
@@ -226,11 +231,13 @@ public class ExpenseApprovalController {
 
             List<ExpenseApprovalAttachmentDTO> attachments = expenseApprovalService.getAttachments(idx);
             return ResponseEntity.ok(attachments);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("[첨부파일 추가 - 검증 오류] idx: {}, reason: {}", idx, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiErrorResponse.of(e));
         } catch (Exception e) {
-            log.error("첨부파일 추가 실패: {}", e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            log.error("[첨부파일 추가 실패] idx: {}", idx, e);
+            return ResponseEntity.internalServerError().body(
+                    ApiErrorResponse.of("첨부파일을 업로드하지 못했습니다. 파일 크기와 확장자를 확인한 뒤 다시 시도해 주세요."));
         }
     }
 
@@ -250,13 +257,12 @@ public class ExpenseApprovalController {
             res.put("message", "첨부파일이 삭제되었습니다.");
             return ResponseEntity.ok(res);
         } catch (IllegalArgumentException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            log.warn("[첨부파일 삭제 - 대상 없음] attachmentIdx: {}, reason: {}", attachmentIdx, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                    ApiErrorResponse.of("삭제할 첨부파일을 찾을 수 없습니다. 목록을 새로고침한 뒤 다시 시도해 주세요."));
         } catch (Exception e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("error", "서버 오류가 발생했습니다.");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+            log.error("[첨부파일 삭제 실패] attachmentIdx: {}", attachmentIdx, e);
+            return ResponseEntity.internalServerError().body(ApiErrorResponse.serverError());
         }
     }
 
@@ -316,11 +322,13 @@ public class ExpenseApprovalController {
             List<ExpenseApprovalAttachmentDTO> saved = expenseApprovalService.saveItemAttachments(
                     approval.getIdx(), detailIdx, files, loginUserIdx);
             return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            log.warn("[항목별 영수증 업로드 - 검증 오류] detailIdx: {}, reason: {}", detailIdx, e.getMessage());
+            return ResponseEntity.badRequest().body(ApiErrorResponse.of(e));
         } catch (Exception e) {
-            log.error("항목별 영수증 업로드 실패: {}", e.getMessage(), e);
-            Map<String, String> error = new HashMap<>();
-            error.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(error);
+            log.error("[항목별 영수증 업로드 실패] detailIdx: {}", detailIdx, e);
+            return ResponseEntity.internalServerError().body(
+                    ApiErrorResponse.of("영수증을 업로드하지 못했습니다. 파일 크기와 확장자를 확인한 뒤 다시 시도해 주세요."));
         }
     }
 

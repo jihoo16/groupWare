@@ -50,8 +50,8 @@
             startCountdown();
             routeByStatus(sessionData.status, sessionData.verified);
         } catch (err) {
-            console.error(err);
-            showError('연결 오류', '서버에 접근할 수 없습니다. 네트워크를 확인해주세요.');
+            console.error('[서명 세션 조회]', err);
+            showError('서버에 연결할 수 없습니다', '인터넷 연결을 확인한 뒤 페이지를 새로고침해 주세요.');
         }
     });
 
@@ -70,6 +70,14 @@
         }
         if (status === 'C1304') {
             showStep('step-complete');
+            return;
+        }
+
+        // 외부인 세션: 사번 2차 인증 스킵 (백엔드가 스캔 시 자동 VERIFIED 처리)
+        // 안전장치로 verified=false인 경우에도 external이면 바로 서명 단계
+        if (sessionData && sessionData.isExternal) {
+            showStep('step-sign');
+            initSignaturePad();
             return;
         }
 
@@ -132,8 +140,16 @@
                     input.focus();
                 }
             } catch (err) {
-                console.error(err);
-                Swal.fire({ icon: 'error', title: '인증 실패', text: '인증 처리 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.' });
+                console.error('[서명 인증]', err);
+                Swal.fire({
+                    title: '인증을 진행하지 못했습니다',
+                    html: '서버와 잠시 연결되지 않아 인증이 완료되지 않았습니다.<br>' +
+                          '<b>다시 확인 버튼</b>을 눌러 주세요.<br>' +
+                          '같은 문제가 계속되면 관리자에게 문의해 주세요.',
+                    icon: 'warning',
+                    confirmButtonText: '확인',
+                    confirmButtonColor: '#ff9800'
+                });
             } finally {
                 btn.disabled = false;
             }
@@ -218,8 +234,16 @@
             if (countdownTimer) clearInterval(countdownTimer);
             showStep('step-complete');
         } catch (err) {
-            console.error(err);
-            Swal.fire({ icon: 'error', title: '제출 실패', text: '서명 제출에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
+            console.error('[서명 제출]', err);
+            Swal.fire({
+                title: '서명을(를) 제출하지 못했습니다',
+                html: '서버와 잠시 연결되지 않아 제출이 완료되지 않았습니다.<br>' +
+                      '작성하신 서명은 그대로 남아 있으니 <b>다시 제출 버튼</b>을 눌러 주세요.<br>' +
+                      '같은 문제가 계속되면 관리자에게 문의해 주세요.',
+                icon: 'warning',
+                confirmButtonText: '확인',
+                confirmButtonColor: '#ff9800'
+            });
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 제출';
         }
@@ -235,7 +259,15 @@
         document.getElementById('doc-title').textContent = sessionData.documentTitle || '-';
         document.getElementById('slot-label').textContent = sessionData.signatureSlotLabel || '-';
         const nameEl = document.getElementById('signer-name');
-        if (sessionData.verified && sessionData.signerNameFull) {
+        if (sessionData.isExternal) {
+            // 외부인: 이름 + 소속 풀 표시 (사번 인증 없음 대신 본인 확인 돕기)
+            const company = sessionData.signerCompany ? ` (${sessionData.signerCompany})` : '';
+            nameEl.textContent = (sessionData.signerNameFull || '외부 인원') + company;
+            // 외부인은 '본인 확인 완료' 배지 대신 '외부 참석자' 배지로 변경
+            const badge = document.getElementById('verified-badge');
+            badge.innerHTML = '<i class="fas fa-user-tag"></i> 외부 참석자';
+            badge.style.display = 'inline-flex';
+        } else if (sessionData.verified && sessionData.signerNameFull) {
             nameEl.textContent = sessionData.signerNameFull;
             document.getElementById('verified-badge').style.display = 'inline-flex';
         } else {

@@ -401,12 +401,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 로딩 오버레이 숨김
                 window.hidePageLoadingOverlay();
             } else {
-                await showError('일정 정보를 불러올 수 없습니다: ' + data.message);
+                console.error('[일정 로드] 실패:', data.message);
+                await showLoadFailure('일정');
                 window.location.href = '/calendar';
             }
         } catch (error) {
-            console.error('일정 로드 중 오류:', error);
-            await showError('일정 정보를 불러오는 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[일정 로드] 일정', error);
+            await showLoadFailure('일정');
             window.hidePageLoadingOverlay();
             window.location.href = '/calendar';
         }
@@ -1056,11 +1057,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 await showSuccess('일정이 삭제되었습니다.');
                 window.location.href = '/calendar';
             } else {
-                await showError('일정 삭제 실패: ' + data.message);
+                console.error('[일정 삭제] 실패:', data.message);
+                await showDeleteFailure('일정');
             }
         } catch (error) {
-            console.error('일정 삭제 중 오류:', error);
-            await showError('일정 삭제 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[일정 삭제] 일정', error);
+            await showDeleteFailure('일정');
         }
     });
 
@@ -1137,11 +1139,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 await showSuccess('일정이 성공적으로 수정되었습니다.');
                 window.location.href = '/calendar';
             } else {
-                await showError('일정 수정 실패: ' + data.message);
+                console.error('[일정 수정] 실패:', data.message);
+                await showUpdateFailure('일정');
             }
         } catch (error) {
-            console.error('일정 수정 중 오류:', error);
-            await showError('일정 수정 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[일정 수정] 일정', error);
+            await showUpdateFailure('일정');
         }
     });
 

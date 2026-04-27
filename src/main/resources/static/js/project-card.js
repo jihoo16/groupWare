@@ -289,8 +289,8 @@ document.addEventListener('DOMContentLoaded', function() {
             closeCardModal();
             loadAllCards(); // 목록 새로고침
         } catch (error) {
-            console.error('카드 저장 오류:', error);
-            showError('카드 저장에 실패했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[카드 저장]', error);
+            showSaveFailure('카드 정보');
         }
     };
 
@@ -322,8 +322,8 @@ document.addEventListener('DOMContentLoaded', function() {
             await showSuccess('카드가 삭제되었습니다.');
             loadAllCards(); // 목록 새로고침
         } catch (error) {
-            console.error('카드 삭제 오류:', error);
-            showError('카드 삭제에 실패했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[카드 삭제]', error);
+            showDeleteFailure('카드');
         }
     };
 
@@ -388,8 +388,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             projectInfoModal.classList.add('show');
         } catch (error) {
-            console.error('프로젝트 정보 조회 오류:', error);
-            showError('프로젝트 정보를 불러오는데 실패했습니다.');
+            console.error('[프로젝트 정보 조회]', error);
+            showLoadFailure('프로젝트 정보');
         }
     };
 

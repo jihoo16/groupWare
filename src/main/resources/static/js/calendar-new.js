@@ -1292,13 +1292,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 await showSuccess('일정이 성공적으로 추가되었습니다.');
                 window.location.href = '/calendar';
             } else {
-                await showError('일정 추가 실패: ' + data.message);
+                console.error('[일정 추가] 실패:', data.message);
+                await showSaveFailure('일정');
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fas fa-check"></i> 저장';
             }
         } catch (error) {
-            console.error('일정 추가 중 오류:', error);
-            await showError('일정 추가 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[일정 추가] 일정', error);
+            await showSaveFailure('일정');
             saveBtn.disabled = false;
             saveBtn.innerHTML = '<i class="fas fa-check"></i> 저장';
         }

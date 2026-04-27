@@ -58,6 +58,8 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
     private final DocumentSequenceService documentSequenceService;
     private final ProjectCardRepository projectCardRepository;
     private final UserRepository userRepository;
+    private final com.pinecni.erp.api.externalperson.repository.ExternalPersonRepository externalPersonRepository;
+    private final com.pinecni.erp.api.code.repository.CodeRepository codeRepository;
     private final ProjectMemberValidationService projectMemberValidationService;
     private final SignatureService signatureService;
 
@@ -208,8 +210,9 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
 
         // 전자서명 요청 자동 생성
         try {
-            // 회의 세션 내부 참석자 userIdx 수집 (외부인 제외)
+            // 회의 세션 내부 + 외부 참석자 분리 수집
             List<Long> attendeeUserIdxList = null;
+            List<Long> externalAttendeeIdxList = null;
             if (dto.getMeetingSessions() != null && !dto.getMeetingSessions().isEmpty()) {
                 attendeeUserIdxList = dto.getMeetingSessions().stream()
                         .filter(s -> s.getMeetingAttendees() != null)
@@ -219,9 +222,17 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                         .filter(Objects::nonNull)
                         .distinct()
                         .collect(Collectors.toList());
+                externalAttendeeIdxList = dto.getMeetingSessions().stream()
+                        .filter(s -> s.getMeetingAttendees() != null)
+                        .flatMap(s -> s.getMeetingAttendees().stream())
+                        .filter(a -> Boolean.TRUE.equals(a.getIsExternal()))
+                        .map(ReceiptMeetingAttendeeDTO::getUserIdx)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .collect(Collectors.toList());
             }
             signatureService.requestSignaturesForDocument(documentIdx, currentUserIdx,
-                    dto.getProjectIdx(), attendeeUserIdxList);
+                    dto.getProjectIdx(), attendeeUserIdxList, externalAttendeeIdxList);
             savedDocument.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
             approvalDocumentRepository.save(savedDocument);
         } catch (Exception e) {
@@ -304,8 +315,13 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
 
         log.debug("출장+회의 수정 - idx: {}, currentUserIdx: {}", idx, currentUserIdx);
 
-        ReceiptTripMeeting entity = receiptTripMeetingRepository.findById(idx)
-                .orElseThrow(() -> new IllegalArgumentException("출장+회의 정보를 찾을 수 없습니다. idx: " + idx));
+        // idx 는 receipt_trip_meeting.idx 또는 document_idx 허용
+        final Long requestedIdx = idx;
+        ReceiptTripMeeting entity = receiptTripMeetingRepository.findByDocumentIdx(requestedIdx)
+                .orElseGet(() -> receiptTripMeetingRepository.findById(requestedIdx)
+                        .orElseThrow(() -> new IllegalArgumentException("출장+회의 정보를 찾을 수 없습니다. idx: " + requestedIdx)));
+        // 이후 idx 는 반드시 entity.idx 로 정규화 (하류 FK 삽입 기준)
+        idx = entity.getIdx();
         if (Boolean.TRUE.equals(entity.getDeleted())) {
             throw new IllegalArgumentException("삭제된 출장+회의입니다. idx: " + idx);
         }
@@ -473,12 +489,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         ReceiptTripMeeting entity = receiptTripMeetingRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("출장+회의 정보를 찾을 수 없습니다. idx: " + idx));
 
-        // 전자서명 게이트
-        if (entity.getDocumentIdx() != null
-                && signatureService.hasAnySignatureCaptured(entity.getDocumentIdx())) {
-            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
-        }
-
+        // 연구비증빙(출장+회의)은 수정요청 대응을 위해 서명 진행/완료 후에도 삭제 허용
         LocalDateTime now = LocalDateTime.now();
 
         // 1. 참석자 소프트 딜리트
@@ -917,6 +928,10 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
             meetingSessionDTOs = sessions.stream().map(session -> {
                 List<ReceiptAttendee> sessionAttendees = receiptAttendeeRepository
                         .findBySessionIdxAndParticipationTypeAndIsDeletedFalseOrderByDisplayOrder(session.getIdx(), "회의");
+                String sessionDrafterName = session.getAuthorIdx() != null
+                        ? userRepository.findById(session.getAuthorIdx())
+                                .map(com.pinecni.erp.entity.User::getEmpName).orElse(null)
+                        : null;
                 return MeetingSessionDTO.builder()
                         .sessionIdx(session.getIdx())
                         .displayOrder(session.getDisplayOrder())
@@ -927,6 +942,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                         .meetingPurpose(session.getPurpose())
                         .meetingContent(session.getContent())
                         .meetingDrafterUserIdx(session.getAuthorIdx())
+                        .meetingDrafterUserName(sessionDrafterName)
                         .meetingAmount(session.getAmount())
                         .meetingAttendees(sessionAttendees.stream().map(this::toMeetingAttendeeDTO).collect(Collectors.toList()))
                         .build();
@@ -935,6 +951,12 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
             meetingSessionDTOs = Collections.emptyList();
         }
 
+        // 출장 작성자 이름 조회 (상세페이지 복명자/작성자 표시용)
+        String drafterName = entity.getDrafterUserIdx() != null
+                ? userRepository.findById(entity.getDrafterUserIdx())
+                        .map(com.pinecni.erp.entity.User::getEmpName).orElse(null)
+                : null;
+
         return ReceiptTripMeetingResponseDTO.builder()
                 .receiptTripMeetingIdx(entity.getIdx())
                 .documentIdx(entity.getDocumentIdx())
@@ -942,6 +964,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .projectIdx(entity.getProjectIdx())
                 .cardIdx(entity.getCardIdx())
                 .drafterUserIdx(entity.getDrafterUserIdx())
+                .drafterUserName(drafterName)
                 .deleted(entity.getDeleted())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
@@ -959,6 +982,7 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .meetingPurpose(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getMeetingPurpose())
                 .minutesNotes(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getMeetingContent())
                 .meetingDrafterUserIdx(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getMeetingDrafterUserIdx())
+                .meetingDrafterUserName(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getMeetingDrafterUserName())
                 .meetingAmount(meetingSessionDTOs.isEmpty() ? null : meetingSessionDTOs.get(0).getMeetingAmount())
                 .meetingAttendees(meetingSessionDTOs.isEmpty() ? Collections.emptyList() : meetingSessionDTOs.get(0).getMeetingAttendees())
                 .dailyExpenses(expenses.stream().map(this::toExpenseDTO).collect(Collectors.toList()))
@@ -1007,7 +1031,19 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
         if (attendee.getUserIdx() != null) {
             userRepository.findById(attendee.getUserIdx()).ifPresent(user -> {
                 dto.setName(user.getEmpName());
-                log.debug("[DEBUG] toTripAttendeeDTO - userIdx:{}, empName:{}", attendee.getUserIdx(), user.getEmpName());
+                dto.setPositionCode(user.getEmpPosition());
+                if (user.getEmpDept() != null) {
+                    dto.setDepartment(codeRepository.findByGroupCodeAndCode(
+                                    com.pinecni.erp.constant.CodeConstants.GroupCode.DEPARTMENT.getCode(),
+                                    user.getEmpDept())
+                            .map(com.pinecni.erp.entity.Code::getCodeName).orElse(null));
+                }
+                if (user.getEmpPosition() != null) {
+                    dto.setPosition(codeRepository.findByGroupCodeAndCode(
+                                    com.pinecni.erp.constant.CodeConstants.GroupCode.POSITION.getCode(),
+                                    user.getEmpPosition())
+                            .map(com.pinecni.erp.entity.Code::getCodeName).orElse(null));
+                }
             });
         }
         return dto;
@@ -1020,8 +1056,33 @@ public class ReceiptTripMeetingServiceImpl implements ReceiptTripMeetingService 
                 .isExternal(attendee.getIsExternal())
                 .displayOrder(attendee.getDisplayOrder())
                 .build();
-        if (attendee.getUserIdx() != null && !Boolean.TRUE.equals(attendee.getIsExternal())) {
-            userRepository.findById(attendee.getUserIdx()).ifPresent(user -> dto.setName(user.getEmpName()));
+
+        if (attendee.getUserIdx() == null) return dto;
+
+        if (Boolean.TRUE.equals(attendee.getIsExternal())) {
+            // 외부 참석자: external_person 에서 이름/소속(회사)/직책 조회
+            externalPersonRepository.findById(attendee.getUserIdx()).ifPresent(ep -> {
+                dto.setName(ep.getName());
+                dto.setDepartment(ep.getCompanyName());
+                dto.setPosition(ep.getPosition());
+            });
+        } else {
+            // 내부 참석자: User 에서 이름/부서/직급 조회 (부서/직급은 code_name 변환)
+            userRepository.findById(attendee.getUserIdx()).ifPresent(user -> {
+                dto.setName(user.getEmpName());
+                if (user.getEmpDept() != null) {
+                    dto.setDepartment(codeRepository.findByGroupCodeAndCode(
+                                    com.pinecni.erp.constant.CodeConstants.GroupCode.DEPARTMENT.getCode(),
+                                    user.getEmpDept())
+                            .map(com.pinecni.erp.entity.Code::getCodeName).orElse(null));
+                }
+                if (user.getEmpPosition() != null) {
+                    dto.setPosition(codeRepository.findByGroupCodeAndCode(
+                                    com.pinecni.erp.constant.CodeConstants.GroupCode.POSITION.getCode(),
+                                    user.getEmpPosition())
+                            .map(com.pinecni.erp.entity.Code::getCodeName).orElse(null));
+                }
+            });
         }
         return dto;
     }

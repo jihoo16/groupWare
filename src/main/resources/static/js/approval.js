@@ -770,7 +770,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadAllDocuments();
                 Swal.fire({ icon: 'success', title: '저장 완료', text: '첨부파일이 저장되었습니다.', timer: 1500, showConfirmButton: false });
             } catch (err) {
-                Swal.fire({ icon: 'error', title: '저장 실패', text: '저장에 실패했습니다.\n잠시 후 다시 시도해주세요.', didOpen: () => { const c = document.querySelector('.swal2-container'); if (c) c.style.zIndex = '20001'; } });
+                console.error('[저장 실패] 지출 결의서 첨부파일', err);
+                showSaveFailure('첨부파일');
             } finally {
                 newSaveBtn.disabled = false;
                 newSaveBtn.textContent = '저장';
@@ -820,11 +821,13 @@ document.addEventListener('DOMContentLoaded', function() {
             `).join('');
 
             openAttachModal('연차신청서 PDF', rows);
-        } catch (_) {
+        } catch (err) {
+            console.error('[불러오기 실패] 연차 신청서 PDF 목록', err);
             openAttachModal('연차신청서 PDF', `
                 <div style="text-align:center;padding:28px 0;color:#ef4444;font-size:13px;">
                     <i class="fas fa-exclamation-circle" style="font-size:24px;display:block;margin-bottom:8px;"></i>
-                    파일 정보를 불러오는 데 실패했습니다.
+                    파일 정보를 표시하지 못했습니다.<br>
+                    잠시 후 모달을 다시 열어 주세요.
                 </div>
             `);
         }

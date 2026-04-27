@@ -441,7 +441,7 @@ div:focus {
     background: #f0f0f0;
 }
 
-.approval-sign-cell {
+.doc-approval-sign {
     height: 70px;
     width: 110px;
     padding: 4px;
@@ -464,7 +464,7 @@ div:focus {
     user-select: none;
 }
 
-.approval-sign-cell.signed .sign-placeholder {
+.doc-approval-sign.signed .sign-placeholder {
     display: none;
 }
 

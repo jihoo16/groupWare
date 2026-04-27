@@ -39,12 +39,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }));
                 console.log('직원 데이터 로드 완료:', employees.length + '명');
             } else {
-                console.error('직원 데이터 로드 실패:', response.status);
-                showError('직원 데이터를 불러오는데 실패했습니다. 관리자에게 문의하세요.');
+                console.error('[불러오기 실패] 직원 데이터', response.status);
+                showLoadFailure('직원 목록');
             }
         } catch (error) {
-            console.error('직원 데이터 로드 오류:', error);
-            showError('직원 데이터를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.');
+            console.error('[불러오기 실패] 직원 데이터', error);
+            showLoadFailure('직원 목록');
         }
     }
 
@@ -1214,7 +1214,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
 
                     if (!response.ok) {
-                        throw new Error('저장에 실패했습니다.\n잠시 후 다시 시도해주세요.');
+                        throw new Error('SAVE_FAILED');
                     }
 
                     const result = await response.json();
@@ -1241,8 +1241,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         }
                     }
                 } catch (error) {
-                    console.error('저장 중 오류 발생:', error);
-                    showError('저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+                    console.error('[저장 실패] 지출 결의서', error);
+                    showSaveFailure('지출 결의서');
                 }
             }
         });
@@ -1521,8 +1521,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 showSuccess('PDF가 저장되었습니다.');
             } catch (error) {
-                console.error('PDF 생성 오류:', error);
-                showError('문서 생성 중 오류가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+                console.error('[생성 실패] PDF 문서', error);
+                showGenerateFailure('PDF 문서');
             } finally {
                 // 에러 발생 여부와 관계없이 항상 원래 스타일 복원
                 if (allDivs && originalDisplays.length > 0) {
@@ -2530,8 +2530,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
         } catch (e) {
-            console.error('[expense-edit] load failed:', e);
-            showError('문서를 불러오는 데 실패했습니다.');
+            console.error('[불러오기 실패] 지출 결의서', e);
+            showLoadFailure('지출 결의서');
         }
     }
 

@@ -83,18 +83,17 @@
                                 <th style="white-space: nowrap; font-size: 11px;">회의일시</th>
                                 <td style="padding: 10px 8px; text-align: center;"><span id="doc_datetime_proposal" style="font-size: 12px; line-height: 1.5; white-space: pre-line;"></span></td>
                             </tr>
-                            <tr>
+                            <tr id="meeting_purpose_row">
                                 <th>내외구분</th>
                                 <th>소속</th>
                                 <th>성명</th>
-                                <th rowspan="6">회의 목적</th>
-                                <td colspan="3" rowspan="6" style="vertical-align: middle; text-align: center; padding: 10px;">
+                                <th rowspan="6" id="meeting_purpose_header">회의 목적</th>
+                                <td colspan="3" rowspan="6" class="meeting-purpose-cell" style="vertical-align: middle; text-align: center; padding: 10px;">
                                     <div id="doc_purpose" style="width: 100%; padding: 10px; font-size: 16px; line-height: 1.6; word-break: keep-all; word-wrap: break-word;"></div>
                                 </td>
                             </tr>
-                            <tbody id="proposalAttendeeBody">
-                            <!-- 참석자 행 동적 생성 -->
-                            </tbody>
+                            <!-- 참석자 행은 JS가 meeting_purpose_row 다음에 동적 삽입.
+                                 tbody 래퍼를 두면 rowspan="6"이 tbody 경계에 막혀 회의 목적 셀이 1행만 차지. -->
                             <tr class="attendee-row"><td colspan="3">&nbsp;</td></tr>
                             <tr class="attendee-row"><td colspan="3">&nbsp;</td></tr>
                             <tr class="attendee-row"><td colspan="3">&nbsp;</td></tr>

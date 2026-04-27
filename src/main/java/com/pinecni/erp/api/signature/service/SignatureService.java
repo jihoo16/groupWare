@@ -39,10 +39,22 @@ public interface SignatureService {
     /**
      * 프로젝트 문서용 오버로드
      * @param projectIdx 프로젝트 IDX (PROJECT_LEAD 결정용, null이면 스킵)
-     * @param attendeeUserIdxList 참석자 userIdx 목록 (ATTENDEE 서명용, null이면 스킵)
+     * @param attendeeUserIdxList 내부 참석자 userIdx 목록 (ATTENDEE 서명용, null이면 스킵)
      */
     void requestSignaturesForDocument(Long documentIdx, Long requesterUserIdx,
                                        Long projectIdx, List<Long> attendeeUserIdxList);
+
+    /**
+     * 프로젝트 문서용 오버로드 (외부 참석자 포함)
+     * @param projectIdx 프로젝트 IDX
+     * @param attendeeUserIdxList 내부 참석자 users.idx 목록
+     * @param externalAttendeeIdxList 외부 참석자 external_person.idx 목록
+     *                                (각 외부인에 대해 is_external=true DS row 생성)
+     */
+    void requestSignaturesForDocument(Long documentIdx, Long requesterUserIdx,
+                                       Long projectIdx,
+                                       List<Long> attendeeUserIdxList,
+                                       List<Long> externalAttendeeIdxList);
 
     /**
      * 순차 서명 단계 전진

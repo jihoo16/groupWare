@@ -230,17 +230,17 @@ public class ReceiptMeetingController {
     @DeleteMapping("/{idx}")
     public ResponseEntity<Map<String, String>> deleteReceiptMeeting(
             @PathVariable Long idx,
-            @RequestBody Map<String, Long> requestBody) {
+            HttpSession session) {
         log.debug("DELETE /api/receipt-meetings/{}", idx);
 
-        try {
-            Long deletedUserIdx = requestBody.get("deletedUserIdx");
-            if (deletedUserIdx == null) {
-                Map<String, String> error = new HashMap<>();
-                error.put("error", "삭제한 사용자 정보가 필요합니다.");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-            }
+        Long deletedUserIdx = (Long) session.getAttribute("userIdx");
+        if (deletedUserIdx == null) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "로그인이 필요합니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
 
+        try {
             receiptMeetingService.deleteReceiptMeeting(idx, deletedUserIdx);
 
             Map<String, String> response = new HashMap<>();

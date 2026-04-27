@@ -222,8 +222,9 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
 
             // 전자서명 요청 자동 생성
             try {
+                // 출장은 통상 참석자 서명 없음 — 혹시 외부 참여자 설정이 들어올 경우 대비
                 signatureService.requestSignaturesForDocument(savedDocument.getIdx(), currentUserIdx,
-                        createDTO.getProjectIdx(), null);
+                        createDTO.getProjectIdx(), null, null);
                 savedDocument.setStatus(CodeConstants.DocumentStatus.SIGN_PENDING.getCode());
                 approvalDocumentRepository.save(savedDocument);
             } catch (Exception e) {
@@ -243,8 +244,13 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
     public ReceiptTripDTO updateReceiptTrip(Long idx, ReceiptTripUpdateDTO updateDTO, Long currentUserIdx) {
         log.debug("출장 수정 - idx: {}, currentUserIdx: {}", idx, currentUserIdx);
 
-        ReceiptTrip entity = receiptTripRepository.findById(idx)
-                .orElseThrow(() -> new IllegalArgumentException("출장 정보를 찾을 수 없습니다. idx: " + idx));
+        // idx 는 receipt_trip.idx 또는 document_idx 허용
+        final Long requestedIdx = idx;
+        ReceiptTrip entity = receiptTripRepository.findByDocumentIdx(requestedIdx)
+                .orElseGet(() -> receiptTripRepository.findById(requestedIdx)
+                        .orElseThrow(() -> new IllegalArgumentException("출장 정보를 찾을 수 없습니다. idx: " + requestedIdx)));
+        // 이후 idx 는 반드시 entity.idx 로 정규화 (하류 FK 삽입 기준)
+        idx = entity.getIdx();
         if (Boolean.TRUE.equals(entity.getDeleted())) {
             throw new IllegalArgumentException("삭제된 출장입니다. idx: " + idx);
         }
@@ -341,12 +347,7 @@ public class ReceiptTripServiceImpl implements ReceiptTripService {
         ReceiptTrip entity = receiptTripRepository.findById(idx)
                 .orElseThrow(() -> new IllegalArgumentException("출장 정보를 찾을 수 없습니다. idx: " + idx));
 
-        // 전자서명 게이트
-        if (entity.getDocumentIdx() != null
-                && signatureService.hasAnySignatureCaptured(entity.getDocumentIdx())) {
-            throw new IllegalStateException("전자서명이 진행된 문서는 삭제할 수 없습니다.");
-        }
-
+        // 연구비증빙(단독출장)은 수정요청 대응을 위해 서명 진행/완료 후에도 삭제 허용
         LocalDateTime now = LocalDateTime.now();
 
         // 1. 일별 비용 명세 물리 삭제

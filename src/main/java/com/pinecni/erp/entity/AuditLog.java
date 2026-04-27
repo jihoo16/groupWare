@@ -3,6 +3,8 @@ package com.pinecni.erp.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -62,8 +64,10 @@ public class AuditLog {
     /**
      * 상세 데이터 (JSONB) - 변경 전/후 값 등
      * 예: {"before": {"status": "C1401"}, "after": {"status": "C1402"}}
-     * 주의: Hibernate 6+ 기본 JSON 지원으로 String 사용. 실제 저장 시 JSONB로 변환됨.
+     * JdbcTypeCode(JSON) 이 있어야 Hibernate 가 JSONB 로 바인딩한다
+     * (columnDefinition 만으론 DDL 힌트일 뿐 varchar→jsonb 캐스트 에러 발생).
      */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "detail_json", columnDefinition = "jsonb")
     private String detailJson;
 

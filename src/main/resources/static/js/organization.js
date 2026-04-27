@@ -143,8 +143,8 @@
 
             return data;
         } catch (error) {
-            console.error('조직도 데이터 로딩 실패:', error);
-            showError('조직도 데이터를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.\n문제가 지속되면 관리자에게 문의해주세요.');
+            console.error('[조직도 로드]', error);
+            showLoadFailure('조직도');
             return null;
         }
     }
@@ -561,7 +561,8 @@
                         timerProgressBar: true
                     });
                 } catch (e) {
-                    Swal.fire({ icon: 'error', title: '복사 실패', text: '클립보드 접근에 실패했습니다.' });
+                    console.error('[명함 복사]', e);
+                    showWarning('명함 정보를 복사하지 못했습니다.\n브라우저 설정에서 클립보드 권한을 허용한 뒤 다시 시도해 주세요.', '복사 안내');
                 }
             });
         }

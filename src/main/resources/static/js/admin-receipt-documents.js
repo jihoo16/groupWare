@@ -538,8 +538,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 await sleep(250);
             }
         } catch (err) {
-            console.error(err);
-            Swal.fire({ icon: 'error', title: '다운로드 실패', text: '파일 다운로드에 실패했습니다.\n잠시 후 다시 시도해주세요.' });
+            console.error('[증빙 문서 첨부파일 내려받기 실패]', err);
+            showDownloadFailure('증빙 문서 첨부파일');
         } finally {
             if (triggerEl) {
                 triggerEl.classList.remove('downloading');

@@ -1,0 +1,395 @@
+/* =========================================================
+ * 관리자 감사 로그 페이지
+ * 다른 admin-* 페이지와 시각적 통일감 유지
+ * ========================================================= */
+
+.audit-content {
+    padding: 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* ─── 필터 패널 ─── */
+.filter-panel {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 120px;
+}
+
+.filter-group.flex-1 {
+    flex: 1;
+    min-width: 180px;
+}
+
+.filter-group label {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.filter-date,
+.filter-select,
+.filter-input {
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    transition: border-color 0.15s;
+}
+
+.filter-date:focus,
+.filter-select:focus,
+.filter-input:focus {
+    border-color: #4f46e5;
+    outline: none;
+}
+
+.filter-input.narrow { width: 110px; }
+
+.filter-buttons {
+    display: flex;
+    gap: 8px;
+    align-self: flex-end;
+}
+
+.btn-search,
+.btn-reset,
+.btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color 0.15s;
+}
+
+.btn-search {
+    background: #4f46e5;
+    color: #ffffff;
+    border-color: #4f46e5;
+}
+
+.btn-search:hover {
+    background: #4338ca;
+}
+
+.btn-reset {
+    background: #ffffff;
+    color: #475569;
+    border-color: #d1d5db;
+}
+
+.btn-reset:hover {
+    background: #f3f4f6;
+}
+
+.btn-export {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+    height: 36px;
+}
+
+.btn-export:hover {
+    background: #0d9668;
+}
+
+/* ─── 결과 메타 ─── */
+.result-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 4px 12px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.result-meta strong {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.page-size-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.page-size-select {
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 12px;
+    background: #fff;
+}
+
+/* ─── 테이블 ─── */
+.audit-table-wrap {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.audit-table thead {
+    background: #f8fafc;
+}
+
+.audit-table th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 700;
+    color: #475569;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.audit-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.1s;
+    cursor: pointer;
+}
+
+.audit-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.audit-table td {
+    padding: 9px 12px;
+    color: #0f172a;
+    vertical-align: top;
+}
+
+.audit-table td.nowrap { white-space: nowrap; }
+.audit-table td.description {
+    max-width: 420px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 대상/행위 배지 */
+.audit-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.audit-badge.target-document     { background: #eef2ff; color: #4338ca; }
+.audit-badge.target-signature    { background: #dcfce7; color: #15803d; }
+.audit-badge.target-session      { background: #fef3c7; color: #92400e; }
+.audit-badge.target-user         { background: #fce7f3; color: #be185d; }
+.audit-badge.target-file         { background: #e0e7ff; color: #3730a3; }
+
+.audit-badge.action-delete       { background: #fee2e2; color: #b91c1c; }
+.audit-badge.action-create       { background: #dcfce7; color: #15803d; }
+.audit-badge.action-update       { background: #fef3c7; color: #92400e; }
+.audit-badge.action-sign,
+.audit-badge.action-submit       { background: #e0e7ff; color: #3730a3; }
+.audit-badge.action-view         { background: #f1f5f9; color: #475569; }
+.audit-badge.action-default      { background: #f3f4f6; color: #475569; }
+
+/* 빈 결과 */
+.empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: #94a3b8;
+}
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+.empty-state p {
+    font-size: 14px;
+    margin: 0;
+}
+
+/* ─── 페이지네이션 ─── */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    padding: 20px 0;
+    flex-wrap: wrap;
+}
+
+.page-btn {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.page-btn:hover:not(:disabled):not(.active) {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.page-btn.active {
+    background: #4f46e5;
+    color: #ffffff;
+    border-color: #4f46e5;
+    font-weight: 700;
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-btn.ellipsis {
+    border: none;
+    background: transparent;
+    cursor: default;
+}
+
+/* ─── 상세 모달 ─── */
+.audit-detail-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+.audit-detail-modal.active {
+    display: flex;
+}
+
+.audit-detail-modal .modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.audit-detail-modal .modal-content {
+    position: relative;
+    width: 720px;
+    max-width: 92vw;
+    max-height: 88vh;
+    background: #ffffff;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+.audit-detail-modal .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1e293b;
+    color: #ffffff;
+}
+
+.audit-detail-modal .modal-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.audit-detail-modal .modal-close {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.audit-detail-modal .modal-close:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.audit-detail-modal .modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 10px 14px;
+    font-size: 13px;
+}
+
+.detail-grid dt {
+    color: #64748b;
+    font-weight: 600;
+}
+
+.detail-grid dd {
+    margin: 0;
+    color: #0f172a;
+    word-break: break-all;
+}
+
+.detail-grid dd pre {
+    margin: 0;
+    padding: 10px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow: auto;
+}
+
+/* 반응형 */
+@media (max-width: 1024px) {
+    .audit-content { padding: 14px; }
+    .filter-row { flex-direction: column; align-items: stretch; }
+    .filter-group { min-width: 0; }
+    .filter-buttons { justify-content: flex-end; }
+}

@@ -1,198 +1,261 @@
-/* ==========================================
- * 공통 버튼/섹션 스타일 — 전역 단일 정의
- * 모든 페이지에서 동일하게 동작. 페이지별 CSS에서 재정의 금지.
- * ========================================== */
+/* ==========================================================================
+   전역 버튼 시스템 (V3)
+   - 모든 페이지에서 동일한 크기/폰트/간격/색으로 동작
+   - 페이지별 CSS에서 버튼을 재정의하지 말 것
+   - 색상 variant는 5종만 사용: primary / secondary / danger / ghost / outline
+   - 기존 네이밍(btn-add, btn-cancel, btn-print, btn-edit, btn-delete …)은
+     모두 위 5종 중 하나의 alias로 매핑됨
+   ========================================================================== */
 
-/* ---------- 기본 버튼 공통 속성 ---------- */
-.btn-primary,
-.btn-secondary,
-.btn-danger,
-.btn-outline,
-.btn-print,
-.btn-back,
-.btn-add,
-.btn-cancel,
-.btn-confirm,
-.btn-reset {
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-size: 12.9px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
+/* --- 모든 버튼 공통 기본값 ---------------------------------------------- */
+.btn,
+.btn-primary, .btn-secondary, .btn-danger, .btn-ghost, .btn-outline,
+.btn-add, .btn-confirm, .btn-save, .btn-submit,
+.btn-cancel, .btn-reset, .btn-back,
+.btn-print, .btn-export, .btn-download,
+.btn-edit, .btn-delete {
+    /* 레이아웃 */
+    /* display는 !important 금지 — 인라인 style="display:none"이 정상 작동해야 함 (숨김 버튼) */
     display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: 1px solid transparent;
-    line-height: 1.2;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    vertical-align: middle;
+
+    /* 크기 — 모든 버튼 기본 36px 높이 */
+    height: 36px;
+    padding: 0 16px !important;
+    min-width: 72px;
+
+    /* 타이포 */
+    font-family: inherit !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    letter-spacing: -0.01em;
     white-space: nowrap;
+
+    /* 모양 */
+    border-radius: 8px !important;
+    border: 1px solid transparent !important;
+    cursor: pointer;
+    user-select: none;
+
+    /* 전환 */
+    transition: background-color .15s ease, color .15s ease,
+    border-color .15s ease, box-shadow .15s ease;
+    box-shadow: none;
 }
 
-.btn-primary i,
-.btn-secondary i,
-.btn-danger i,
-.btn-outline i,
-.btn-print i,
-.btn-back i,
-.btn-add i,
-.btn-cancel i,
-.btn-confirm i,
-.btn-reset i {
-    font-size: 12.9px;
+.btn i,
+.btn-primary i, .btn-secondary i, .btn-danger i, .btn-ghost i, .btn-outline i,
+.btn-add i, .btn-confirm i, .btn-save i, .btn-submit i,
+.btn-cancel i, .btn-reset i, .btn-back i,
+.btn-print i, .btn-export i, .btn-download i,
+.btn-edit i, .btn-delete i {
+    font-size: 13px !important;
+    line-height: 1 !important;
 }
 
-/* ---------- Primary (보라 그라데이션) ---------- */
+/* --- Primary (인디고 솔리드) -------------------------------------------- */
 .btn-primary,
 .btn-add,
-.btn-confirm {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-color: transparent;
+.btn-confirm,
+.btn-save,
+.btn-submit {
+    background: #4f46e5 !important;
+    color: #ffffff !important;
+    border-color: #4f46e5 !important;
 }
-
 .btn-primary:hover:not(:disabled),
 .btn-add:hover:not(:disabled),
-.btn-confirm:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+.btn-confirm:hover:not(:disabled),
+.btn-save:hover:not(:disabled),
+.btn-submit:hover:not(:disabled) {
+    background: #4338ca !important;
+    border-color: #4338ca !important;
+    color: #ffffff !important;
+}
+.btn-primary:active:not(:disabled),
+.btn-add:active:not(:disabled),
+.btn-confirm:active:not(:disabled),
+.btn-save:active:not(:disabled),
+.btn-submit:active:not(:disabled) {
+    background: #3730a3 !important;
+    border-color: #3730a3 !important;
 }
 
-/* ---------- Secondary (연회색) ---------- */
+/* --- Secondary (화이트 + 슬레이트 보더) --------------------------------- */
 .btn-secondary,
 .btn-cancel,
-.btn-reset {
-    background: #f5f7fa;
-    color: #555;
-    border: 1px solid #e0e0e0;
+.btn-reset,
+.btn-back {
+    background: #ffffff !important;
+    color: #475569 !important;
+    border-color: #e2e8f0 !important;
 }
-
 .btn-secondary:hover:not(:disabled),
 .btn-cancel:hover:not(:disabled),
-.btn-reset:hover:not(:disabled) {
-    background: #e3f2fd;
-    color: #1976d2;
-    border-color: #1976d2;
-    transform: translateY(-2px);
+.btn-reset:hover:not(:disabled),
+.btn-back:hover:not(:disabled) {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
 }
 
-/* ---------- Danger (빨강) ---------- */
+/* --- Danger (레드 솔리드) ------------------------------------------------ */
 .btn-danger {
-    background: #ef4444;
-    color: white;
-    border-color: transparent;
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    border-color: #dc2626 !important;
 }
-
 .btn-danger:hover:not(:disabled) {
-    background: #dc2626;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    background: #b91c1c !important;
+    border-color: #b91c1c !important;
 }
 
-/* ---------- Outline / Print / Back (흰 바탕 + 보라 테두리) ---------- */
+/* --- Outline / Tinted (소프트 인디고 틴트) ----------------------
+   인쇄·내보내기·다운로드 등 "보조이지만 식별되어야 하는 액션".
+   흰 건토 위에서도 덯나지 않게 연한 인디고 배경을 깔아 식별성 확보. */
 .btn-outline,
 .btn-print,
-.btn-back {
-    background: white;
-    color: #667eea;
-    border: 2px solid #667eea;
+.btn-export,
+.btn-download {
+    background: #eef2ff !important;
+    color: #4338ca !important;
+    border-color: #c7d2fe !important;
 }
-
-.btn-outline:hover:not(:disabled),
+.btn-outline:hover:not(:disabled):not(.btn-disabled),
 .btn-print:hover:not(:disabled):not(.btn-disabled),
-.btn-back:hover:not(:disabled) {
-    background: #667eea;
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+.btn-export:hover:not(:disabled):not(.btn-disabled),
+.btn-download:hover:not(:disabled):not(.btn-disabled) {
+    background: #e0e7ff !important;
+    color: #3730a3 !important;
+    border-color: #a5b4fc !important;
 }
 
-/* Print 비활성화 상태 */
-.btn-print.btn-disabled {
-    background: #e2e8f0;
-    border-color: #cbd5e1;
-    color: #94a3b8;
-    cursor: not-allowed;
+/* --- Ghost (배경 없음, 텍스트 전용) ------------------------------------- */
+.btn-ghost {
+    background: transparent !important;
+    color: #475569 !important;
+    border-color: transparent !important;
 }
-.btn-print.btn-disabled:hover {
-    transform: none;
-    box-shadow: none;
-    background: #e2e8f0;
-    color: #94a3b8;
+.btn-ghost:hover:not(:disabled) {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
 }
 
-/* ---------- 공통 disabled ---------- */
-.btn-primary:disabled,
-.btn-secondary:disabled,
-.btn-danger:disabled,
-.btn-outline:disabled,
-.btn-print:disabled,
-.btn-back:disabled,
-.btn-add:disabled,
-.btn-cancel:disabled,
-.btn-confirm:disabled,
-.btn-reset:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
-    box-shadow: none !important;
-}
-
-/* ---------- Size modifiers ---------- */
-.btn-lg {
-    padding: 14px 28px;
-    font-size: 15px;
-}
-.btn-lg i {
-    font-size: 15px;
-}
-
-.btn-sm {
-    padding: 6px 12px;
-    font-size: 11.5px;
-    gap: 6px;
-}
-.btn-sm i {
-    font-size: 11.5px;
-}
-
-/* ---------- 테이블 행 액션 버튼 (작은 파란/빨강) ---------- */
+/* --- 테이블 행 액션 전용 (수정/삭제) -------------------------------------
+   테이블 안에서 쓰는 작은 버튼. 높이 28px로 축소 + 소프트톤 */
 .btn-edit,
 .btn-delete {
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+    height: 28px;
+    padding: 0 10px !important;
+    min-width: 0;
+    font-size: 12px !important;
+    gap: 4px !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
 }
-
+.btn-edit i,
+.btn-delete i {
+    font-size: 11px !important;
+}
 .btn-edit {
-    background: #eff6ff;
-    color: #2563eb;
+    background: #eef2ff !important;
+    color: #4f46e5 !important;
+    border-color: #e0e7ff !important;
 }
 .btn-edit:hover:not(:disabled) {
-    background: #dbeafe;
-    transform: translateY(-1px);
+    background: #e0e7ff !important;
+    border-color: #c7d2fe !important;
+    color: #4338ca !important;
 }
-
 .btn-delete {
-    background: #fef2f2;
-    color: #dc2626;
+    background: #fef2f2 !important;
+    color: #dc2626 !important;
+    border-color: #fee2e2 !important;
 }
 .btn-delete:hover:not(:disabled) {
-    background: #fee2e2;
-    transform: translateY(-1px);
+    background: #fee2e2 !important;
+    border-color: #fecaca !important;
+    color: #b91c1c !important;
 }
 
-/* ==========================================
- * 섹션 타이틀 / 헤더 — 전역 단일 정의
- * ========================================== */
+/* --- 크기 모디파이어 ---------------------------------------------------- */
+.btn-sm {
+    height: 28px !important;
+    padding: 0 12px !important;
+    font-size: 12px !important;
+    min-width: 0 !important;
+    gap: 5px !important;
+}
+.btn-sm i { font-size: 11px !important; }
 
-/* 섹션 헤더 (섹션 상단의 좌우 배치 컨테이너) */
+.btn-lg {
+    height: 44px !important;
+    padding: 0 22px !important;
+    font-size: 14px !important;
+    min-width: 88px !important;
+}
+.btn-lg i { font-size: 14px !important; }
+
+/* --- 아이콘 전용(정사각형) -------------------------------------------- */
+.btn-icon {
+    width: 36px !important;
+    padding: 0 !important;
+    min-width: 0 !important;
+}
+.btn-icon.btn-sm { width: 28px !important; }
+.btn-icon.btn-lg { width: 44px !important; }
+
+/* --- 풀폭 --------------------------------------------------------------- */
+.btn-block {
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+/* --- 포커스 링 (키보드 접근성) ----------------------------------------- */
+.btn:focus-visible,
+.btn-primary:focus-visible, .btn-secondary:focus-visible,
+.btn-danger:focus-visible, .btn-ghost:focus-visible, .btn-outline:focus-visible,
+.btn-add:focus-visible, .btn-confirm:focus-visible, .btn-save:focus-visible, .btn-submit:focus-visible,
+.btn-cancel:focus-visible, .btn-reset:focus-visible, .btn-back:focus-visible,
+.btn-print:focus-visible, .btn-export:focus-visible, .btn-download:focus-visible,
+.btn-edit:focus-visible, .btn-delete:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25) !important;
+}
+.btn-danger:focus-visible {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25) !important;
+}
+
+/* --- Disabled 공통 ----------------------------------------------------- */
+.btn:disabled,
+.btn-primary:disabled, .btn-secondary:disabled, .btn-danger:disabled,
+.btn-ghost:disabled, .btn-outline:disabled,
+.btn-add:disabled, .btn-confirm:disabled, .btn-save:disabled, .btn-submit:disabled,
+.btn-cancel:disabled, .btn-reset:disabled, .btn-back:disabled,
+.btn-print:disabled, .btn-export:disabled, .btn-download:disabled,
+.btn-edit:disabled, .btn-delete:disabled,
+.btn-disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+}
+.btn-disabled:hover { background: inherit !important; color: inherit !important; }
+
+/* --- 버튼 그룹 --------------------------------------------------------- */
+.btn-group {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ==========================================================================
+   섹션 헤더 / 타이틀  (기존 정의 유지)
+   ========================================================================== */
 .section-header {
     display: flex;
     justify-content: space-between;
@@ -200,67 +263,61 @@
     margin-bottom: 20px;
     gap: 12px;
 }
-
 .section-header h2,
 .section-header h3 {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
-    color: #111827;
+    color: #0f172a;
     margin: 0;
     display: flex;
     align-items: center;
     gap: 8px;
+    letter-spacing: -0.02em;
 }
-
 .section-header h2 i,
 .section-header h3 i {
-    color: #667eea;
-    font-size: 16px;
+    color: #4f46e5;
+    font-size: 15px;
 }
 
-/* 섹션 타이틀 (폼 내부의 그룹 제목) */
 .section-title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
-    color: #333;
+    color: #0f172a;
     margin: 0 0 16px 0;
     display: flex;
     align-items: center;
     gap: 8px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #667eea;
+    border-bottom: 1px solid #e2e8f0;
+    letter-spacing: -0.01em;
 }
-
 .section-title::before {
     content: '';
     width: 3px;
-    height: 18px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    height: 16px;
+    background: #4f46e5;
     border-radius: 2px;
 }
-
 .section-title i {
-    color: #667eea;
-    font-size: 16px;
+    color: #4f46e5;
+    font-size: 14px;
 }
 
-/* ==========================================
- * Responsive — 모바일(폭 ≤ 768px)
- * ========================================== */
+/* ==========================================================================
+   반응형 (≤ 768px)
+   ========================================================================== */
 @media (max-width: 768px) {
-    .btn-primary,
-    .btn-secondary,
-    .btn-danger,
-    .btn-outline,
-    .btn-print,
-    .btn-back,
-    .btn-add,
-    .btn-cancel,
-    .btn-confirm,
-    .btn-reset {
+    .btn,
+    .btn-primary, .btn-secondary, .btn-danger, .btn-ghost, .btn-outline,
+    .btn-add, .btn-confirm, .btn-save, .btn-submit,
+    .btn-cancel, .btn-reset, .btn-back,
+    .btn-print, .btn-export, .btn-download {
         width: 100%;
-        justify-content: center;
     }
+    /* 테이블 액션은 좁은 화면에서도 인라인 유지 */
+    .btn-edit, .btn-delete,
+    .btn-sm, .btn-icon { width: auto !important; }
 
     .section-header {
         flex-direction: column;
