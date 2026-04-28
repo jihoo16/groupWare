@@ -38,8 +38,11 @@
     display: block;
 }
 
-/* 참석자 테이블 등 행 높이 고정 셀 — 서명 이미지 가운데 정렬 */
-td[data-slot] .sign-image {
+/* 참석자 테이블 전용 — 행 높이가 작아 서명 이미지 압축 + 가운데 정렬
+ * (결재란 .doc-approval-sign 같은 일반 td[data-slot]에는 적용되면 안 됨)
+ */
+#attendee-signature-table td[data-slot] .sign-image,
+tr.attendee-row td[data-slot] .sign-image {
     max-height: 40px;
     width: auto;
     margin: 0 auto;
@@ -111,10 +114,18 @@ td[data-slot] .sign-image {
 /* ============================================================
  * footer-signature (하단 signature 영역 — C0402/C0413 등)
  * td가 아닌 div 기반, 별도 레이아웃
+ *
+ * 기본 [data-slot] .sign-image 룰의 display:block 을 inline-block 으로 덮어써
+ * "연구책임자 : 홍길동 [서명]" 한 줄에 가지런히 흐르도록 한다 (줄내림 방지).
+ * width 도 제한해 가로로 너무 길어 줄바꿈되는 케이스 방지.
  * ============================================================ */
 .footer-signature[data-slot] .signature-seal .sign-image {
     height: 40px;
     max-height: 40px;
+    width: auto;
+    max-width: 120px;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 /* ============================================================
@@ -133,9 +144,8 @@ td[data-slot] .sign-image {
     .signature-offline .sign-area::after {
         display: none !important;
     }
+    /* 인쇄 시 색상 보존만 강제 — 크기는 각 문서 CSS의 셀 크기에 맞춰 자율 조정 */
     [data-slot] .sign-image {
-        max-width: 100px !important;
-        max-height: 60px !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }

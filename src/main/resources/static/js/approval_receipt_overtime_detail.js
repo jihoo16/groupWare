@@ -204,7 +204,8 @@ function renderOvertimePersons(attendees) {
         const sigInner = a.userIdx
             ? '<div class="sign-area"><span class="sign-placeholder"></span></div>'
             : '';
-        html += `<tr>
+        // attendee-row 클래스 — signature-cell.css 의 행높이 보존 룰 (max-height:40px) 매칭
+        html += `<tr class="attendee-row">
             <td style="text-align:center;">${index + 1}</td>
             <td style="text-align:center;">${a.userName || ''}</td>
             <td style="text-align:center;">${a.workTime || ''}</td>
@@ -217,7 +218,7 @@ function renderOvertimePersons(attendees) {
     // 최소 5행 보장
     const remaining = Math.max(0, 5 - attendees.length);
     for (let i = 0; i < remaining; i++) {
-        html += `<tr>
+        html += `<tr class="attendee-row">
             <td style="text-align:center;">${attendees.length + i + 1}</td>
             <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
         </tr>`;
