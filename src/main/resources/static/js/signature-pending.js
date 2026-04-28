@@ -92,6 +92,23 @@ const TYPE_ICONS = {
     'C0411': 'fa-calendar-alt', 'C0412': 'fa-users', 'C0413': 'fa-umbrella-beach'
 };
 
+// 문서 카테고리 — "비용 결재" vs "일반 서명요청" 구분 (받은요청 화면의 구분 컬럼)
+//   비용: 개인경비, 지출품의서, 재료비, 장비비
+//   일반: 그 외 (야근식대·출장·회의·연차·보고서 등)
+const DOC_CATEGORY_MONEY = new Set(['C0401', 'C0402', 'C0407', 'C0408']);
+
+function getDocCategory(docType) {
+    return DOC_CATEGORY_MONEY.has(docType) ? 'money' : 'general';
+}
+
+function renderCategoryBadge(docType) {
+    const cat = getDocCategory(docType);
+    if (cat === 'money') {
+        return '<span class="doc-category-badge category-money" title="비용 결재 — 개인경비/지출품의/재료비/장비비"><i class="fas fa-won-sign"></i> 비용</span>';
+    }
+    return '<span class="doc-category-badge category-general" title="일반 서명요청"><i class="fas fa-pen"></i> 일반</span>';
+}
+
 // ============================================================
 // 데이터 로드
 // ============================================================
@@ -237,6 +254,7 @@ function renderPendingTab() {
 
         return `<tr>
             <td><input type="checkbox" class="sig-check" data-idx="${dsIdx}" data-index="${start + i}"></td>
+            <td>${renderCategoryBadge(item.documentType)}</td>
             <td><span class="doc-type-label"><i class="fas ${icon}"></i> ${item.documentTypeName || item.documentType}</span></td>
             <td style="font-size:11px; color:#64748b;">${item.documentNo || '-'}</td>
             <td class="doc-title-cell" onclick="window.location.href='${href}'"${tipAttr}>${title}</td>
@@ -286,6 +304,7 @@ function renderCompletedTab() {
         const drafter = hl(item.drafterName || '-');
 
         return `<tr style="cursor:pointer;" onclick="window.location.href='${href}'">
+            <td>${renderCategoryBadge(item.documentType)}</td>
             <td><span class="doc-type-label completed"><i class="fas ${icon}"></i> ${item.documentTypeName || item.documentType}</span></td>
             <td style="font-size:11px; color:#64748b;">${item.documentNo || '-'}</td>
             <td class="doc-title-cell"${tipAttr}>${title}</td>
@@ -340,13 +359,16 @@ function renderRequestedTab() {
         const title = hl(truncate(fullTitle, 20));
         const tipAttr = fullTitle.length > 20 ? ` data-tip="${fullTitle.replace(/"/g, '&quot;')}"` : '';
         const progressText = item.progress || '-';
+        const pendingCell = renderPendingSignersCell(item);
 
         return `<tr style="cursor:pointer;" onclick="window.location.href='${href}'">
+            <td>${renderCategoryBadge(item.documentType)}</td>
             <td><span class="doc-type-label"><i class="fas ${icon}"></i> ${item.documentTypeName || item.documentType}</span></td>
             <td style="font-size:11px; color:#64748b;">${item.documentNo || '-'}</td>
             <td class="doc-title-cell"${tipAttr}>${title}</td>
             <td>${statusBadge(item.statusCode, item.statusName, item.documentType)}</td>
             <td><span class="progress-badge clickable" onclick="event.stopPropagation(); showSignerDetail(${item.documentIdx}, 'requested')">${progressText}</span></td>
+            <td onclick="event.stopPropagation(); showSignerDetail(${item.documentIdx}, 'requested')" style="cursor:pointer;">${pendingCell}</td>
             <td>${dateStr}</td>
             <td><button class="btn-go" onclick="event.stopPropagation(); window.location.href='${href}';"><i class="fas fa-arrow-right"></i></button></td>
         </tr>`;
@@ -405,6 +427,10 @@ function handleSort(th) {
         if (key === 'statusName') {
             va = STATUS_ORDER[a.statusCode] || 99;
             vb = STATUS_ORDER[b.statusCode] || 99;
+        } else if (key === 'docCategory') {
+            // 비용(money) 먼저, 일반(general) 다음
+            va = getDocCategory(a.documentType);
+            vb = getDocCategory(b.documentType);
         } else {
             va = a[key] || '';
             vb = b[key] || '';
@@ -608,6 +634,39 @@ function showSignerDetail(documentIdx, source) {
 function getDetailUrl(item) {
     const base = DETAIL_URLS[item.documentType];
     return base ? `${base}?documentIdx=${item.documentIdx}` : '#';
+}
+
+/**
+ * "보낸 요청" 행의 미서명자 셀 — 누가 막고 있는지 한눈에.
+ * - 현재 차례에 도착(요청됨, 미서명) → 진하게 + 호박색 점
+ * - 순서 대기                     → 옅은 회색
+ * - 모두 서명 완료                → "전원 완료"
+ * 길면 앞 2명 + "외 N명" 으로 줄이고, 전체 명단은 셀 클릭 시 모달.
+ */
+function renderPendingSignersCell(item) {
+    if (!item || !Array.isArray(item.signers)) return '<span style="color:#94a3b8;">-</span>';
+    const unsigned = item.signers.filter(s => !s.signed);
+    if (unsigned.length === 0) {
+        return '<span style="color:#059669; font-weight:600;">전원 완료</span>';
+    }
+    const active = unsigned.filter(s => s.requestedAt);
+    const queued = unsigned.filter(s => !s.requestedAt);
+
+    const fmt = (s, isActive) => {
+        const dot = isActive
+            ? '<span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#f59e0b; margin-right:5px; vertical-align:middle;"></span>'
+            : '';
+        const color = isActive ? '#b45309' : '#94a3b8';
+        const weight = isActive ? '600' : '400';
+        const slot = s.slotLabel ? ` <span style="font-size:10px; color:#94a3b8;">(${s.slotLabel})</span>` : '';
+        return `<span style="color:${color}; font-weight:${weight};">${dot}${s.signerName || '-'}${slot}</span>`;
+    };
+
+    const ordered = [...active, ...queued];
+    const max = 2;
+    const head = ordered.slice(0, max).map((s, i) => fmt(s, i < active.length)).join(', ');
+    const more = ordered.length > max ? ` <span style="color:#64748b; font-size:11px;">외 ${ordered.length - max}명</span>` : '';
+    return head + more;
 }
 
 function formatDateTime(dateStr) {

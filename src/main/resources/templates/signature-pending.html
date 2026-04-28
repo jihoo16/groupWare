@@ -81,7 +81,8 @@
                         <thead>
                             <tr>
                                 <th style="width:4%;"><input type="checkbox" id="selectAllHeader"></th>
-                                <th style="width:9%; cursor:pointer;" data-sort="documentTypeName">유형 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:6%; cursor:pointer;" data-sort="docCategory">구분 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:8%; cursor:pointer;" data-sort="documentTypeName">유형 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="width:10%; cursor:pointer;" data-sort="documentNo">문서번호 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="cursor:pointer;" data-sort="documentTitle">문서 제목 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="width:10%; cursor:pointer;" data-sort="statusName">진행 상태 <i class="fas fa-sort sort-icon"></i></th>
@@ -108,7 +109,8 @@
                     <table class="documents-table" id="completedTable">
                         <thead>
                             <tr>
-                                <th style="width:9%; cursor:pointer;" data-sort="documentTypeName" data-tab="completed">유형 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:6%; cursor:pointer;" data-sort="docCategory" data-tab="completed">구분 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:8%; cursor:pointer;" data-sort="documentTypeName" data-tab="completed">유형 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="width:10%; cursor:pointer;" data-sort="documentNo" data-tab="completed">문서번호 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="cursor:pointer;" data-sort="documentTitle" data-tab="completed">문서 제목 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="width:10%; cursor:pointer;" data-sort="statusName" data-tab="completed">최종 상태 <i class="fas fa-sort sort-icon"></i></th>
@@ -135,11 +137,13 @@
                     <table class="documents-table" id="requestedTable">
                         <thead>
                             <tr>
-                                <th style="width:9%; cursor:pointer;" data-sort="documentTypeName" data-tab="requested">유형 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:6%; cursor:pointer;" data-sort="docCategory" data-tab="requested">구분 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:8%; cursor:pointer;" data-sort="documentTypeName" data-tab="requested">유형 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="width:10%; cursor:pointer;" data-sort="documentNo" data-tab="requested">문서번호 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="cursor:pointer;" data-sort="documentTitle" data-tab="requested">문서 제목 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="width:10%; cursor:pointer;" data-sort="statusName" data-tab="requested">진행 상태 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="width:6%; cursor:pointer;" data-sort="progress" data-tab="requested">현황 <i class="fas fa-sort sort-icon"></i></th>
+                                <th style="width:18%;">미서명자</th>
                                 <th style="width:10%; cursor:pointer;" data-sort="createdAt" data-tab="requested">생성 일시 <i class="fas fa-sort sort-icon"></i></th>
                                 <th style="width:4%;">이동</th>
                             </tr>
