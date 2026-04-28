@@ -12,6 +12,7 @@ import com.pinecni.erp.api.document.repository.ReceiptPurchaseItemRepository;
 import com.pinecni.erp.api.document.repository.ReceiptPurchaseRepository;
 import com.pinecni.erp.api.project.repository.ProjectCardRepository;
 import com.pinecni.erp.api.project.service.ProjectMemberValidationService;
+import com.pinecni.erp.api.signature.repository.DocumentSignatureRepository;
 import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.constant.CodeConstants;
 import com.pinecni.erp.entity.ApprovalDocument;
@@ -54,6 +55,7 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
     private final ProjectCardRepository projectCardRepository;
     private final ProjectMemberValidationService projectMemberValidationService;
     private final SignatureService signatureService;
+    private final DocumentSignatureRepository documentSignatureRepository;
 
     @Value("${file.base.dir}")
     private String baseDir;
@@ -136,6 +138,9 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                 : CodeConstants.DocumentType.RECEIPT_EQUIPMENT;
 
         // 1. approval_documents 생성 및 문서번호 채번
+        // 연구비증빙은 신청자(authorIdx = pu_applicant 선택자)가 곧 DRAFTER —
+        // 로그인 사용자(uploadUserIdx)가 아니라 선택된 연구참여인력이 서명 주체임.
+        Long drafterIdx = dto.getAuthorIdx() != null ? dto.getAuthorIdx() : uploadUserIdx;
         String documentNo = documentSequenceService.generateDocumentNumber(docType.getCode(), docType.getPrefix(), uploadUserIdx);
         String docTitle = (dto.getDocumentTitle() != null && !dto.getDocumentTitle().isBlank())
                 ? dto.getDocumentTitle() : docType.getName();
@@ -146,7 +151,7 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                 .isProject(true)
                 .content(dto.getDocumentContent())
                 .status(CodeConstants.DocumentStatus.DRAFTED.getCode())
-                .drafterUserIdx(uploadUserIdx)
+                .drafterUserIdx(drafterIdx)
                 .createdUserIdx(uploadUserIdx)
                 .updatedUserIdx(uploadUserIdx)
                 .build();
@@ -239,6 +244,23 @@ public class ReceiptPurchaseServiceImpl implements ReceiptPurchaseService {
                     doc.setTitle(dto.getDocumentTitle());
                 }
                 doc.setContent(dto.getDocumentContent());
+                // 신청자(authorIdx) 변경 시 drafterUserIdx 및 미서명 DRAFTER 행 signer 동기화
+                if (dto.getAuthorIdx() != null && !dto.getAuthorIdx().equals(doc.getDrafterUserIdx())) {
+                    Long oldDrafter = doc.getDrafterUserIdx();
+                    doc.setDrafterUserIdx(dto.getAuthorIdx());
+                    if (oldDrafter != null) {
+                        documentSignatureRepository
+                                .findByDocumentIdxAndSignerUserIdxAndSignatureSlotAndIsExternal(
+                                        doc.getIdx(), oldDrafter,
+                                        CodeConstants.SignatureSlot.DRAFTER.getCode(), false)
+                                .filter(sig -> CodeConstants.DocumentSignatureStatus.PENDING.getCode()
+                                        .equals(sig.getStatus()))
+                                .ifPresent(sig -> {
+                                    sig.setSignerUserIdx(dto.getAuthorIdx());
+                                    documentSignatureRepository.save(sig);
+                                });
+                    }
+                }
                 doc.setUpdatedUserIdx(uploadUserIdx);
                 approvalDocumentRepository.save(doc);
             });
