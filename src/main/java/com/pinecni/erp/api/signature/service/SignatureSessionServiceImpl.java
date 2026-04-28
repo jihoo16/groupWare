@@ -5,6 +5,7 @@ import com.pinecni.erp.api.audit.service.AuditLogService;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.externalperson.repository.ExternalPersonRepository;
 import com.pinecni.erp.api.signature.dto.SignatureEventMessage;
+import com.pinecni.erp.api.signature.event.SignatureCompletedEvent;
 import com.pinecni.erp.api.signature.dto.SignatureSessionCreateRequest;
 import com.pinecni.erp.api.signature.dto.SignatureSessionResponse;
 import com.pinecni.erp.api.signature.dto.SignatureSubmitRequest;
@@ -27,6 +28,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,6 +59,7 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
     private final SignatureWebSocketNotifier wsNotifier;
     private final SignatureService signatureService;
     private final AuditLogService auditLogService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${signature.session.ttl-seconds:300}")
     private int sessionTtlSeconds;
@@ -80,9 +83,12 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
         ApprovalDocument document = approvalDocumentRepository.findById(documentIdx)
                 .orElseThrow(() -> new EntityNotFoundException("문서를 찾을 수 없습니다: " + documentIdx));
 
-        // 2. 로그인 사용자가 이 슬롯의 서명자인지 확인
+        // 2. 로그인 사용자(내부)가 이 슬롯의 서명자인지 확인
+        //    isExternal=false 명시 — external_person.idx 와 users.idx 가 같은 숫자일 때
+        //    외부인 슬롯이 잘못 매칭되는 폴리모픽 충돌 방지
         Optional<DocumentSignature> docSigOpt = documentSignatureRepository
-                .findByDocumentIdxAndSignerUserIdxAndSignatureSlot(documentIdx, loginUserIdx, signatureSlot);
+                .findByDocumentIdxAndSignerUserIdxAndSignatureSlotAndIsExternal(
+                        documentIdx, loginUserIdx, signatureSlot, false);
 
         if (docSigOpt.isEmpty()) {
             // 이 문서에 본인 서명칸이 있는지 확인
@@ -499,7 +505,47 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
                         && CodeConstants.DocumentSignatureStatus.PENDING.getCode().equals(ds.getStatus())
                         && Boolean.TRUE.equals(ds.getIsExternal()) == sessionIsExternal)
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("서명할 메인 슬롯이 없습니다"));
+                .orElseThrow(() -> {
+                    // 진단: 문서 전체 슬롯 + 같은 사용자 슬롯 상세 로깅
+                    String docNo;
+                    try {
+                        docNo = approvalDocumentRepository.findById(documentIdx)
+                                .map(ApprovalDocument::getDocumentNo).orElse("(미존재)");
+                    } catch (Exception e) { docNo = "(조회실패)"; }
+                    String allRows = docSigs.stream().map(ds -> String.format(
+                            "[idx=%d slot=%s order=%d signerUserIdx=%d isExternal=%s linkedIdx=%s status=%s requestedAt=%s]",
+                            ds.getIdx(), ds.getSignatureSlot(), ds.getSignatureOrder(),
+                            ds.getSignerUserIdx(),
+                            String.valueOf(Boolean.TRUE.equals(ds.getIsExternal())),
+                            ds.getLinkedSignatureIdx() == null ? "null" : ds.getLinkedSignatureIdx().toString(),
+                            ds.getStatus(),
+                            ds.getRequestedAt() == null ? "null" : ds.getRequestedAt().toString()))
+                            .collect(java.util.stream.Collectors.joining(", "));
+                    // 내부/외부 분기 — 같은 idx 라도 isExternal 다르면 다른 사람
+                    List<DocumentSignature> mySlots = docSigs.stream()
+                            .filter(ds -> ds.getSignerUserIdx().equals(signerUserIdx)
+                                    && Boolean.TRUE.equals(ds.getIsExternal()) == sessionIsExternal)
+                            .toList();
+                    boolean alreadySigned = mySlots.stream()
+                            .anyMatch(ds -> ds.getLinkedSignatureIdx() == null
+                                    && CodeConstants.DocumentSignatureStatus.COMPLETED.getCode()
+                                            .equals(ds.getStatus())
+                                    && Boolean.TRUE.equals(ds.getIsExternal()) == sessionIsExternal);
+                    boolean onlyLinked = !mySlots.isEmpty()
+                            && mySlots.stream().allMatch(ds -> ds.getLinkedSignatureIdx() != null);
+                    boolean externalMismatch = mySlots.stream()
+                            .anyMatch(ds -> Boolean.TRUE.equals(ds.getIsExternal()) != sessionIsExternal);
+                    log.warn("서명 가능 슬롯 없음: documentIdx={} (documentNo={}), signerUserIdx={}, sessionIsExternal={}, "
+                                    + "mySlotCount={}, alreadySigned={}, onlyLinked={}, externalMismatch={}, allRows={}",
+                            documentIdx, docNo, signerUserIdx, sessionIsExternal,
+                            mySlots.size(), alreadySigned, onlyLinked, externalMismatch, allRows);
+                    if (alreadySigned) {
+                        return new IllegalStateException(
+                                "이 문서의 서명은 이미 처리된 것 같아요.\n다른 기기에서 먼저 서명되었거나, 잠시 전에 완료된 서명입니다.");
+                    }
+                    return new IllegalStateException(
+                            "이 문서에서 서명하실 칸을 찾지 못했어요.\nPC에서 서명 목록을 새로고침한 뒤 다시 시도해 주세요.");
+                });
 
         LocalDateTime now = LocalDateTime.now();
         List<Long> completedIdxList = new ArrayList<>();
@@ -585,6 +631,17 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
                     "서명 완료: " + actor + ", slot=" + mainRow.getSignatureSlot(), null);
         }
         // 외부인은 audit.user_idx (NOT NULL) 제약상 기록 불가 — session 테이블에 이미 기록됨
+
+        // 7. 이 서명으로 문서 전체 서명이 완료된 경우, 카테고리 B 자동 PDF 트리거 이벤트 발행.
+        //    @TransactionalEventListener(AFTER_COMMIT) 가 받아서 비동기로 PDF 생성 — 메인 트랜잭션 분리.
+        if (signatureService.isAllSignaturesComplete(documentIdx)) {
+            String docType = approvalDocumentRepository.findById(documentIdx)
+                    .map(ApprovalDocument::getDocumentType).orElse(null);
+            if (docType != null) {
+                eventPublisher.publishEvent(new SignatureCompletedEvent(documentIdx, docType));
+                log.info("[자동 PDF] 트리거 이벤트 발행: documentIdx={}, docType={}", documentIdx, docType);
+            }
+        }
     }
 
     // ============================================================

@@ -22,9 +22,17 @@ public interface DocumentSignatureRepository extends JpaRepository<DocumentSigna
 
     /**
      * 문서 + 서명자 + 슬롯으로 특정 서명 행 조회
+     * <p>주의: signerUserIdx 는 isExternal 에 따라 users.idx 또는 external_person.idx 를 가리키므로
+     *        polymorphic 충돌 방지를 위해 호출부에서 isExternal 분기를 명시한 메서드를 우선 사용한다.</p>
      */
     Optional<DocumentSignature> findByDocumentIdxAndSignerUserIdxAndSignatureSlot(
             Long documentIdx, Long signerUserIdx, String signatureSlot);
+
+    /**
+     * 문서 + 서명자 + 슬롯 + isExternal 로 특정 서명 행 조회 (polymorphic idx 충돌 방지)
+     */
+    Optional<DocumentSignature> findByDocumentIdxAndSignerUserIdxAndSignatureSlotAndIsExternal(
+            Long documentIdx, Long signerUserIdx, String signatureSlot, Boolean isExternal);
 
     /**
      * 문서의 미완료 서명 수 (C1402/C1403 외, linked 제외)
@@ -65,22 +73,37 @@ public interface DocumentSignatureRepository extends JpaRepository<DocumentSigna
     List<DocumentSignature> findByLinkedSignatureIdx(Long linkedSignatureIdx);
 
     /**
-     * 사용자의 미처리 서명 수 (홈 화면 알림 배지용)
+     * 사용자(내부)의 미처리 서명 수 (홈 화면 알림 배지용)
      * - status=C1401 (서명대기) + requested_at NOT NULL (차례 도래)
+     * - is_external=false 강제 — users.idx ↔ external_person.idx 폴리모픽 충돌 방지
      */
     @Query("SELECT COUNT(ds) FROM DocumentSignature ds " +
            "WHERE ds.signerUserIdx = :userIdx " +
+           "AND ds.isExternal = false " +
            "AND ds.status = 'C1401' " +
            "AND ds.requestedAt IS NOT NULL " +
            "AND ds.linkedSignatureIdx IS NULL")
     long countPendingBySignerUserIdx(@Param("userIdx") Long userIdx);
 
     /**
-     * 사용자의 서명 대기 목록 (홈 위젯용)
-     * - 차례 도래 + 미서명 + linked 아님
+     * 사용자(내부)의 PENDING 서명 행 전체 (requested_at 무관) — 자가복구용.
+     * <p>"활성화되어야 할 행이 누락된" 상태를 검출하려면 requested_at 가 NULL 인 행도 봐야 함.</p>
      */
     @Query("SELECT ds FROM DocumentSignature ds " +
            "WHERE ds.signerUserIdx = :userIdx " +
+           "AND ds.isExternal = false " +
+           "AND ds.status = 'C1401' " +
+           "AND ds.linkedSignatureIdx IS NULL")
+    List<DocumentSignature> findAllPendingBySignerUserIdxIgnoringRequested(@Param("userIdx") Long userIdx);
+
+    /**
+     * 사용자(내부)의 서명 대기 목록 (홈 위젯용)
+     * - 차례 도래 + 미서명 + linked 아님
+     * - is_external=false 강제 (외부인 행이 동일 idx로 끼어드는 폴리모픽 충돌 방지)
+     */
+    @Query("SELECT ds FROM DocumentSignature ds " +
+           "WHERE ds.signerUserIdx = :userIdx " +
+           "AND ds.isExternal = false " +
            "AND ds.status = 'C1401' " +
            "AND ds.requestedAt IS NOT NULL " +
            "AND ds.linkedSignatureIdx IS NULL " +
@@ -88,10 +111,12 @@ public interface DocumentSignatureRepository extends JpaRepository<DocumentSigna
     List<DocumentSignature> findPendingBySignerUserIdx(@Param("userIdx") Long userIdx);
 
     /**
-     * 사용자의 서명 완료 이력 (최근 순)
+     * 사용자(내부)의 서명 완료 이력 (최근 순)
+     * - is_external=false 강제 (폴리모픽 충돌 방지)
      */
     @Query("SELECT ds FROM DocumentSignature ds " +
            "WHERE ds.signerUserIdx = :userIdx " +
+           "AND ds.isExternal = false " +
            "AND ds.status = 'C1402' " +
            "AND ds.linkedSignatureIdx IS NULL " +
            "ORDER BY ds.signedAt DESC")

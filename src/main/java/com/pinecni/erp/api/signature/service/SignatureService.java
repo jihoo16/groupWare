@@ -120,4 +120,11 @@ public interface SignatureService {
      * 내가 요청한 서명 목록 (내가 만든 문서의 서명 진행 현황)
      */
     List<Map<String, Object>> getRequestedListForUser(Long userIdx);
+
+    /**
+     * 문서의 가장 최근 서명 완료 시각.
+     * <p>받은 PDF 영역이 페이지 로드 시 "방금 서명 끝난 문서인지" 판별해
+     * "생성 중" 상태로 자동 진입할지 결정하는 데 사용.</p>
+     */
+    java.util.Optional<java.time.LocalDateTime> getLastSignedAt(Long documentIdx);
 }

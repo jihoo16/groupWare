@@ -316,6 +316,37 @@ public class SignatureServiceImpl implements SignatureService {
         }
     }
 
+    /**
+     * 사용자의 PENDING DS 행 중 "이전 order 모두 완료인데 requested_at 누락" 인 케이스를
+     * 즉석에서 활성화. 받은 요청 / 카운트 조회 진입 시 호출되어 advanceToNextOrder 가
+     * 어떤 이유로(이벤트 누락·과거 버그·동시성·수동 DB 보정 등) 빠뜨린 활성화를 보정.
+     *
+     * <p>비용: 사용자당 PENDING 행 수만큼 문서당 한 번씩 advance 호출 (내부적으로
+     * 자가복구형 reconcile 이라 idempotent). 일반 사용자는 PENDING 이 한 자릿수라 영향 미미.</p>
+     */
+    private void selfHealActivationForUser(Long userIdx) {
+        try {
+            List<DocumentSignature> myPending = documentSignatureRepository
+                    .findAllPendingBySignerUserIdxIgnoringRequested(userIdx);
+            // 같은 문서가 여러 행이어도 advance 는 idempotent — 문서별 한 번이면 충분
+            java.util.Set<Long> docIdxList = new java.util.HashSet<>();
+            for (DocumentSignature ds : myPending) {
+                if (ds.getRequestedAt() == null) docIdxList.add(ds.getDocumentIdx());
+            }
+            for (Long docIdx : docIdxList) {
+                advanceToNextOrder(docIdx, 0);
+            }
+            if (!docIdxList.isEmpty()) {
+                log.info("[자가복구] 사용자 {} 의 미활성 단계 보정 시도: documentIdxList={}",
+                        userIdx, docIdxList);
+            }
+        } catch (Exception e) {
+            // 자가복구 실패해도 기본 조회는 진행 — 화면이 빈 채로라도 응답
+            log.warn("[자가복구] 보정 중 오류 (조회는 계속): userIdx={}, error={}",
+                    userIdx, e.getMessage());
+        }
+    }
+
     private List<Long> resolveProjectLead(Long projectIdx) {
         if (projectIdx == null) {
             log.warn("PROJECT_LEAD 결정 실패: projectIdx가 전달되지 않음");
@@ -454,6 +485,15 @@ public class SignatureServiceImpl implements SignatureService {
     }
 
     @Override
+    public Optional<LocalDateTime> getLastSignedAt(Long documentIdx) {
+        return documentSignatureRepository.findByDocumentIdxOrderBySignatureOrderAscIdxAsc(documentIdx)
+                .stream()
+                .map(DocumentSignature::getSignedAt)
+                .filter(java.util.Objects::nonNull)
+                .max(LocalDateTime::compareTo);
+    }
+
+    @Override
     public boolean hasAnySignatureCaptured(Long documentIdx) {
         return documentSignatureRepository.existsCompletedByDocumentIdx(documentIdx);
     }
@@ -541,7 +581,9 @@ public class SignatureServiceImpl implements SignatureService {
     // ============================================================
 
     @Override
+    @Transactional
     public long countPendingForUser(Long userIdx) {
+        selfHealActivationForUser(userIdx);
         // 삭제된 문서 제외 — list와 동일한 기준
         return documentSignatureRepository.findPendingBySignerUserIdx(userIdx).stream()
                 .filter(ds -> {
@@ -552,7 +594,9 @@ public class SignatureServiceImpl implements SignatureService {
     }
 
     @Override
+    @Transactional
     public List<Map<String, Object>> getPendingListForUser(Long userIdx) {
+        selfHealActivationForUser(userIdx);
         List<DocumentSignature> rows = documentSignatureRepository
                 .findPendingBySignerUserIdx(userIdx);
 
@@ -701,8 +745,9 @@ public class SignatureServiceImpl implements SignatureService {
             DocumentSignature ds = documentSignatureRepository.findById(dsIdx).orElse(null);
             if (ds == null) continue;
 
-            // 본인 서명칸만 처리
+            // 본인(내부) 서명칸만 처리 — 외부인 행은 idx 충돌해도 절대 적용 금지
             if (!ds.getSignerUserIdx().equals(userIdx)) continue;
+            if (Boolean.TRUE.equals(ds.getIsExternal())) continue;
             // 이미 완료된 건 스킵
             if (!CodeConstants.DocumentSignatureStatus.PENDING.getCode().equals(ds.getStatus())) continue;
             // linked 슬롯 스킵

@@ -7,6 +7,7 @@ import com.pinecni.erp.api.signature.dto.SignatureSessionResponse;
 import com.pinecni.erp.api.signature.dto.SignatureSubmitRequest;
 import com.pinecni.erp.api.signature.dto.SignatureVerifyRequest;
 import com.pinecni.erp.api.signature.dto.SignatureVerifyResponse;
+import com.pinecni.erp.api.signature.service.AutoSignedPdfService;
 import com.pinecni.erp.api.signature.service.SignatureService;
 import com.pinecni.erp.api.signature.service.SignatureSessionService;
 import com.pinecni.erp.constant.CodeConstants.AuditAction;
@@ -39,6 +40,7 @@ public class SignatureController {
     private final SignatureSessionService sessionService;
     private final SignatureService signatureService;
     private final AuditLogService auditLogService;
+    private final AutoSignedPdfService autoSignedPdfService;
 
     // ============================================================
     // 서명 세션 (QR 플로우)
@@ -204,6 +206,70 @@ public class SignatureController {
     public ResponseEntity<Map<String, Boolean>> isComplete(@PathVariable Long documentIdx) {
         boolean complete = signatureService.isAllSignaturesComplete(documentIdx);
         return ResponseEntity.ok(Map.of("complete", complete));
+    }
+
+    /**
+     * 카테고리 B 자동 서명 PDF 상태 조회 (UI 분기용)
+     * <ul>
+     *   <li>complete=true / hasFinalPdf=true  → 다운로드 버튼 표시</li>
+     *   <li>complete=true / hasFinalPdf=false → "PDF 다시 생성하기" 안내 + 재시도 버튼</li>
+     *   <li>complete=false                    → 영역 숨김</li>
+     * </ul>
+     */
+    @GetMapping("/document/{documentIdx}/final-pdf-status")
+    public ResponseEntity<Map<String, Object>> getFinalPdfStatus(@PathVariable Long documentIdx,
+                                                                   HttpSession session) {
+        if (session.getAttribute("userIdx") == null) return ResponseEntity.status(401).build();
+        boolean complete = signatureService.isAllSignaturesComplete(documentIdx);
+        var info = complete ? autoSignedPdfService.findFinalPdfInfo(documentIdx) : null;
+        java.util.Map<String, Object> body = new java.util.HashMap<>();
+        body.put("signatureComplete", complete);
+        body.put("hasFinalPdf", info != null);
+        if (info != null) {
+            body.put("attachmentIdx", info.attachmentIdx());
+            body.put("fileName", info.fileName());
+            body.put("downloadUrl", info.downloadUrl());
+            body.put("createdAt", info.createdAt());
+        }
+        // 가장 최근 서명 시각 (페이지 로드 시 "방금 서명 완료된 문서인지" 판별용 — 30초 이내면 "생성 중" 추정)
+        if (complete) {
+            signatureService.getLastSignedAt(documentIdx).ifPresent(ts -> body.put("lastSignedAt", ts));
+        }
+        return ResponseEntity.ok(body);
+    }
+
+    /**
+     * 자동 서명 PDF 수동 재생성 (자동 트리거 실패·지연 시 사용자가 직접 재시도).
+     * <p>권한: 기안자 또는 관리자 — 단, 본 컨트롤러에선 로그인 + 서명 완료 여부만 검증.
+     * 더 정밀한 권한 체크는 추후 추가.</p>
+     * <p>동기 호출 — 사용자 화면에서 즉시 결과 확인.</p>
+     */
+    @PostMapping("/document/{documentIdx}/regenerate-pdf")
+    public ResponseEntity<Map<String, Object>> regenerateFinalPdf(@PathVariable Long documentIdx,
+                                                                    HttpSession session) {
+        Long userIdx = (Long) session.getAttribute("userIdx");
+        if (userIdx == null) return ResponseEntity.status(401).build();
+
+        if (!signatureService.isAllSignaturesComplete(documentIdx)) {
+            return ResponseEntity.status(409).body(Map.of(
+                    "success", false,
+                    "message", "전자서명이 모두 완료된 후에 PDF를 생성할 수 있어요."
+            ));
+        }
+        try {
+            autoSignedPdfService.generate(documentIdx);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "최종 서명 PDF를 다시 생성했어요."
+            ));
+        } catch (Exception e) {
+            log.error("[자동 PDF] 수동 재생성 실패: documentIdx={}, requester={}, error={}",
+                    documentIdx, userIdx, e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of(
+                    "success", false,
+                    "message", "PDF 생성에 실패했어요. 잠시 후 다시 시도해 주세요."
+            ));
+        }
     }
 
     // ============================================================

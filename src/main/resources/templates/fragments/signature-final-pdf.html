@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<!--
+  카테고리 B 문서 (대표이사 수기 서명 불필요) 의 전자서명 완료 후
+  자동 생성되는 "최종 서명 PDF" 영역 fragment.
+
+  사용:
+    <div th:replace="fragments/signature-final-pdf :: section"></div>
+
+  3가지 상태:
+    1) ready     — 서명 완료 + PDF 있음 → 다운로드/재생성 버튼
+    2) generating — 마지막 서명 직후 자동 생성 진행 중 (스피너 + 자동 polling)
+    3) pending   — 서명은 끝났지만 PDF 없음·polling 시간초과 → 수동 재시도 안내
+
+  외부 트리거:
+    window.startFinalPdfPolling()  — 마지막 서명 WS 이벤트 받았을 때 즉시 호출
+    window.refreshFinalPdfSection() — 단순 상태 새로고침
+-->
+<body>
+
+<section th:fragment="section" class="final-pdf-section" id="finalPdfSection" style="display:none;">
+    <div class="final-pdf-card">
+        <!-- 상태 1: 서명 완료 + PDF 있음 -->
+        <div class="final-pdf-state final-pdf-ready" id="finalPdfReady" style="display:none;">
+            <div class="final-pdf-header">
+                <i class="fas fa-file-pdf"></i>
+                <span class="final-pdf-title">최종 서명 PDF</span>
+            </div>
+            <div class="final-pdf-body">
+                <div class="final-pdf-filename" id="finalPdfFileName">-</div>
+                <div class="final-pdf-meta">
+                    전자서명이 모두 완료되어 자동으로 생성된 공식 양식이에요.
+                </div>
+                <div class="final-pdf-actions">
+                    <a href="#" class="btn-final-pdf primary" id="finalPdfDownloadBtn">
+                        <i class="fas fa-download"></i> 다운로드
+                    </a>
+                    <button type="button" class="btn-final-pdf secondary" id="finalPdfRegenerateBtn">
+                        <i class="fas fa-sync"></i> 다시 생성하기
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 상태 2: 자동 생성 진행 중 (방금 마지막 서명 완료) -->
+        <div class="final-pdf-state final-pdf-generating" id="finalPdfGenerating" style="display:none;">
+            <div class="final-pdf-header generating">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span class="final-pdf-title">최종 서명 PDF 생성 중…</span>
+            </div>
+            <div class="final-pdf-body">
+                <div class="final-pdf-meta">
+                    전자서명이 모두 완료되어 공식 양식 PDF를 자동으로 만들고 있어요.
+                    <br>잠시만 기다려 주세요. (보통 <b>5~10초</b> 정도 걸려요)
+                </div>
+            </div>
+        </div>
+
+        <!-- 상태 3: 서명 완료 + PDF 없음 (자동 생성 실패·시간초과) -->
+        <div class="final-pdf-state final-pdf-pending" id="finalPdfPending" style="display:none;">
+            <div class="final-pdf-header warning">
+                <i class="fas fa-exclamation-circle"></i>
+                <span class="final-pdf-title">최종 서명 PDF가 아직 만들어지지 않았어요</span>
+            </div>
+            <div class="final-pdf-body">
+                <div class="final-pdf-meta">
+                    자동 생성이 늦어지거나 실패한 것 같아요.
+                    아래 [다시 생성하기]를 눌러 주세요.
+                </div>
+                <div class="final-pdf-actions">
+                    <button type="button" class="btn-final-pdf primary" id="finalPdfRetryBtn">
+                        <i class="fas fa-sync"></i> 다시 생성하기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .final-pdf-section {
+        margin-top: 16px;
+    }
+    .final-pdf-card {
+        background: #fff;
+        border: 1px solid #e0e6ed;
+        border-radius: 8px;
+        padding: 16px 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .final-pdf-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #1565c0;
+        margin-bottom: 12px;
+    }
+    .final-pdf-header.generating {
+        color: #0d6efd;
+    }
+    .final-pdf-header.warning {
+        color: #b78103;
+    }
+    .final-pdf-header i {
+        font-size: 20px;
+    }
+    .final-pdf-body {
+        padding-left: 30px;
+    }
+    .final-pdf-filename {
+        font-size: 14px;
+        font-weight: 500;
+        color: #222;
+        margin-bottom: 6px;
+        word-break: break-all;
+    }
+    .final-pdf-meta {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 12px;
+        line-height: 1.5;
+    }
+    .final-pdf-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .btn-final-pdf {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 500;
+        border-radius: 5px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.15s;
+    }
+    .btn-final-pdf.primary {
+        background: #1565c0;
+        color: #fff;
+    }
+    .btn-final-pdf.primary:hover {
+        background: #0d47a1;
+    }
+    .btn-final-pdf.secondary {
+        background: #f5f7fa;
+        color: #555;
+        border-color: #d0d7de;
+    }
+    .btn-final-pdf.secondary:hover {
+        background: #e9eef3;
+    }
+    .btn-final-pdf:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+</style>
+
+<script th:inline="javascript">
+    (function() {
+        // ── polling 설정 ────────────────────────────────────────
+        // 마지막 서명 직후 자동 생성 진행 상태를 추적하기 위해 짧은 간격 polling.
+        // 30초 (3초 × 10회) 동안 기다리고 그래도 PDF 없으면 "수동 재시도" 상태로 떨어짐.
+        const POLL_INTERVAL_MS = 3000;
+        const POLL_MAX_TRIES = 10;
+
+        let pollTimer = null;
+        let pollTriesLeft = 0;
+
+        function getDocumentIdx() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('documentIdx');
+        }
+
+        function showOnly(stateId) {
+            ['finalPdfReady', 'finalPdfGenerating', 'finalPdfPending'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = (id === stateId) ? '' : 'none';
+            });
+            const section = document.getElementById('finalPdfSection');
+            if (section) section.style.display = stateId ? '' : 'none';
+        }
+
+        function stopPolling() {
+            if (pollTimer) {
+                clearTimeout(pollTimer);
+                pollTimer = null;
+            }
+            pollTriesLeft = 0;
+        }
+
+        async function fetchStatus() {
+            const documentIdx = getDocumentIdx();
+            if (!documentIdx) return null;
+            try {
+                const res = await fetch(`/api/signature/document/${documentIdx}/final-pdf-status`);
+                if (!res.ok) return null;
+                return await res.json();
+            } catch (e) {
+                console.error('[최종 PDF 상태 조회 실패]', e);
+                return null;
+            }
+        }
+
+        function applyReadyState(data) {
+            document.getElementById('finalPdfFileName').textContent = data.fileName || '-';
+            const dl = document.getElementById('finalPdfDownloadBtn');
+            dl.href = data.downloadUrl || '#';
+            dl.setAttribute('download', data.fileName || '');
+            showOnly('finalPdfReady');
+        }
+
+        // 일반 상태 새로고침 (page load / 재생성 후)
+        async function refresh() {
+            const data = await fetchStatus();
+            if (!data) {
+                showOnly(null);
+                return;
+            }
+            if (!data.signatureComplete) {
+                showOnly(null);
+                return;
+            }
+            if (data.hasFinalPdf) {
+                stopPolling();
+                applyReadyState(data);
+                return;
+            }
+            // 서명 끝났는데 PDF 없음 — 마지막 서명이 30초 내면 "방금 서명 끝남" 으로 보고 polling 진입
+            // 그보다 오래됐으면 자동 생성 실패·지연으로 보고 수동 재시도 안내
+            const lastSignedAtMs = data.lastSignedAt ? Date.parse(data.lastSignedAt) : 0;
+            const elapsedMs = lastSignedAtMs ? Date.now() - lastSignedAtMs : Infinity;
+            if (elapsedMs < 30 * 1000) {
+                if (!pollTimer) startPolling();
+            } else {
+                if (!pollTimer) showOnly('finalPdfPending');
+            }
+        }
+
+        // 마지막 서명 WS 이벤트 받았을 때 / 페이지 로드 시 직전 서명 감지된 경우 호출.
+        // "생성 중" 상태로 즉시 진입 + polling 시작.
+        function startPolling() {
+            stopPolling();
+            showOnly('finalPdfGenerating');
+            pollTriesLeft = POLL_MAX_TRIES;
+            tickPolling();
+        }
+
+        async function tickPolling() {
+            const data = await fetchStatus();
+            if (data && data.signatureComplete && data.hasFinalPdf) {
+                stopPolling();
+                applyReadyState(data);
+                return;
+            }
+            pollTriesLeft -= 1;
+            if (pollTriesLeft <= 0) {
+                // 시간 내 생성 안됨 — 수동 재시도 안내로 전환
+                stopPolling();
+                showOnly('finalPdfPending');
+                return;
+            }
+            pollTimer = setTimeout(tickPolling, POLL_INTERVAL_MS);
+        }
+
+        async function regenerate() {
+            const documentIdx = getDocumentIdx();
+            if (!documentIdx) return;
+            stopPolling();
+            Swal.fire({
+                title: 'PDF 생성 중',
+                html: '잠시만 기다려 주세요. (보통 5~10초 정도 걸려요)',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => Swal.showLoading()
+            });
+            try {
+                const res = await fetch(`/api/signature/document/${documentIdx}/regenerate-pdf`, {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                Swal.close();
+                if (res.ok && data.success) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '생성 완료',
+                        text: data.message || '최종 서명 PDF를 다시 생성했어요.',
+                        timer: 1800,
+                        showConfirmButton: false
+                    });
+                    refresh();
+                } else {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: '생성에 실패했어요',
+                        text: data.message || '잠시 후 다시 시도해 주세요.'
+                    });
+                    refresh();
+                }
+            } catch (e) {
+                Swal.close();
+                console.error('[최종 PDF 재생성 실패]', e);
+                await Swal.fire({
+                    icon: 'warning',
+                    title: '생성에 실패했어요',
+                    text: '네트워크 상태를 확인하고 다시 시도해 주세요.'
+                });
+                refresh();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const retry1 = document.getElementById('finalPdfRetryBtn');
+            const retry2 = document.getElementById('finalPdfRegenerateBtn');
+            if (retry1) retry1.addEventListener('click', regenerate);
+            if (retry2) retry2.addEventListener('click', regenerate);
+            setTimeout(refresh, 500);
+        });
+
+        // 외부 노출 — signature-render.js 등이 마지막 서명 감지 시 호출
+        window.refreshFinalPdfSection = refresh;
+        window.startFinalPdfPolling = startPolling;
+    })();
+</script>
+
+</body>
+</html>

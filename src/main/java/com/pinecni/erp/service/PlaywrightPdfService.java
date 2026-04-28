@@ -204,6 +204,32 @@ public class PlaywrightPdfService {
         }
     }
 
+    /**
+     * URL을 접속해 PDF로 변환하되, 모든 요청(메인 페이지 + 페이지 내 fetch/AJAX)에 추가 HTTP 헤더 포함.
+     * 자동 서명 PDF 생성 시 내부 인증 우회용 X-Internal-PDF-Token 전달에 사용.
+     */
+    public byte[] convertUrlToPdfWithHeaders(String url, Map<String, String> extraHeaders, PdfOptions pdfOptions) throws Exception {
+        boolean acquired = false;
+        try {
+            acquired = pdfGenerationSemaphore.tryAcquire(timeoutSeconds, TimeUnit.SECONDS);
+            if (!acquired) throw new Exception("PDF 생성 요청이 너무 많습니다. " + timeoutSeconds + "초 후 다시 시도해주세요.");
+
+            try {
+                return generatePdfFromUrl(url, pdfOptions, extraHeaders);
+            } catch (PlaywrightException e) {
+                String msg = String.valueOf(e.getMessage());
+                if (msg.contains("Browser has been closed") || msg.contains("Target page, context or browser has been closed")) {
+                    log.warn("[Playwright PDF] 브라우저 종료 감지 -> 재기동 후 1회 재시도: {}", msg);
+                    ensureBrowserAlive(msg);
+                    return generatePdfFromUrl(url, pdfOptions, extraHeaders);
+                }
+                throw e;
+            }
+        } finally {
+            if (acquired) pdfGenerationSemaphore.release();
+        }
+    }
+
     public byte[] convertHtmlToPdf(String htmlContent, PdfOptions pdfOptions) throws Exception {
         boolean acquired = false;
         try {
@@ -228,12 +254,20 @@ public class PlaywrightPdfService {
     }
 
     private byte[] generatePdfFromUrl(String url, PdfOptions pdfOptions) throws Exception {
+        return generatePdfFromUrl(url, pdfOptions, null);
+    }
+
+    private byte[] generatePdfFromUrl(String url, PdfOptions pdfOptions, Map<String, String> extraHeaders) throws Exception {
         ensureBrowserAlive("before newContext(url)");
 
         BrowserContext context = null;
         Page page = null;
         try {
             context = browser.newContext(new Browser.NewContextOptions().setViewportSize(1920, 1080));
+            if (extraHeaders != null && !extraHeaders.isEmpty()) {
+                // setExtraHTTPHeaders 는 페이지 navigate + 페이지 내 fetch/AJAX 모두에 적용됨
+                context.setExtraHTTPHeaders(extraHeaders);
+            }
             page = context.newPage();
             page.emulateMedia(new Page.EmulateMediaOptions().setMedia(Media.PRINT));
 

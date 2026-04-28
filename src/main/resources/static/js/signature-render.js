@@ -236,6 +236,17 @@
         const signatures = await load(state.currentDocumentIdx);
         if (!signatures) return;
 
+        // 이 이벤트로 문서 전체 서명이 완료됐다면 자동 PDF 생성 영역을 "생성 중" 상태로 즉시 진입.
+        // 카테고리 B 가 아닌 문서면 status API 가 signatureComplete=false 응답을 주므로 fragment 가
+        // 알아서 영역을 숨김 — 문서별 분기 불필요.
+        // 완료 판정: linked 행 제외하고 status 가 C1402(완료) 또는 C1403(건너뜀) 인 행만 남음
+        const mainRows = signatures.filter(s => !s.linkedSignatureIdx);
+        const allSigned = mainRows.length > 0
+            && mainRows.every(s => s.status === 'C1402' || s.status === 'C1403');
+        if (allSigned && typeof window.startFinalPdfPolling === 'function') {
+            window.startFinalPdfPolling();
+        }
+
         // 본인이 모달 안에서 방금 서명한 경우는 signature-modal 완료 화면이 피드백을 줌 — 토스트 생략
         if (modalActive) return;
 
