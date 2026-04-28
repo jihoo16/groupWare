@@ -18,6 +18,20 @@ html, body {
     font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: #222;
     overflow-x: hidden;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* 사번 입력 필드는 선택/붙여넣기 허용 */
+input, textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
 }
 
 .sig-app {
@@ -229,6 +243,10 @@ html, body {
     background: #fafafa;
     overflow: hidden;
     margin-bottom: 12px;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 #signature-canvas {
     width: 100%;
