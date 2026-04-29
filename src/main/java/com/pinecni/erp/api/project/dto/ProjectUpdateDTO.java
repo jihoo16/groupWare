@@ -25,9 +25,14 @@ public class ProjectUpdateDTO {
     private String projectName;
 
     /**
-     * 고객사명
+     * 주간기관
      */
     private String clientName;
+
+    /**
+     * 전담기관(발주사)
+     */
+    private String dedicatedOrg;
 
     /**
      * PM User IDX

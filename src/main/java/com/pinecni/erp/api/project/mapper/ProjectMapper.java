@@ -90,6 +90,7 @@ public class ProjectMapper {
                 .activityAdjustment(row[22] != null ? (BigDecimal) row[22] : BigDecimal.ZERO)
                 .equipmentAdjustment(row[23] != null ? (BigDecimal) row[23] : BigDecimal.ZERO)
                 .materialAdjustment(row[24] != null ? (BigDecimal) row[24] : BigDecimal.ZERO)
+                .dedicatedOrg(row.length > 25 ? (String) row[25] : null)
                 .build();
     }
 
@@ -185,6 +186,7 @@ public class ProjectMapper {
                 .idx(entity.getIdx())
                 .projectName(entity.getProjectName())
                 .clientName(entity.getClientName())
+                .dedicatedOrg(entity.getDedicatedOrg())
                 .projectManagerIdx(entity.getProjectManagerIdx())
                 .projectManagerName(projectManagerName)
                 .startDate(entity.getStartDate())
@@ -232,6 +234,7 @@ public class ProjectMapper {
         Project project = Project.builder()
                 .projectName(dto.getProjectName())
                 .clientName(dto.getClientName())
+                .dedicatedOrg(dto.getDedicatedOrg())
                 .projectManagerIdx(dto.getProjectManagerIdx())
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
@@ -275,6 +278,9 @@ public class ProjectMapper {
         }
         if (dto.getClientName() != null) {
             entity.setClientName(dto.getClientName());
+        }
+        if (dto.getDedicatedOrg() != null) {
+            entity.setDedicatedOrg(dto.getDedicatedOrg());
         }
         if (dto.getProjectManagerIdx() != null) {
             entity.setProjectManagerIdx(dto.getProjectManagerIdx());

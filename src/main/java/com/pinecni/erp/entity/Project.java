@@ -2,6 +2,7 @@ package com.pinecni.erp.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Comment;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,7 +35,12 @@ public class Project extends BaseEntity {
     private String projectName;
 
     @Column(name = "client_name", length = 200)
+    @Comment("주간기관")
     private String clientName;
+
+    @Column(name = "dedicated_org", length = 200)
+    @Comment("전담기관(발주사)")
+    private String dedicatedOrg;
 
     @Column(name = "project_manager_idx")
     private Long projectManagerIdx;

@@ -252,6 +252,7 @@
                 document.getElementById('projectId').value = project.idx;
                 document.getElementById('projectName').value = project.projectName || '';
                 document.getElementById('clientName').value = project.clientName || '';
+                document.getElementById('dedicatedOrg').value = project.dedicatedOrg || '';
                 document.getElementById('projectStatus').value = project.projectStatus || '';
 
                 // 연구 책임자 선택 (프로젝트 매니저 목록이 로드된 후에 설정)
@@ -1453,6 +1454,7 @@
             const updateData = {
                 projectName: document.getElementById('projectName').value,
                 clientName: document.getElementById('clientName').value,
+                dedicatedOrg: document.getElementById('dedicatedOrg').value,
                 projectManagerIdx: parseInt(document.getElementById('projectManager').value),
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
@@ -1639,7 +1641,7 @@
         }
 
         if (!clientNameInput.value.trim()) {
-            await warnAndFocus('발주사를 입력해주세요.', clientNameInput);
+            await warnAndFocus('주간기관을 입력해주세요.', clientNameInput);
             return false;
         }
 

@@ -1213,6 +1213,7 @@
                 projectName: document.getElementById('projectName').value,
                 projectStatus: document.getElementById('projectStatus').value,
                 clientName: document.getElementById('clientName').value,
+                dedicatedOrg: document.getElementById('dedicatedOrg').value,
                 projectManagerIdx: projectManagerIdxInput.value,
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
@@ -1263,6 +1264,7 @@
             const createData = {
                 projectName: formData.projectName,
                 clientName: formData.clientName,
+                dedicatedOrg: formData.dedicatedOrg,
                 projectStatus: formData.projectStatus,
                 projectManagerIdx: parseInt(formData.projectManagerIdx),
                 startDate: formData.startDate,
@@ -1403,7 +1405,7 @@
         }
 
         if (!clientName) {
-            await warnAndFocus('발주사를 입력해주세요.', clientNameInput);
+            await warnAndFocus('주간기관을 입력해주세요.', clientNameInput);
             return false;
         }
 
@@ -1723,10 +1725,16 @@
                 projectNameInput.value = generateNextProjectName(project.projectName);
             }
 
-            // 2. 발주사 설정
+            // 2. 주간기관 설정
             const clientNameInput = document.getElementById('clientName');
             if (clientNameInput && !clientNameInput.value) {
                 clientNameInput.value = project.clientName || '';
+            }
+
+            // 2-1. 전담기관(발주사) 설정
+            const dedicatedOrgInput = document.getElementById('dedicatedOrg');
+            if (dedicatedOrgInput && !dedicatedOrgInput.value) {
+                dedicatedOrgInput.value = project.dedicatedOrg || '';
             }
 
             // 3. 총 프로젝트 시작일 설정
@@ -1946,10 +1954,16 @@
             projectNameInput.value = '';
         }
 
-        // 2. 발주사 초기화
+        // 2. 주간기관 초기화
         const clientNameInput = document.getElementById('clientName');
         if (clientNameInput) {
             clientNameInput.value = '';
+        }
+
+        // 2-1. 전담기관(발주사) 초기화
+        const dedicatedOrgInput = document.getElementById('dedicatedOrg');
+        if (dedicatedOrgInput) {
+            dedicatedOrgInput.value = '';
         }
 
         // 3. 총 프로젝트 시작일 초기화

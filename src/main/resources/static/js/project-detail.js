@@ -266,6 +266,7 @@ function checkAndShowParticipantButtons(projectMembers, currentUserIdx) {
 function displayBasicInfo(data) {
     document.getElementById('projectName').value = data.projectName || '-';
     document.getElementById('clientName').value = data.clientName || '-';
+    document.getElementById('dedicatedOrg').value = data.dedicatedOrg || '-';
     document.getElementById('projectStatus').value = getStatusLabel(data.projectStatus) || '-';
     document.getElementById('projectManager').value = data.projectManagerName || '-';
     document.getElementById('memberCount').value = data.memberCount ? `${data.memberCount}명` : '0명';

@@ -78,7 +78,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "(SELECT COALESCE(SUM(COALESCE(rtm.totalFee, 0)), 0) FROM ReceiptTripMeeting rtm WHERE rtm.projectIdx = p.idx AND rtm.deleted = false)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx, " +
-            "p.activityBudgetAdjustment, p.equipmentBudgetAdjustment, p.materialBudgetAdjustment " +
+            "p.activityBudgetAdjustment, p.equipmentBudgetAdjustment, p.materialBudgetAdjustment, " +
+            "p.dedicatedOrg " +
             "FROM Project p " +
             "LEFT JOIN p.projectManager pm " +
             "LEFT JOIN ProjectMember m ON m.projectIdx = p.idx AND m.isActive = true " +
@@ -100,7 +101,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "(SELECT COALESCE(SUM(COALESCE(rtm.totalFee, 0)), 0) FROM ReceiptTripMeeting rtm WHERE rtm.projectIdx = p.idx AND rtm.deleted = false)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx, " +
-            "p.activityBudgetAdjustment, p.equipmentBudgetAdjustment, p.materialBudgetAdjustment " +
+            "p.activityBudgetAdjustment, p.equipmentBudgetAdjustment, p.materialBudgetAdjustment, " +
+            "p.dedicatedOrg " +
             "FROM Project p " +
             "LEFT JOIN p.projectManager pm " +
             "LEFT JOIN ProjectMember m ON m.projectIdx = p.idx AND m.isActive = true " +
@@ -122,7 +124,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "(SELECT COALESCE(SUM(COALESCE(rtm.totalFee, 0)), 0) FROM ReceiptTripMeeting rtm WHERE rtm.projectIdx = p.idx AND rtm.deleted = false)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx, " +
-            "p.activityBudgetAdjustment, p.equipmentBudgetAdjustment, p.materialBudgetAdjustment " +
+            "p.activityBudgetAdjustment, p.equipmentBudgetAdjustment, p.materialBudgetAdjustment, " +
+            "p.dedicatedOrg " +
             "FROM Project p " +
             "LEFT JOIN p.projectManager pm " +
             "LEFT JOIN ProjectMember m ON m.projectIdx = p.idx AND m.isActive = true " +
@@ -145,7 +148,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             "(SELECT COALESCE(SUM(COALESCE(rtm.totalFee, 0)), 0) FROM ReceiptTripMeeting rtm WHERE rtm.projectIdx = p.idx AND rtm.deleted = false)), " +
             "p.totalPeriodStart, p.totalPeriodEnd, " +
             "p.createdAt, p.updatedAt, p.createdUserIdx, p.updatedUserIdx, " +
-            "p.activityBudgetAdjustment, p.equipmentBudgetAdjustment, p.materialBudgetAdjustment " +
+            "p.activityBudgetAdjustment, p.equipmentBudgetAdjustment, p.materialBudgetAdjustment, " +
+            "p.dedicatedOrg " +
             "FROM Project p " +
             "LEFT JOIN p.projectManager pm " +
             "INNER JOIN ProjectMember m ON m.projectIdx = p.idx AND m.employeeIdx = :memberIdx AND m.isActive = true " +
