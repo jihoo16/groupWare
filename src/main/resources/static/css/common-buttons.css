@@ -307,7 +307,7 @@
 /* ==========================================================================
    반응형 (≤ 768px)
    ========================================================================== */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .btn,
     .btn-primary, .btn-secondary, .btn-danger, .btn-ghost, .btn-outline,
     .btn-add, .btn-confirm, .btn-save, .btn-submit,

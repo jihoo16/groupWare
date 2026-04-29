@@ -524,7 +524,7 @@
 }
 
 /* 반응형 */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .editor-area {
         padding: 20px;
     }
@@ -901,7 +901,7 @@
     font-weight: 500;
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .iframe-modal {
         width: 98%;
         height: 95vh;

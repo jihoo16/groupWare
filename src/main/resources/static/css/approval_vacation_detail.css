@@ -363,8 +363,8 @@
     gap: 10px;
 }
 
-/* 반응형 */
-@media (max-width: 768px) {
+/* 반응형 — screen 전용 (print는 Chrome이 72dpi 기준 A4=595px로 계산해 768px 룰을 매칭하므로 명시적으로 분리) */
+@media screen and (max-width: 768px) {
     .editor-area {
         padding: 20px;
     }

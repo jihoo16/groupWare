@@ -2270,7 +2270,7 @@ body:has(.project-form-footer) .main-content {
 }
 
 /* 반응형 */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .project-grid {
         grid-template-columns: 1fr;
     }
@@ -2576,7 +2576,7 @@ body:has(.project-form-footer) .main-content {
 /* ===========================
    Responsive for Expense Settings
    =========================== */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .expense-settings-container {
         overflow-x: scroll;
     }

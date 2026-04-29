@@ -927,7 +927,7 @@
     }
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .header-right .header-filters {
         flex-wrap: wrap;
         gap: 6px;

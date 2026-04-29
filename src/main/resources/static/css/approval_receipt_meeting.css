@@ -992,7 +992,7 @@ div:focus {
 }
 
 /* 반응형 */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .common-info-section {
         border-radius: 6px;
     }

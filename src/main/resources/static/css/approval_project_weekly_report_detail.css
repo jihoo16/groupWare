@@ -223,7 +223,7 @@
 }
 
 /* 반응형 */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .editor-area {
         padding: 20px;
     }

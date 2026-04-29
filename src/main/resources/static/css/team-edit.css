@@ -945,7 +945,7 @@ select.form-control {
     }
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .content-card {
         padding: 20px;
         margin: 16px;

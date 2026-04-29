@@ -258,7 +258,7 @@
 }
 
 /* ── 반응형 ─────────────────────────────────── */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .file-preview-overlay {
         padding: 8px;
     }

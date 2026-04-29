@@ -882,7 +882,7 @@
     }
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .settings-area {
         padding: 16px;
     }

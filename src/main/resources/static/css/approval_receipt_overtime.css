@@ -864,7 +864,7 @@ div:focus {
 }
 
 /* 반응형 */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .common-info-section {
         border-radius: 6px;
     }
@@ -1556,7 +1556,7 @@ div h2{
 }
 
 /* 반응형 */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .pdf-loading-content {
         min-width: 300px;
         padding: 30px 20px;

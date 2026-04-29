@@ -2141,7 +2141,7 @@ div h2{
     }
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .vif-header {
         flex-direction: column;
         gap: 16px;
@@ -3043,7 +3043,7 @@ div h2{
 }
 
 /* 반응형: 모바일에서 툴팁 위치 조정 */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
     .reason-tooltip {
         width: 90vw;
         max-width: 400px;
