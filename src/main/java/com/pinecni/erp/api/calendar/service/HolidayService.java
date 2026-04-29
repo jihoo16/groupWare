@@ -28,9 +28,10 @@ public class HolidayService {
     private static final String CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3/calendars/";
 
     // 제외할 기념일 키워드 (법정 공휴일 아님)
+    // 근로자의 날(5/1)·제헌절(7/17)은 2026년 법 개정으로 법정 공휴일로 (재)지정되어 제외 목록에서 빠짐
     private static final List<String> EXCLUDED_KEYWORDS = List.of(
         "크리스마스 이브", "섣달 그믐날", "국군의날", "어버이날",
-        "노동절", "스승의날", "식목일", "제헌절"
+        "스승의날", "식목일"
     );
 
     public HolidayService() {
@@ -207,12 +208,22 @@ public class HolidayService {
 
     /**
      * 고정 공휴일 추가 (매년 동일)
+     *
+     * <p>근로자의 날(5/1) — 2026년 「관공서의 공휴일에 관한 규정」 개정으로 공무원·교사 포함 법정 공휴일.
+     * <p>제헌절(7/17) — 2008년 폐지 후 2026년 「공휴일에 관한 법률」 개정(2026-05-11 시행)으로 부활.
+     * <p>시행일 이전 연도는 빨간날 처리하면 안 되므로 {@code year >= 2026} 조건으로 분기.
      */
     private void addFixedHolidays(Map<String, String> holidays, int year) {
         holidays.put(year + "-01-01", "신정");
         holidays.put(year + "-03-01", "삼일절");
+        if (year >= 2026) {
+            holidays.put(year + "-05-01", "근로자의 날");
+        }
         holidays.put(year + "-05-05", "어린이날");
         holidays.put(year + "-06-06", "현충일");
+        if (year >= 2026) {
+            holidays.put(year + "-07-17", "제헌절");
+        }
         holidays.put(year + "-08-15", "광복절");
         holidays.put(year + "-10-03", "개천절");
         holidays.put(year + "-10-09", "한글날");
@@ -287,6 +298,11 @@ public class HolidayService {
         // "기독탄신일" → "크리스마스" (이미 필터링에서 처리했지만 혹시 몰라서)
         if (name.equals("기독탄신일")) {
             return "크리스마스";
+        }
+
+        // "노동절" → "근로자의 날" (공식 법령명 「근로자의날제정에관한법률」)
+        if (name.equals("노동절") || name.equals("근로자의날")) {
+            return "근로자의 날";
         }
 
         return name;
