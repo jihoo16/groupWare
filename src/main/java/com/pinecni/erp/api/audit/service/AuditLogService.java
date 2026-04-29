@@ -85,12 +85,4 @@ public interface AuditLogService {
                  Long documentIdx,
                  String description,
                  HttpServletRequest request);
-
-    /**
-     * 사용자 계정 관련 간편 오버로드 (로그인/로그아웃)
-     */
-    void logUser(Long userIdx,
-                 AuditAction action,
-                 String description,
-                 HttpServletRequest request);
 }

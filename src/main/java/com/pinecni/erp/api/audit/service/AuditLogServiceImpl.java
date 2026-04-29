@@ -100,13 +100,6 @@ public class AuditLogServiceImpl implements AuditLogService {
         submit(userIdx, AuditTargetType.FILE, action, fileIdx, documentIdx, description, null, s);
     }
 
-    @Override
-    public void logUser(Long userIdx, AuditAction action, String description,
-                        HttpServletRequest request) {
-        Snapshot s = Snapshot.from(request);
-        submit(userIdx, AuditTargetType.USER, action, userIdx, null, description, null, s);
-    }
-
     // ============================================================
     // 내부 — auditLogExecutor 에 insert 작업 제출
     // ============================================================
