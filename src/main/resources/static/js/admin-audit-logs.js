@@ -304,10 +304,28 @@
     // =========================================================================
     // CSV 내보내기
     // =========================================================================
-    function exportCsv() {
+    // 화면 조회와 동일한 필터(이름/사번 키워드 → userIdx 변환 포함)를 적용해야 하므로
+    // search() 와 같은 흐름으로 keyword 를 먼저 resolve 한다.
+    async function exportCsv() {
         const params = buildParams(0, 0); // page/size 의미 없음 (서버가 MAX_EXPORT_ROWS 까지)
         params.delete('page');
         params.delete('size');
+
+        const keyword = document.getElementById('filterKeyword').value.trim();
+        if (keyword) {
+            const userIdx = await resolveUserIdxByKeyword(keyword);
+            if (userIdx === null) {
+                // 매칭 사용자 없음 — 빈 결과를 다운받게 두지 말고 안내
+                Swal.fire({
+                    icon: 'info',
+                    title: '검색 결과가 없습니다',
+                    text: '입력하신 이름/사번과 일치하는 사용자가 없어 내보낼 내용이 없습니다.'
+                });
+                return;
+            }
+            params.set('userIdx', userIdx);
+        }
+
         const url = `${API_BASE}/export?${params.toString()}`;
         window.location.href = url;
     }
