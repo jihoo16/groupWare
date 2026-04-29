@@ -1,13 +1,10 @@
 package com.pinecni.erp.api.auth.controller;
 
-import com.pinecni.erp.api.audit.service.AuditLogService;
 import com.pinecni.erp.api.auth.dto.ChangePasswordRequestDTO;
 import com.pinecni.erp.api.auth.dto.LoginRequestDTO;
 import com.pinecni.erp.api.auth.dto.LoginResponseDTO;
 import com.pinecni.erp.api.auth.service.AuthService;
-import com.pinecni.erp.constant.CodeConstants.AuditAction;
 import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -29,7 +26,6 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-    private final AuditLogService auditLogService;
 
     /**
      * 로그인
@@ -39,7 +35,6 @@ public class AuthController {
     public ResponseEntity<LoginResponseDTO> login(
             @Valid @RequestBody LoginRequestDTO loginRequest,
             HttpSession session,
-            HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
 
         log.debug("POST /api/auth/login - empId: {}", loginRequest.getEmpId());
@@ -73,10 +68,6 @@ public class AuthController {
                     response.getEmpId(), session.getId(), response.getIsFirstLogin());
         }
 
-        // 감사 로그: 로그인 성공
-        auditLogService.logUser(response.getIdx(), AuditAction.CREATE,
-                "로그인 (empId=" + response.getEmpId() + ", rememberMe=" + rememberMe + ")", httpRequest);
-
         return ResponseEntity.ok(response);
     }
 
@@ -85,15 +76,9 @@ public class AuthController {
      * POST /api/auth/logout
      */
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout(HttpSession session, HttpServletRequest httpRequest) {
+    public ResponseEntity<Map<String, String>> logout(HttpSession session) {
         String empId = (String) session.getAttribute("empId");
-        Long userIdx = (Long) session.getAttribute("userIdx");
         log.info("POST /api/auth/logout - empId: {}", empId);
-
-        // 감사 로그: 로그아웃 (세션 무효화 전)
-        if (userIdx != null) {
-            auditLogService.logUser(userIdx, AuditAction.DELETE, "로그아웃 (empId=" + empId + ")", httpRequest);
-        }
 
         // 세션 무효화
         session.invalidate();

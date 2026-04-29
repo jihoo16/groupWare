@@ -287,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const capslockWarning = document.getElementById('capslockWarning');
 
     function updateCapsLockState(e) {
-        if (capslockWarning) {
+        if (capslockWarning && typeof e.getModifierState === 'function') {
             capslockWarning.classList.toggle('show', e.getModifierState('CapsLock'));
         }
     }
