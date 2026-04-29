@@ -74,4 +74,13 @@ public interface WeeklyReportService {
      * @return 이전 주 주간업무보고 DTO, 없으면 null
      */
     WeeklyReportDTO getPrevWeekReport(Long projectIdx, String prevWeekStartPattern);
+
+    /**
+     * 특정 주차에 이미 작성된 주간보고가 있는지 확인
+     * @param projectIdx 프로젝트 IDX
+     * @param weekStart 주 시작일 (예: "2026.04.21")
+     * @param excludeReportId 제외할 보고서 ID (수정 시 자기 자신 제외, null 가능)
+     * @return 중복 여부
+     */
+    WeeklyReportDTO findDuplicateReport(Long projectIdx, String weekStart, Long excludeReportId);
 }
