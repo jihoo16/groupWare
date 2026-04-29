@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 수정 모드
     let isEditMode = false;
     let editingIdx = null;
+    let originalTotalAmount = 0;  // 수정 모드에서 잔여예산 계산 시 used에서 차감
     let existingReceiptAttachments = [];
     let existingDocumentAttachments = [];
     let existingEstimateAttachments = [];
@@ -1600,6 +1601,34 @@ document.addEventListener('DOMContentLoaded', async function() {
             return false;
         }
 
+        // 잔여 예산 초과 검증 — 선택된 과제의 장비비/재료비 한도 체크
+        if (selectedProject) {
+            const budget = Number(purchaseType === 'equipment'
+                ? (selectedProject.equipmentBudget || 0)
+                : (selectedProject.materialBudget || 0));
+            const used = Number(purchaseType === 'equipment'
+                ? (selectedProject.equipmentUsed || 0)
+                : (selectedProject.materialUsed || 0));
+            // 수정 모드: 현재 문서의 기존 금액은 used에 이미 포함되어 있으므로 차감 후 비교
+            const adjustedUsed = used - (isEditMode ? originalTotalAmount : 0);
+            const remaining = budget - adjustedUsed;
+            if (totalPayment > remaining) {
+                const overAmount = totalPayment - remaining;
+                totalPaymentEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                Swal.fire({
+                    icon: 'warning',
+                    title: `${purchaseTypeLabel} 잔여예산을 초과합니다`,
+                    html: `<div style="text-align:left;line-height:1.7;">
+                        <div>잔여 ${purchaseTypeLabel}: <b>${remaining.toLocaleString('ko-KR')}원</b></div>
+                        <div>총 결제금액: <b>${totalPayment.toLocaleString('ko-KR')}원</b></div>
+                        <div style="color:#e03131;font-weight:600;margin-top:6px;">초과 금액: ${overAmount.toLocaleString('ko-KR')}원</div>
+                        <div style="margin-top:10px;font-size:13px;color:#555;">금액을 조정하거나 과제 예산을 확인해주세요.</div>
+                    </div>`,
+                });
+                return false;
+            }
+        }
+
         // 4) 연구비이체 선택 시 통장사본 필수 검증 (가장 하단이므로 마지막에 체크)
         const isTransfer = document.querySelector('input[name="paymentType"]:checked')?.value === 'transfer';
         if (isTransfer) {
@@ -1814,6 +1843,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function populateForm(data) {
+        // 수정 모드 잔여예산 계산용 — 현재 문서의 기존 금액은 used에 이미 포함되어 있음
+        originalTotalAmount = Number(data.totalAmount) || 0;
+
         // 기본 필드
         if (data.approvalDate) document.getElementById('pu_approval_date').value = data.approvalDate;
         if (data.documentTitle) document.getElementById('pu_title').value = data.documentTitle;
