@@ -4,9 +4,9 @@
  * ========================================================= */
 
 .audit-content {
-    padding: 24px;
-    max-width: 1600px;
-    margin: 0 auto;
+    padding: 20px;
+    width: 100%;
+    max-width: 100%;
 }
 
 /* ─── 필터 패널 ─── */

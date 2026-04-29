@@ -208,7 +208,7 @@
                     </li>
                     <li class="submenu-item" th:classappend="${activeMenu == 'admin-audit-logs'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102' or session.userRoleCode == 'C1105'}">
                         <a href="/admin/audit-logs">
-                            <span class="submenu-text">감사 로그</span>
+                            <span class="submenu-text">서명 이력</span>
                         </a>
                     </li>
                     <li class="submenu-item" th:classappend="${activeMenu == 'dev-code-groups'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101'}">

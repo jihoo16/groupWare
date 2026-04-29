@@ -33,6 +33,7 @@ public class AuditLogDTO {
     private String actionName;
 
     private Long documentIdx;
+    private String documentNo;       // 화면 표시용 문서번호 (예: VAC-20251218-001)
     private String description;
     private String detailJson;
 

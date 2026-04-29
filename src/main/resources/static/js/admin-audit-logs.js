@@ -12,13 +12,30 @@
 
     const API_BASE = '/api/admin/audit-logs';
     let currentPage = 0;
-    let currentSize = 20;
+    let currentSize = 50;
 
     document.addEventListener('DOMContentLoaded', () => {
+        applyDefaultDateRange(); // 첫 진입 — 이번달 기본 조회
         bindFilters();
         bindModal();
         search(); // 최초 로드
     });
+
+    /** 첫 진입 시 시작일/종료일이 비어있으면 이번달 1일 ~ 말일로 채움 */
+    function applyDefaultDateRange() {
+        const startEl = document.getElementById('filterStart');
+        const endEl = document.getElementById('filterEnd');
+        if (startEl.value || endEl.value) return; // 사용자가 이미 채워둔 경우 존중
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = now.getMonth(); // 0-indexed
+        const pad = n => String(n).padStart(2, '0');
+        const first = `${y}-${pad(m + 1)}-01`;
+        const lastDay = new Date(y, m + 1, 0).getDate();
+        const last = `${y}-${pad(m + 1)}-${pad(lastDay)}`;
+        startEl.value = first;
+        endEl.value = last;
+    }
 
     // =========================================================================
     // 필터 바인딩
@@ -36,6 +53,7 @@
             document.getElementById('filterAction').value = '';
             document.getElementById('filterKeyword').value = '';
             document.getElementById('filterDocumentIdx').value = '';
+            applyDefaultDateRange(); // 기본값 = 이번달
             currentPage = 0;
             search();
         });
@@ -97,7 +115,7 @@
             Swal.fire({
                 icon: 'error',
                 title: '조회 실패',
-                text: '감사 로그를 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.'
+                text: '서명 이력을 불러오는데 실패했습니다.\n잠시 후 다시 시도해주세요.'
             });
         }
     }
@@ -155,7 +173,8 @@
             const dept = r.userDeptName || '-';
             const targetClass = targetBadgeClass(r.targetType);
             const actionClass = actionBadgeClass(r.action);
-            const docCell = r.documentIdx ? `#${r.documentIdx}` : '-';
+            const docCell = r.documentNo ? escapeHtml(r.documentNo)
+                    : (r.documentIdx ? `#${r.documentIdx}` : '-');
             const desc = escapeHtml(r.description || '-');
             return `<tr data-idx="${r.idx}">
                 <td class="nowrap">${when}</td>
@@ -265,7 +284,7 @@
                     <dt>부서</dt>           <dd>${escapeHtml(r.userDeptName || '-')}</dd>
                     <dt>대상</dt>           <dd>${escapeHtml(r.targetTypeName || r.targetType)}${r.targetIdx ? ' <small>#' + r.targetIdx + '</small>' : ''}</dd>
                     <dt>행위</dt>           <dd>${escapeHtml(r.actionName || r.action)}</dd>
-                    <dt>관련 문서</dt>       <dd>${r.documentIdx ? '#' + r.documentIdx : '-'}</dd>
+                    <dt>관련 문서</dt>       <dd>${r.documentNo ? escapeHtml(r.documentNo) + (r.documentIdx ? ' <small>#' + r.documentIdx + '</small>' : '') : (r.documentIdx ? '#' + r.documentIdx : '-')}</dd>
                     <dt>설명</dt>           <dd>${escapeHtml(r.description || '-')}</dd>
                     <dt>IP</dt>             <dd>${escapeHtml(r.ipAddress || '-')}</dd>
                     <dt>URL</dt>            <dd>${escapeHtml((r.requestMethod || '') + ' ' + (r.requestUrl || '-'))}</dd>

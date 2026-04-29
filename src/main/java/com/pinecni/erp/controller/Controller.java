@@ -450,13 +450,13 @@ public class Controller {
     }
 
     /**
-     * 관리자 전용 - 감사 로그 조회 페이지
+     * 관리자 전용 - 서명 이력 조회 페이지
      * - ADMIN/DEVELOPER/EXECUTIVE 열람 가능 (REST API 에서도 동일 권한 체크)
      */
     @GetMapping("/admin/audit-logs")
     public String adminAuditLogs(HttpSession session) {
         if (!AuthorizationUtil.isExecutiveOrHigher(session)) {
-            log.warn("권한 없는 사용자의 감사 로그 접근 시도");
+            log.warn("권한 없는 사용자의 서명 이력 접근 시도");
             return "redirect:/nope";
         }
         return "admin-audit-logs";
