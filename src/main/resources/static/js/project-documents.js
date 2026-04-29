@@ -1498,7 +1498,7 @@ let text;
             console.error('[첨부파일 저장]', err);
             Swal.fire({
                 ...swalAboveModal,
-                title: '첨부파일을(를) 저장하지 못했습니다',
+                title: '첨부파일을 저장하지 못했습니다',
                 html: '서버와 잠시 연결되지 않아 저장이 완료되지 않았습니다.<br>' +
                       '선택하신 파일은 그대로 남아 있으니 <b>다시 저장 버튼</b>을 눌러 주세요.<br>' +
                       '같은 문제가 계속되면 관리자에게 문의해 주세요.',
@@ -1525,7 +1525,7 @@ let text;
                 console.error('[파일 다운로드] 파일을 찾지 못함: ' + filename + ' status=' + response.status);
                 Swal.fire({
                     ...swalAboveModal,
-                    title: '파일을(를) 내려받지 못했습니다',
+                    title: '파일을 내려받지 못했습니다',
                     html: `<b>${filename}</b> 파일을 서버에서 찾을 수 없습니다.<br>` +
                           '파일이 삭제되었거나 이동되었을 수 있습니다.<br>' +
                           '목록을 새로고침해 확인해 주세요.',
@@ -1548,7 +1548,7 @@ let text;
             console.error('[파일 다운로드]', filename, err);
             Swal.fire({
                 ...swalAboveModal,
-                title: '파일을(를) 내려받지 못했습니다',
+                title: '파일을 내려받지 못했습니다',
                 html: '서버와 잠시 연결되지 않아 내려받기가 완료되지 않았습니다.<br>' +
                       '인터넷 연결을 확인한 뒤 <b>다시 내려받기 버튼</b>을 눌러 주세요.',
                 icon: 'warning',

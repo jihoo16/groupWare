@@ -7,6 +7,25 @@
  */
 
 // ============================================
+// 한국어 조사 헬퍼
+// ============================================
+// 단어의 마지막 글자 받침 유무에 따라 적절한 조사를 골라준다.
+// pair 형식: '받침있을때/받침없을때' (예: '을/를', '이/가', '은/는', '으로/로')
+window.koParticle = function(word, pair) {
+    const parts = (pair || '').split('/');
+    if (parts.length !== 2) return '';
+    if (!word) return parts[0];
+    const last = String(word).charAt(String(word).length - 1);
+    const code = last.charCodeAt(0);
+    if (isNaN(code) || code < 0xAC00 || code > 0xD7A3) {
+        // 한글이 아닌 경우(영문/숫자) — 받침있는 쪽으로 일관 처리
+        return parts[0];
+    }
+    const hasJongseong = (code - 0xAC00) % 28 !== 0;
+    return hasJongseong ? parts[0] : parts[1];
+};
+
+// ============================================
 // 기본 Alert 함수
 // ============================================
 
@@ -285,7 +304,7 @@ window.confirmCustom = async function(message) {
 /** 서버/네트워크 일시 장애로 저장되지 않음 */
 window.showSaveFailure = function(subject = '내용') {
     return Swal.fire({
-        title: `${subject}을(를) 저장하지 못했습니다`,
+        title: `${subject}${koParticle(subject, '을/를')} 저장하지 못했습니다`,
         html: `서버와 잠시 연결되지 않아 저장이 완료되지 않았습니다.<br>` +
               `작성하신 내용은 그대로 남아 있으니 <b>다시 저장 버튼</b>을 눌러 주세요.<br>` +
               `같은 문제가 계속되면 관리자에게 문의해 주세요.`,
@@ -298,7 +317,7 @@ window.showSaveFailure = function(subject = '내용') {
 /** 수정 저장 실패 */
 window.showUpdateFailure = function(subject = '내용') {
     return Swal.fire({
-        title: `${subject}을(를) 수정하지 못했습니다`,
+        title: `${subject}${koParticle(subject, '을/를')} 수정하지 못했습니다`,
         html: `서버와 잠시 연결되지 않아 수정이 완료되지 않았습니다.<br>` +
               `고치신 내용은 그대로 남아 있으니 <b>다시 수정 버튼</b>을 눌러 주세요.<br>` +
               `같은 문제가 계속되면 관리자에게 문의해 주세요.`,
@@ -311,7 +330,7 @@ window.showUpdateFailure = function(subject = '내용') {
 /** 삭제 실패 */
 window.showDeleteFailure = function(subject = '항목') {
     return Swal.fire({
-        title: `${subject}을(를) 삭제하지 못했습니다`,
+        title: `${subject}${koParticle(subject, '을/를')} 삭제하지 못했습니다`,
         html: `서버와 잠시 연결되지 않아 삭제가 완료되지 않았습니다.<br>` +
               `<b>다시 삭제 버튼</b>을 눌러 주세요.<br>` +
               `같은 문제가 계속되면 관리자에게 문의해 주세요.`,
@@ -324,7 +343,7 @@ window.showDeleteFailure = function(subject = '항목') {
 /** 파일 다운로드/내보내기 실패 */
 window.showDownloadFailure = function(subject = '파일') {
     return Swal.fire({
-        title: `${subject}을(를) 내려받지 못했습니다`,
+        title: `${subject}${koParticle(subject, '을/를')} 내려받지 못했습니다`,
         html: `서버와 잠시 연결되지 않아 내려받기가 완료되지 않았습니다.<br>` +
               `인터넷 연결을 확인한 뒤 <b>다시 내려받기 버튼</b>을 눌러 주세요.`,
         icon: 'warning',
@@ -336,7 +355,7 @@ window.showDownloadFailure = function(subject = '파일') {
 /** 파일 생성(PDF 등) 실패 */
 window.showGenerateFailure = function(subject = '문서') {
     return Swal.fire({
-        title: `${subject}을(를) 만들지 못했습니다`,
+        title: `${subject}${koParticle(subject, '을/를')} 만들지 못했습니다`,
         html: `${subject} 생성 중 문제가 생겨 파일이 만들어지지 않았습니다.<br>` +
               `<b>다시 시도</b>하거나, 계속되면 관리자에게 문의해 주세요.`,
         icon: 'warning',
@@ -348,7 +367,7 @@ window.showGenerateFailure = function(subject = '문서') {
 /** 파일 업로드 실패 */
 window.showUploadFailure = function(subject = '파일') {
     return Swal.fire({
-        title: `${subject}을(를) 올리지 못했습니다`,
+        title: `${subject}${koParticle(subject, '을/를')} 올리지 못했습니다`,
         html: `업로드 중 서버와 연결되지 않았습니다.<br>` +
               `파일을 다시 선택해 올려 주세요. 크기가 너무 크거나 형식이 맞지 않는지 확인해 주세요.`,
         icon: 'warning',
@@ -384,9 +403,10 @@ window.showFileTypeInvalid = function(allowedText = '') {
 
 /** 목록/상세 데이터 로드 실패 */
 window.showLoadFailure = function(subject = '정보') {
+    const eulReul = koParticle(subject, '을/를');
     return Swal.fire({
-        title: `${subject}을(를) 불러오지 못했습니다`,
-        html: `서버와 잠시 연결되지 않아 ${subject}을(를) 표시하지 못했습니다.<br>` +
+        title: `${subject}${eulReul} 불러오지 못했습니다`,
+        html: `서버와 잠시 연결되지 않아 ${subject}${eulReul} 표시하지 못했습니다.<br>` +
               `<b>페이지 새로고침(F5)</b> 후 다시 시도해 주세요.<br>` +
               `같은 문제가 계속되면 관리자에게 문의해 주세요.`,
         icon: 'warning',
@@ -399,7 +419,7 @@ window.showLoadFailure = function(subject = '정보') {
 window.showPermissionDenied = function(action = '이 작업') {
     return Swal.fire({
         title: '권한이 없습니다',
-        html: `${action}을(를) 수행할 권한이 없습니다.<br>` +
+        html: `${action}${koParticle(action, '을/를')} 수행할 권한이 없습니다.<br>` +
               `필요한 경우 관리자에게 요청해 주세요.`,
         icon: 'info',
         confirmButtonText: '확인',
@@ -410,8 +430,8 @@ window.showPermissionDenied = function(action = '이 작업') {
 /** 필수 입력 누락 */
 window.showRequiredMissing = function(fieldName) {
     return Swal.fire({
-        title: `${fieldName}을(를) 입력해 주세요`,
-        html: `${fieldName}은(는) 반드시 입력해야 하는 항목입니다.`,
+        title: `${fieldName}${koParticle(fieldName, '을/를')} 입력해 주세요`,
+        html: `${fieldName}${koParticle(fieldName, '은/는')} 반드시 입력해야 하는 항목입니다.`,
         icon: 'info',
         confirmButtonText: '확인',
         confirmButtonColor: '#667eea'
