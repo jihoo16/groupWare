@@ -228,22 +228,39 @@
 
             if (!response.ok) {
                 const error = await safeJson(response);
-                throw new Error(error?.message || '서명 제출 실패');
+                // 400대(비즈니스 안내)는 서버 메시지 그대로 노출, 5xx/네트워크는 일반 안내
+                const isBusiness = response.status >= 400 && response.status < 500;
+                const serverMsg = error?.message;
+                const e = new Error(serverMsg || '서명 제출 실패');
+                e.isBusiness = isBusiness && !!serverMsg;
+                e.serverMsg = serverMsg;
+                throw e;
             }
 
             if (countdownTimer) clearInterval(countdownTimer);
             showStep('step-complete');
         } catch (err) {
             console.error('[서명 제출]', err);
-            Swal.fire({
-                title: '서명을(를) 제출하지 못했습니다',
-                html: '서버와 잠시 연결되지 않아 제출이 완료되지 않았습니다.<br>' +
-                      '작성하신 서명은 그대로 남아 있으니 <b>다시 제출 버튼</b>을 눌러 주세요.<br>' +
-                      '같은 문제가 계속되면 관리자에게 문의해 주세요.',
-                icon: 'warning',
-                confirmButtonText: '확인',
-                confirmButtonColor: '#ff9800'
-            });
+            if (err && err.isBusiness) {
+                Swal.fire({
+                    title: '서명을 마칠 수 없어요',
+                    html: String(err.serverMsg).replace(/\n/g, '<br>') +
+                          '<br><br>PC 화면에서 <b>서명 목록을 새로고침</b>한 뒤 다시 시도해 주세요.',
+                    icon: 'info',
+                    confirmButtonText: '확인',
+                    confirmButtonColor: '#667eea'
+                });
+            } else {
+                Swal.fire({
+                    title: '서명을 제출하지 못했습니다',
+                    html: '서버와 잠시 연결되지 않아 제출이 완료되지 않았습니다.<br>' +
+                          '작성하신 서명은 그대로 남아 있으니 <b>다시 제출 버튼</b>을 눌러 주세요.<br>' +
+                          '같은 문제가 계속되면 관리자에게 문의해 주세요.',
+                    icon: 'warning',
+                    confirmButtonText: '확인',
+                    confirmButtonColor: '#ff9800'
+                });
+            }
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 제출';
         }
