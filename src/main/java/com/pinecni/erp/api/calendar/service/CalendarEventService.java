@@ -384,6 +384,14 @@ public class CalendarEventService {
             displayColor = getEventTypeColor(event.getEventType());
         }
 
+        // 작성자(생성자) 이름 조회
+        String creatorName = null;
+        if (event.getCreatedUserIdx() != null) {
+            creatorName = userRepository.findById(event.getCreatedUserIdx())
+                    .map(User::getEmpName)
+                    .orElse(null);
+        }
+
         return CalendarEventDto.builder()
                 .idx(event.getIdx())
                 .eventTitle(event.getEventTitle())
@@ -396,6 +404,7 @@ public class CalendarEventService {
                 .isAllDay(event.getIsAllDay())
                 .location(event.getLocation())
                 .creatorIdx(event.getCreatedUserIdx())
+                .creatorName(creatorName)
                 .approvalIdx(event.getApprovalIdx())
                 .groupId(event.getGroupId())
                 .teamIdx(event.getTeamIdx())

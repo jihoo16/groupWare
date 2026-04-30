@@ -889,6 +889,9 @@ document.addEventListener('DOMContentLoaded', function() {
             ? schedule.participants.join(', ')
             : '-';
 
+        // 작성자 표시
+        document.getElementById('detailCreator').textContent = schedule.creator || '-';
+
         // 설명 표시
         document.getElementById('detailDescription').textContent = schedule.description || '-';
 

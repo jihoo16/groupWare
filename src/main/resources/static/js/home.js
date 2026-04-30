@@ -261,13 +261,19 @@ function loadWeeklySchedule() {
                 const timeStr = schedule.isAllDay ? '종일' : formatScheduleTimeFromStrings(schedule.startTime, schedule.endTime);
                 const todayClass = isToday(schedule) ? 'today-schedule' : (isPast(schedule) ? 'past-schedule' : '');
 
+                const creatorStr = schedule.creatorName
+                    ? `<span class="schedule-creator">${escapeHtml(schedule.creatorName)}</span>`
+                    : '';
                 return `
                     <div class="schedule-item ${todayClass}" onclick="openScheduleModal(${schedule.idx})">
                         <div class="schedule-item-header">
                             <span class="schedule-title">${escapeHtml(schedule.eventTitle)}</span>
                             <span class="schedule-time">${timeStr}</span>
                         </div>
-                        <div class="schedule-date">${dateStr}</div>
+                        <div class="schedule-meta">
+                            <span class="schedule-date">${dateStr}</span>
+                            ${creatorStr}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -452,6 +458,12 @@ function openScheduleModal(scheduleIdx) {
         document.getElementById('detailParticipants').textContent = participantNames || '-';
     } else {
         document.getElementById('detailParticipants').textContent = '-';
+    }
+
+    // 작성자 표시
+    const detailCreatorElement = document.getElementById('detailCreator');
+    if (detailCreatorElement) {
+        detailCreatorElement.textContent = schedule.creatorName || '-';
     }
 
     // 설명 표시
