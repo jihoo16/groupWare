@@ -249,6 +249,116 @@
     }
 
     // -------------------------------------------------------------
+    // 봇 연결 테스트
+    // -------------------------------------------------------------
+
+    function testConnection() {
+        const btn = document.getElementById('btnTestBot');
+        const wrap = document.getElementById('botTestResult');
+        if (btn) { btn.disabled = true; btn.classList.add('is-busy'); }
+        if (wrap) {
+            wrap.innerHTML =
+                '<div class="notif-status-row" style="background:#f3f4f6;border-color:#e5e7eb;color:#4b5563;">' +
+                '  <i class="fas fa-spinner fa-spin status-icon"></i>' +
+                '  <span class="status-text">Mattermost 서버에 연결 중...</span>' +
+                '</div>';
+        }
+
+        fetch('/api/admin/notifications/test-connection', {
+            method: 'POST',
+            credentials: 'same-origin'
+        })
+            .then(function (res) {
+                if (res.status === 403) throw new Error('FORBIDDEN');
+                if (!res.ok) throw new Error('TEST_FAILED');
+                return res.json();
+            })
+            .then(renderTestResult)
+            .catch(function (err) {
+                if (wrap) {
+                    wrap.innerHTML = renderRow(false,
+                        err.message === 'FORBIDDEN'
+                            ? '알림 관리 권한이 없습니다.'
+                            : '연결 검증 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+                }
+                console.error('[봇 연결 테스트] 요청 실패', err);
+            })
+            .finally(function () {
+                if (btn) { btn.disabled = false; btn.classList.remove('is-busy'); }
+            });
+    }
+
+    function renderTestResult(r) {
+        const wrap = document.getElementById('botTestResult');
+        if (!wrap) return;
+
+        // 봇 식별자 자동 채움 (성공 시)
+        if (r.botOk && r.botResolvedUserId) {
+            const idInput = document.getElementById('inBotUserId');
+            if (idInput) idInput.value = r.botResolvedUserId;
+            const nameInput = document.getElementById('inBotUsername');
+            if (nameInput && r.botResolvedUsername) nameInput.value = r.botResolvedUsername;
+        }
+
+        let html = renderRow(r.botOk, r.botMessage);
+        if (r.channelChecked) {
+            html += renderRow(r.channelOk, r.channelMessage);
+        }
+        wrap.innerHTML = html;
+    }
+
+    function renderRow(ok, msg) {
+        const cls  = ok ? 'status-ok'  : 'status-error';
+        const icon = ok ? 'fa-check-circle' : 'fa-exclamation-circle';
+        return '<div class="notif-status-row ' + cls + '">' +
+               '  <i class="fas ' + icon + ' status-icon"></i>' +
+               '  <span class="status-text">' + escapeHtml(msg || '') + '</span>' +
+               '</div>';
+    }
+
+    // -------------------------------------------------------------
+    // 테스트 메시지 발송 (본인 → 본인)
+    // -------------------------------------------------------------
+
+    function testSend() {
+        const btn = document.getElementById('btnTestSend');
+        const wrap = document.getElementById('botSendResult');
+        if (btn) { btn.disabled = true; btn.classList.add('is-busy'); }
+        if (wrap) {
+            wrap.innerHTML =
+                '<div class="notif-status-row" style="background:#f3f4f6;border-color:#e5e7eb;color:#4b5563;">' +
+                '  <i class="fas fa-spinner fa-spin status-icon"></i>' +
+                '  <span class="status-text">메시지 발송 중...</span>' +
+                '</div>';
+        }
+
+        fetch('/api/admin/notifications/test-send', {
+            method: 'POST',
+            credentials: 'same-origin'
+        })
+            .then(function (res) {
+                if (res.status === 403) throw new Error('FORBIDDEN');
+                if (!res.ok) throw new Error('SEND_FAILED');
+                return res.json();
+            })
+            .then(function (r) {
+                if (wrap) wrap.innerHTML = renderRow(r.success, r.message);
+            })
+            .catch(function (err) {
+                if (wrap) {
+                    wrap.innerHTML = renderRow(false,
+                        err.message === 'FORBIDDEN'
+                            ? '알림 관리 권한이 없습니다.'
+                            : '발송 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+                }
+                console.error('[테스트 발송] 요청 실패', err);
+            })
+            .finally(function () {
+                if (btn) { btn.disabled = false; btn.classList.remove('is-busy'); }
+            });
+    }
+
+    // -------------------------------------------------------------
     // 액션 바인딩
     // -------------------------------------------------------------
 
@@ -257,13 +367,8 @@
             saveSettings(collectFormPayload());
         });
 
-        document.getElementById('btnTestBot')?.addEventListener('click', function () {
-            Swal.fire({
-                icon: 'info',
-                title: '아직 준비 중입니다',
-                text: '봇 연결 테스트 기능은 다음 작업 단계에서 연결됩니다.'
-            });
-        });
+        document.getElementById('btnTestBot')?.addEventListener('click', testConnection);
+        document.getElementById('btnTestSend')?.addEventListener('click', testSend);
 
         document.getElementById('btnChangeToken')?.addEventListener('click', onChangeTokenClick);
 

@@ -1,7 +1,10 @@
 package com.pinecni.erp.api.notification.controller;
 
+import com.pinecni.erp.api.notification.dto.BotConnectionTestResponse;
 import com.pinecni.erp.api.notification.dto.NotificationSettingsResponse;
 import com.pinecni.erp.api.notification.dto.NotificationSettingsUpdateRequest;
+import com.pinecni.erp.api.notification.dto.TestSendResponse;
+import com.pinecni.erp.api.notification.service.BotConnectionTestService;
 import com.pinecni.erp.api.notification.service.NotificationSettingsService;
 import com.pinecni.erp.util.AuthorizationUtil;
 import jakarta.servlet.http.HttpSession;
@@ -10,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,6 +32,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class AdminNotificationController {
 
     private final NotificationSettingsService settingsService;
+    private final BotConnectionTestService botConnectionTestService;
 
     @GetMapping("/settings")
     public ResponseEntity<NotificationSettingsResponse> getSettings(HttpSession session) {
@@ -46,6 +51,33 @@ public class AdminNotificationController {
                 req.getIsEnabled(),
                 req.getBotToken() != null && !req.getBotToken().isBlank());
         return ResponseEntity.ok(settingsService.updateSettings(req, userIdx));
+    }
+
+    /**
+     * [봇 연결 테스트] — 저장된 토큰으로 Mattermost API 호출해 인증 + 채널 접근 검증.
+     *
+     * <p>성공 시 봇 식별자 (bot_user_id) 자동 갱신.
+     */
+    @PostMapping("/test-connection")
+    public ResponseEntity<BotConnectionTestResponse> testConnection(HttpSession session) {
+        assertPermission(session);
+        Long userIdx = (Long) session.getAttribute("userIdx");
+        log.info("[알림 설정] 봇 연결 테스트 요청 — userIdx={}", userIdx);
+        return ResponseEntity.ok(botConnectionTestService.testConnection(userIdx));
+    }
+
+    /**
+     * [지금 나에게 테스트 발송] — 본인 사번 → MM DM → 메시지 1통.
+     *
+     * <p>발송 경로 (사번 lookup → DM 채널 → post) 전체를 검증한다.
+     * 성공 시 본인 Mattermost 인박스에 봇 메시지가 도착.
+     */
+    @PostMapping("/test-send")
+    public ResponseEntity<TestSendResponse> testSend(HttpSession session) {
+        assertPermission(session);
+        Long userIdx = (Long) session.getAttribute("userIdx");
+        log.info("[알림 설정] 테스트 발송 요청 — userIdx={}", userIdx);
+        return ResponseEntity.ok(botConnectionTestService.sendTestMessage(userIdx));
     }
 
     // =========================================================================

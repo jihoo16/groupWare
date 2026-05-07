@@ -143,6 +143,22 @@
                     <button class="notif-btn notif-btn-primary" id="btnSaveSettings"><i class="fas fa-save"></i> 저장</button>
                 </div>
 
+                <!-- ④ 발송 경로 검증 -->
+                <div class="notif-card">
+                    <h3 class="notif-card-title">
+                        발송 경로 검증
+                        <span class="subtitle">지금 본인 Mattermost 인박스로 테스트 메시지 1통을 보냅니다</span>
+                    </h3>
+                    <div style="font-size:13px;color:#4b5563;margin-bottom:12px;">
+                        본인 사번으로 MM 사용자를 조회하고, 봇과의 DM 채널을 만들고, 실제 메시지를 발송하는 전체 경로를 한 번에 검증합니다.
+                        성공하면 본인 Mattermost 인박스에 봇 메시지가 한 통 도착합니다. 다른 직원에게는 가지 않습니다.
+                    </div>
+                    <div class="notif-btn-row" style="margin-top:0;">
+                        <button class="notif-btn" id="btnTestSend"><i class="fas fa-paper-plane"></i> 지금 나에게 테스트 발송</button>
+                    </div>
+                    <div id="botSendResult" style="margin-top:12px;"></div>
+                </div>
+
             </div>
         </div>
     </main>
