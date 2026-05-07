@@ -30,6 +30,8 @@ public class AdminVacationDocumentDTO {
     private Long documentIdx;
     private LocalDateTime createdAt;
     private LocalDateTime deletedAt;
+    /** C05 문서 상태 — C0501 작성중 / C0504 승인 / C0505 반려 등. 화면에서 [반려] 버튼 노출 분기에 사용. */
+    private String status;
 
     // User 정보
     private Long userIdx;

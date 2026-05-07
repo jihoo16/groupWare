@@ -301,8 +301,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 onclick="${isDeleted ? 'return false;' : `approveDocument(${doc.documentIdx}, '${doc.userName}', true)`}"
                                                 ${isDeleted ? 'disabled' : ''}>
                                                 <i class="fas fa-check"></i>
-                                                승인
-                                           </button>`
+                                                ${doc.status === 'C0505' ? '재승인' : '승인'}
+                                           </button>` +
+                                          (doc.status === 'C0505'
+                                            ? ''
+                                            : `<button class="btn-reject ${isDeleted ? 'disabled' : ''}"
+                                                  onclick="${isDeleted ? 'return false;' : `rejectDocument(${doc.documentIdx}, '${doc.userName}')`}"
+                                                  ${isDeleted ? 'disabled' : ''}>
+                                                  <i class="fas fa-times"></i>
+                                                  반려
+                                               </button>`)
                                     }
                                     <button class="btn-delete ${isDeleted ? 'disabled' : ''}"
                                             onclick="${isDeleted ? 'return false;' : `deleteDocument(${doc.documentIdx}, '${doc.userName}')`}"
@@ -431,6 +439,68 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error(`[연차 신청서 ${action} 실패]`, error);
             showUpdateFailure(`연차 신청서 ${action}`);
+        }
+    };
+
+    /**
+     * 연차신청서 반려 — 사유 입력 모달 → API 호출 (status=C0505 + C1906 알림 발송).
+     */
+    window.rejectDocument = async function(documentIdx, userName) {
+        const result = await Swal.fire({
+            title: `${userName}님의 연차 반려`,
+            html: '<div style="text-align:left;font-size:13px;color:#4b5563;margin-bottom:8px;">' +
+                  '반려 사유는 신청자에게 알림으로 함께 전달됩니다.' +
+                  '</div>' +
+                  '<textarea id="rejectReasonInput" class="swal2-textarea" rows="5" ' +
+                  'style="height:120px;width:100%;margin:0;" placeholder="예: 동일 부서 동시 휴가 불가 — 다음 주로 조정 부탁드립니다."></textarea>',
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '반려',
+            cancelButtonText: '취소',
+            preConfirm: () => {
+                const reason = document.getElementById('rejectReasonInput').value.trim();
+                if (!reason) {
+                    Swal.showValidationMessage('반려 사유를 입력해 주세요.');
+                    return false;
+                }
+                if (reason.length > 500) {
+                    Swal.showValidationMessage('반려 사유는 500자 이내로 입력해 주세요.');
+                    return false;
+                }
+                return reason;
+            }
+        });
+
+        if (!result.isConfirmed) return;
+        const rejectReason = result.value;
+
+        try {
+            const params = new URLSearchParams({ approve: 'false', rejectReason });
+            const response = await fetch(
+                `/api/vacation/admin/documents/${documentIdx}/approve?${params.toString()}`,
+                { method: 'PATCH' }
+            );
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.error || '반려 처리 실패');
+            }
+
+            await Swal.fire({
+                icon: 'success',
+                title: '반려되었습니다',
+                text: '신청자에게 반려 사유와 함께 알림이 발송됩니다.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            loadDocuments();
+
+        } catch (error) {
+            console.error('[연차 신청서 반려 실패]', error);
+            showUpdateFailure('연차 신청서 반려');
         }
     };
 

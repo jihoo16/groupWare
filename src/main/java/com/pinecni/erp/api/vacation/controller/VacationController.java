@@ -682,6 +682,7 @@ public class VacationController {
                                 .documentIdx(doc.getIdx())
                                 .createdAt(doc.getCreatedAt())
                                 .deletedAt(doc.getDeletedAt())
+                                .status(doc.getStatus())
                                 .userIdx(user.getIdx())
                                 .userName(user.getEmpName())
                                 .userDept(user.getEmpDept())
