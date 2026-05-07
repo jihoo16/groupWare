@@ -884,7 +884,7 @@ public class SignatureServiceImpl implements SignatureService {
     private static final java.time.format.DateTimeFormatter NOTIF_TIME_FMT =
             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    /** C1901 — 그 차례 서명자에게 알림. 외부인 / 본인=요청자 SKIP. */
+    /** C1901 — 그 차례 서명자에게 알림. 외부인만 SKIP. */
     private void enqueueSignatureRequestNotification(ApprovalDocument document,
                                                      DocumentSignature ds,
                                                      Long requesterUserIdx) {
@@ -892,7 +892,6 @@ public class SignatureServiceImpl implements SignatureService {
         if (Boolean.TRUE.equals(ds.getIsExternal())) return;
         Long signerIdx = ds.getSignerUserIdx();
         if (signerIdx == null) return;
-        if (signerIdx.equals(requesterUserIdx)) return;
 
         String recipientName = userRepository.findById(signerIdx)
                 .map(User::getEmpName).orElse("");

@@ -1045,7 +1045,6 @@ public class ProjectServiceImpl implements ProjectService {
     private void enqueueProjectMemberNotification(String type, Project project, ProjectMember member,
                                                   Long actorUserIdx, String changedFields) {
         if (project == null || member == null || member.getEmployeeIdx() == null) return;
-        if (member.getEmployeeIdx().equals(actorUserIdx)) return;
 
         java.time.format.DateTimeFormatter dateFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
         java.time.format.DateTimeFormatter dtFmt   = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");

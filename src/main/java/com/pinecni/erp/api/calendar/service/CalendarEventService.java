@@ -165,8 +165,6 @@ public class CalendarEventService {
             Long recipientIdx = p.getUserIdx();
             // 외부인 (userIdx null) SKIP — MM 계정 없음
             if (recipientIdx == null) continue;
-            // 본인이 만든 일정에 본인을 참석자로 등록한 경우 SKIP
-            if (creatorIdx != null && recipientIdx.equals(creatorIdx)) continue;
 
             String recipientName = userRepository.findById(recipientIdx)
                     .map(User::getEmpName)
@@ -315,7 +313,6 @@ public class CalendarEventService {
         for (CalendarParticipantDto p : eventDto.getParticipants()) {
             Long recipientIdx = p.getUserIdx();
             if (recipientIdx == null) continue;
-            if (actorIdx != null && recipientIdx.equals(actorIdx)) continue;
 
             String recipientName = userRepository.findById(recipientIdx)
                     .map(User::getEmpName)
@@ -401,7 +398,6 @@ public class CalendarEventService {
         for (CalendarParticipant p : participants) {
             Long recipientIdx = p.getUserIdx();
             if (recipientIdx == null) continue;
-            if (actorIdx != null && recipientIdx.equals(actorIdx)) continue;
 
             java.util.Map<String, Object> vars = new java.util.LinkedHashMap<>();
             vars.put("eventTitle",    event.getEventTitle() != null ? event.getEventTitle() : "(제목 없음)");

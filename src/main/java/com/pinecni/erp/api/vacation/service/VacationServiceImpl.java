@@ -2006,7 +2006,7 @@ public class VacationServiceImpl implements VacationService {
                                                      Long approverUserIdx,
                                                      boolean approve,
                                                      String rejectReason) {
-        if (vacationUserIdx == null || vacationUserIdx.equals(approverUserIdx)) return;
+        if (vacationUserIdx == null) return;
 
         DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -2063,7 +2063,7 @@ public class VacationServiceImpl implements VacationService {
                                                          List<VacationRequest> vacationRequests,
                                                          Long vacationUserIdx,
                                                          Long actorUserIdx) {
-        if (vacationUserIdx == null || vacationUserIdx.equals(actorUserIdx)) return;
+        if (vacationUserIdx == null) return;
 
         DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
