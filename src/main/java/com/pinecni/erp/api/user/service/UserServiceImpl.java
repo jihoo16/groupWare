@@ -36,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final CodeService codeService;
+    private final com.pinecni.erp.api.notification.service.NotificationSubscriptionService notificationSubscriptionService;
 
     @Override
     public List<UserSimpleDTO> getAllActiveUsers() {
@@ -160,6 +161,15 @@ public class UserServiceImpl implements UserService {
             savedUser = userRepository.save(savedUser);
             log.info("Manager auto-assigned for user {}. Manager idx: {}",
                     savedUser.getEmpId(), savedUser.getManagerIdx());
+        }
+
+        // 알림 구독 기본 행 생성 (15종 × 2채널 = 30건). 실패해도 사용자 생성은 정상 — 운영자가
+        // 나중에 /admin/notifications 권한으로도 보정 가능.
+        try {
+            notificationSubscriptionService.createDefaultsFor(savedUser.getIdx());
+        } catch (Exception e) {
+            log.warn("[알림 구독 기본 생성 실패 — 무시하고 진행] userIdx={}, error={}",
+                    savedUser.getIdx(), e.getMessage());
         }
 
         return userMapper.toDTO(savedUser);
