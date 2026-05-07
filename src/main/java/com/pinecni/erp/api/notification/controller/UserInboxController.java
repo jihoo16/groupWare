@@ -3,9 +3,13 @@ package com.pinecni.erp.api.notification.controller;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.notification.dto.InboxEntryDto;
 import com.pinecni.erp.api.notification.dto.InboxPageResponse;
+import com.pinecni.erp.api.notification.dto.SentEntryDto;
+import com.pinecni.erp.api.notification.dto.SentPageResponse;
 import com.pinecni.erp.api.notification.repository.NotificationRepository;
+import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.Code;
 import com.pinecni.erp.entity.Notification;
+import com.pinecni.erp.entity.User;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,11 +28,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * 사용자 인박스 REST API — 본인 INWEB(C2103) 알림만 조회/조작.
+ * 사용자 인박스 REST API — 본인 INWEB(C2103) 알림 + 본인이 발송한 알림.
  */
 @Slf4j
 @RestController
@@ -41,6 +47,7 @@ public class UserInboxController {
     private static final int    MAX_PAGE_SIZE     = 100;
 
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
     private final CodeRepository codeRepository;
 
     @GetMapping
@@ -114,6 +121,92 @@ public class UserInboxController {
         int updated = notificationRepository.markAllInboxRead(userIdx, LocalDateTime.now());
         log.info("[Inbox] 모두 읽음 — userIdx={}, updated={}", userIdx, updated);
         return ResponseEntity.ok(Map.of("updated", updated));
+    }
+
+    // =========================================================================
+    // 보낸 알림 (actor = me)
+    // =========================================================================
+
+    @GetMapping("/sent")
+    public ResponseEntity<SentPageResponse> listSent(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String status,
+            HttpSession session) {
+
+        Long userIdx = requireUser(session);
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int safePage = Math.max(page, 0);
+
+        Page<Notification> result = notificationRepository.findSentPage(
+                userIdx, emptyToNull(channel), emptyToNull(type), emptyToNull(status),
+                PageRequest.of(safePage, safeSize));
+
+        // 일괄 조회로 N+1 회피
+        Set<Long> recipientIdxs = new HashSet<>();
+        result.getContent().forEach(n -> {
+            if (n.getRecipientUserIdx() != null) recipientIdxs.add(n.getRecipientUserIdx());
+        });
+        Map<Long, User> userMap = new HashMap<>();
+        userRepository.findAllById(recipientIdxs).forEach(u -> userMap.put(u.getIdx(), u));
+
+        Map<String, String> typeNameCache    = new HashMap<>();
+        Map<String, String> statusNameCache  = new HashMap<>();
+
+        List<SentEntryDto> content = result.getContent().stream()
+                .map(n -> toSentDto(n, userMap, typeNameCache, statusNameCache))
+                .toList();
+
+        return ResponseEntity.ok(SentPageResponse.builder()
+                .content(content)
+                .page(result.getNumber())
+                .size(result.getSize())
+                .totalElements(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .first(result.isFirst())
+                .last(result.isLast())
+                .build());
+    }
+
+    private SentEntryDto toSentDto(Notification n, Map<Long, User> userMap,
+                                   Map<String, String> typeNameCache, Map<String, String> statusNameCache) {
+        User recipient = n.getRecipientUserIdx() != null ? userMap.get(n.getRecipientUserIdx()) : null;
+        String typeName    = typeNameCache.computeIfAbsent(n.getNotificationType(), c ->
+                codeRepository.findByCode(c).map(Code::getCodeName).orElse(c));
+        String statusName  = n.getStatus() == null ? null
+                : statusNameCache.computeIfAbsent(n.getStatus(), c ->
+                        codeRepository.findByCode(c).map(Code::getCodeName).orElse(c));
+        return SentEntryDto.builder()
+                .idx(n.getIdx())
+                .notificationType(n.getNotificationType())
+                .notificationTypeName(typeName)
+                .channel(n.getChannel())
+                .channelLabel(channelLabel(n.getChannel()))
+                .title(n.getTitle())
+                .body(n.getBody())
+                .linkUrl(n.getLinkUrl())
+                .recipientUserIdx(n.getRecipientUserIdx())
+                .recipientName(recipient != null ? recipient.getEmpName() : null)
+                .recipientEmpId(recipient != null ? recipient.getEmpId() : null)
+                .status(n.getStatus())
+                .statusName(statusName)
+                .retryCount(n.getRetryCount())
+                .lastError(n.getLastError())
+                .createdAt(n.getCreatedAt())
+                .sentAt(n.getSentAt())
+                .build();
+    }
+
+    private static String channelLabel(String channel) {
+        if (channel == null) return null;
+        return switch (channel) {
+            case "C2101" -> "메신저";
+            case "C2102" -> "채널";
+            case "C2103" -> "인박스";
+            default      -> channel;
+        };
     }
 
     // =========================================================================

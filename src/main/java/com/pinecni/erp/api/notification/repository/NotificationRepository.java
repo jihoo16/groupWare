@@ -83,6 +83,27 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
                                         @Param("keyword") String keyword,
                                         Pageable pageable);
 
+    // =========================================================================
+    // 본인이 발송 (= actor) 한 알림
+    // =========================================================================
+
+    /**
+     * 내가 일으킨 알림 목록. C1914(내 알림이 실패해서 나에게 온 fallback) 는 받은 알림 쪽에 떠야 자연스러우므로
+     * 보낸 목록에서는 제외. 채널 필터는 비어있으면 모든 채널.
+     */
+    @Query("SELECT n FROM Notification n " +
+           "WHERE n.actorUserIdx = :userIdx " +
+           "  AND n.notificationType <> 'C1914' " +
+           "  AND (:channel IS NULL OR n.channel = :channel) " +
+           "  AND (:type IS NULL OR n.notificationType = :type) " +
+           "  AND (:status IS NULL OR n.status = :status) " +
+           "ORDER BY n.createdAt DESC, n.idx DESC")
+    Page<Notification> findSentPage(@Param("userIdx") Long userIdx,
+                                    @Param("channel") String channel,
+                                    @Param("type") String type,
+                                    @Param("status") String status,
+                                    Pageable pageable);
+
     /**
      * 재시도 큐 폴링 — RETRY_WAIT(C2005) 인 행 중 다음 시도 시각이 도래한 것만.
      * 인덱스 idx_n_pending (status IN ('C2001','C2005') 부분 인덱스) 를 활용.
