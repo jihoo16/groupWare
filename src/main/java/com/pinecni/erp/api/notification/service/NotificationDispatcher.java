@@ -123,8 +123,7 @@ public class NotificationDispatcher {
             return;
         }
         if (CHANNEL_MM_CH.equals(n.getChannel())) {
-            // 채널 발송은 2차 지원 예정 — 1차 MVP 에선 SKIP
-            markSkipped(n.getIdx(), "채널 발송은 아직 지원되지 않습니다.");
+            dispatchChannelPost(n, settings);
             return;
         }
         if (!CHANNEL_MM.equals(n.getChannel())) {
@@ -201,6 +200,44 @@ public class NotificationDispatcher {
         } catch (Exception e) {
             log.error("[Dispatch] 알 수 없는 예외 — idx={}", n.getIdx(), e);
             scheduleRetry(n, "UNKNOWN", "알 수 없는 오류로 발송 실패");
+        }
+    }
+
+    /** C2102 메신저 채널 발송 — settings.defaultChannelId 로 post. C1915 시스템공지 등에서 사용. */
+    private void dispatchChannelPost(Notification n, NotificationSettings settings) {
+        String channelId = settings.getDefaultChannelId();
+        if (channelId == null || channelId.isBlank()) {
+            markSkipped(n.getIdx(), "공지용 채널 ID 가 설정되어 있지 않습니다.");
+            return;
+        }
+        if (settings.getServerUrl() == null || settings.getServerUrl().isBlank()
+                || !tokenCipher.isPresent(settings.getBotTokenEnc())) {
+            scheduleRetry(n, "BOT_NOT_CONFIGURED", "봇 접속 정보가 등록되어 있지 않습니다.");
+            return;
+        }
+        String plainToken;
+        try {
+            plainToken = tokenCipher.decrypt(settings.getBotTokenEnc());
+        } catch (Exception e) {
+            markFailedAndCascade(n, "TOKEN_DECRYPT", "저장된 봇 토큰을 복호화하지 못함");
+            return;
+        }
+        try {
+            MmPost post = mmClient.postMessage(settings.getServerUrl(), plainToken, channelId, n.getBody());
+            markSent(n.getIdx(), post != null ? post.id() : null);
+            log.info("[Dispatch] CHANNEL SENT — idx={}, type={}, channelId={}, postId={}",
+                    n.getIdx(), n.getNotificationType(), channelId,
+                    post != null ? post.id() : null);
+        } catch (MattermostApiException e) {
+            if (isPermanent(e.getKind())) {
+                markFailedAndCascade(n, e.getKind().name(),
+                        "채널 발송이 거부되었습니다 (" + e.getKind().name() + "). 봇이 채널 멤버인지 확인해 주세요.");
+            } else {
+                scheduleRetry(n, e.getKind().name(), "채널 발송 일시 실패: " + e.getKind().name());
+            }
+        } catch (Exception e) {
+            log.error("[Dispatch] 채널 발송 알 수 없는 예외 — idx={}", n.getIdx(), e);
+            scheduleRetry(n, "UNKNOWN", "알 수 없는 오류로 채널 발송 실패");
         }
     }
 

@@ -89,7 +89,7 @@ public class NotificationSettingsServiceImpl implements NotificationSettingsServ
                 .botUsername(e.getBotUsername())
                 .defaultChannelId(e.getDefaultChannelId())
                 .botTokenSet(tokenCipher.isPresent(e.getBotTokenEnc()))
-                .isEnabled(Boolean.TRUE.equals(e.getIsEnabled()))
+                .isEnabled(e.getIsEnabled() != null ? e.getIsEnabled() : Boolean.FALSE)
                 .maxRetryCount(e.getMaxRetryCount() != null ? e.getMaxRetryCount() : 0)
                 .retryBackoffSeconds(e.getRetryBackoffSeconds() != null ? e.getRetryBackoffSeconds() : 0)
                 .expireAfterMinutes(e.getExpireAfterMinutes() != null ? e.getExpireAfterMinutes() : 0)

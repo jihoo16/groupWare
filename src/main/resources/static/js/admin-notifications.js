@@ -359,6 +359,71 @@
     }
 
     // -------------------------------------------------------------
+    // 시스템 공지 발송
+    // -------------------------------------------------------------
+
+    async function openAnnounceModal() {
+        const result = await Swal.fire({
+            title: '시스템 공지 발송',
+            html:
+                '<input id="annTitle" class="swal2-input" placeholder="공지 제목" maxlength="100">' +
+                '<textarea id="annBody" class="swal2-textarea" placeholder="공지 본문 (Markdown 지원)" rows="6" style="height:140px;"></textarea>' +
+                '<label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:8px;justify-content:flex-start;">' +
+                '  <input type="checkbox" id="annAlsoInbox" checked> 모든 직원 인박스에도 동시 발송' +
+                '</label>',
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: '발송',
+            cancelButtonText: '취소',
+            confirmButtonColor: '#1a73e8',
+            preConfirm: function () {
+                const title = document.getElementById('annTitle').value.trim();
+                const body  = document.getElementById('annBody').value.trim();
+                const alsoInbox = document.getElementById('annAlsoInbox').checked;
+                if (!title || !body) {
+                    Swal.showValidationMessage('제목과 본문을 모두 입력해 주세요.');
+                    return false;
+                }
+                return { title: title, body: body, alsoInbox: alsoInbox };
+            }
+        });
+        if (!result.isConfirmed) return;
+
+        const wrap = document.getElementById('announceResult');
+        if (wrap) {
+            wrap.innerHTML =
+                '<div class="notif-status-row" style="background:#f3f4f6;border-color:#e5e7eb;color:#4b5563;">' +
+                '  <i class="fas fa-spinner fa-spin status-icon"></i>' +
+                '  <span class="status-text">공지 발송 중...</span>' +
+                '</div>';
+        }
+
+        try {
+            const res = await fetch('/api/admin/notifications/announce', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(result.value)
+            });
+            if (res.status === 403) throw new Error('FORBIDDEN');
+            if (!res.ok) throw new Error('FAIL');
+            const json = await res.json();
+            if (wrap) {
+                wrap.innerHTML = renderRow(true,
+                    '공지를 큐에 등록했습니다 — 채널 1건' +
+                    (json.inboxEnqueued > 0 ? ' + 인박스 ' + json.inboxEnqueued + '건' : '') +
+                    '. 발송 결과는 [발송 이력] 탭에서 확인하세요.');
+            }
+        } catch (e) {
+            if (wrap) {
+                wrap.innerHTML = renderRow(false,
+                    e.message === 'FORBIDDEN' ? '알림 관리 권한이 없습니다.' : '공지 발송에 실패했습니다.');
+            }
+            console.error('[Announce] 실패', e);
+        }
+    }
+
+    // -------------------------------------------------------------
     // 액션 바인딩
     // -------------------------------------------------------------
 
@@ -369,6 +434,7 @@
 
         document.getElementById('btnTestBot')?.addEventListener('click', testConnection);
         document.getElementById('btnTestSend')?.addEventListener('click', testSend);
+        document.getElementById('btnAnnounce')?.addEventListener('click', openAnnounceModal);
 
         document.getElementById('btnChangeToken')?.addEventListener('click', onChangeTokenClick);
 

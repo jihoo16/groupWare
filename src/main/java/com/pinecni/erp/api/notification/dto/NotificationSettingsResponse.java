@@ -22,7 +22,11 @@ public class NotificationSettingsResponse {
     /** 봇 토큰이 등록되어 있는지 (평문은 절대 노출하지 않음) */
     private final boolean botTokenSet;
 
-    private final boolean       isEnabled;
+    /**
+     * Wrapper {@link Boolean} 사용 — primitive boolean + "is" 접두어 필드명 조합이면
+     * Jackson 이 JSON 키를 "enabled" 로 직렬화해 프론트의 {@code s.isEnabled} 읽기가 깨진다.
+     */
+    private final Boolean       isEnabled;
     private final int           maxRetryCount;
     private final int           retryBackoffSeconds;
     private final int           expireAfterMinutes;

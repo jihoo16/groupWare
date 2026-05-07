@@ -60,6 +60,29 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     long countByOriginalNotificationIdxAndNotificationTypeNot(@Param("rootIdx") Long rootIdx,
                                                               @Param("excludedType") String excludedType);
 
+    // =========================================================================
+    // 관리자 발송 이력
+    // =========================================================================
+
+    /**
+     * 발송 이력 페이지 조회. 모든 필터 인자는 null 허용.
+     * 키워드는 last_error / dedup_key 안에서 ILIKE 매칭.
+     */
+    @Query("SELECT n FROM Notification n " +
+           "WHERE (:type IS NULL OR n.notificationType = :type) " +
+           "  AND (:status IS NULL OR n.status = :status) " +
+           "  AND (:fromDt IS NULL OR n.createdAt >= :fromDt) " +
+           "  AND (:toDt IS NULL OR n.createdAt < :toDt) " +
+           "  AND (:keyword IS NULL OR LOWER(n.lastError) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "                       OR LOWER(n.dedupKey)  LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "ORDER BY n.createdAt DESC, n.idx DESC")
+    Page<Notification> findAdminLogPage(@Param("type")    String type,
+                                        @Param("status")  String status,
+                                        @Param("fromDt")  LocalDateTime fromDt,
+                                        @Param("toDt")    LocalDateTime toDt,
+                                        @Param("keyword") String keyword,
+                                        Pageable pageable);
+
     /**
      * 재시도 큐 폴링 — RETRY_WAIT(C2005) 인 행 중 다음 시도 시각이 도래한 것만.
      * 인덱스 idx_n_pending (status IN ('C2001','C2005') 부분 인덱스) 를 활용.

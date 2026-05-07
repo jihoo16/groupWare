@@ -159,6 +159,23 @@
                     <div id="botSendResult" style="margin-top:12px;"></div>
                 </div>
 
+                <!-- ⑤ 시스템 공지 발송 -->
+                <div class="notif-card">
+                    <h3 class="notif-card-title">
+                        시스템 공지 발송
+                        <span class="subtitle">공지용 Mattermost 채널로 공지 메시지를 보냅니다</span>
+                    </h3>
+                    <div style="font-size:13px;color:#4b5563;margin-bottom:12px;">
+                        위 [봇 접속 정보] 의 <strong>공지용 채널 ID</strong> 로 메시지가 발송됩니다.
+                        그 채널에 봇이 멤버로 추가되어 있어야 발송이 성공합니다.
+                        <strong>인박스 동시 발송</strong> 을 켜면 모든 활성 직원의 그룹웨어 인박스에도 같은 공지가 들어갑니다.
+                    </div>
+                    <div class="notif-btn-row" style="margin-top:0;">
+                        <button class="notif-btn notif-btn-primary" id="btnAnnounce"><i class="fas fa-bullhorn"></i> 공지 작성</button>
+                    </div>
+                    <div id="announceResult" style="margin-top:12px;"></div>
+                </div>
+
             </div>
         </div>
     </main>
