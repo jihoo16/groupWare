@@ -61,6 +61,25 @@ public class AsyncConfig implements AsyncConfigurer {
     }
 
     /**
+     * Mattermost 알림 발송 전용 Executor
+     * - 외부(MM) HTTP 호출이 응답 시간을 지연시키지 않게 메인 트랜잭션과 분리
+     * - 일반 @Async / 감사 로그와 격리하여 MM 장애 시 다른 비동기 작업이 영향받지 않게
+     * - 큐 용량은 일시적 폭주에 대비 (실패해도 RETRY_WAIT 로 다시 시도되므로 손실 위험은 작음)
+     */
+    @Bean(name = "mattermostExecutor")
+    public Executor mattermostExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(200);
+        executor.setThreadNamePrefix("mm-notif-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        executor.initialize();
+        return executor;
+    }
+
+    /**
      * @Async 메서드에서 발생한 예외 처리
      * - 로그 남기고 삼킴 (비즈니스 로직에 영향 없도록)
      */
