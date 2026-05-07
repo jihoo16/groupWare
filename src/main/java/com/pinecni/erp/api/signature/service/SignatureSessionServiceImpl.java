@@ -60,6 +60,7 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
     private final SignatureService signatureService;
     private final AuditLogService auditLogService;
     private final ApplicationEventPublisher eventPublisher;
+    private final com.pinecni.erp.api.notification.service.NotificationEnqueueService notificationEnqueueService;
 
     @Value("${signature.session.ttl-seconds:300}")
     private int sessionTtlSeconds;
@@ -632,6 +633,16 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
         }
         // 외부인은 audit.user_idx (NOT NULL) 제약상 기록 불가 — session 테이블에 이미 기록됨
 
+        // 6-1. C1904 — 외부 참석자 서명 완료 시 작성자에게 알림
+        if (sessionIsExternal) {
+            try {
+                enqueueExternalSignedNotification(documentIdx, signerUserIdx, mainRow, now);
+            } catch (Exception e) {
+                log.warn("[외부참석자 서명완료 알림 enqueue 실패 — 무시하고 진행] documentIdx={}, error={}",
+                        documentIdx, e.getMessage());
+            }
+        }
+
         // 7. 이 서명으로 문서 전체 서명이 완료된 경우, 카테고리 B 자동 PDF 트리거 이벤트 발행.
         //    @TransactionalEventListener(AFTER_COMMIT) 가 받아서 비동기로 PDF 생성 — 메인 트랜잭션 분리.
         if (signatureService.isAllSignaturesComplete(documentIdx)) {
@@ -793,5 +804,49 @@ public class SignatureSessionServiceImpl implements SignatureSessionService {
         if (name.length() == 1) return name;
         if (name.length() == 2) return name.charAt(0) + "*";
         return name.charAt(0) + "*".repeat(name.length() - 1);
+    }
+
+    /**
+     * C1904 — 외부 참석자 모바일 서명 완료 시 작성자(drafter) 에게 알림.
+     */
+    private void enqueueExternalSignedNotification(Long documentIdx, Long externalPersonIdx,
+                                                   DocumentSignature mainRow, LocalDateTime eventTime) {
+        ApprovalDocument document = approvalDocumentRepository.findById(documentIdx).orElse(null);
+        if (document == null || document.getDrafterUserIdx() == null) return;
+
+        var external = externalPersonRepository.findById(externalPersonIdx).orElse(null);
+        String externalName        = external != null && external.getName() != null
+                ? external.getName() : "외부 참석자";
+        String externalAffiliation = external != null && external.getCompanyName() != null
+                ? external.getCompanyName() : "";
+
+        String deepLink = SignatureServiceImpl.approvalDeepLink(
+                document.getDocumentType(), document.getIdx());
+
+        java.time.format.DateTimeFormatter timeFmt =
+                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        java.util.Map<String, Object> vars = new java.util.LinkedHashMap<>();
+        vars.put("documentTitle",             document.getTitle() != null ? document.getTitle() : "문서");
+        vars.put("externalPersonName",        externalName);
+        vars.put("externalPersonAffiliation", externalAffiliation);
+        vars.put("eventTime",                 eventTime.format(timeFmt));
+        vars.put("documentTypePath",          "");
+        vars.put("documentIdx",               document.getIdx());
+        vars.put("deepLink",                  deepLink);
+
+        notificationEnqueueService.enqueue(
+                com.pinecni.erp.api.notification.dto.NotificationCreateCommand.builder()
+                        .notificationType("C1904")
+                        .channel("C2101")
+                        .channel("C2103")
+                        .recipientUserIdx(document.getDrafterUserIdx())
+                        .actorUserIdx(document.getDrafterUserIdx())  // self — 외부인은 user.idx 가 아니라 매핑 불가
+                        .targetType("C1702")  // signature_requests
+                        .targetIdx(mainRow.getIdx())
+                        .documentIdx(document.getIdx())
+                        .variables(vars)
+                        .dedupKey("EXTSIGN:" + mainRow.getIdx())
+                        .build());
     }
 }
