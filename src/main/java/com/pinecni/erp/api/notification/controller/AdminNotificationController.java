@@ -204,6 +204,14 @@ public class AdminNotificationController {
         Long rootIdx = n.getOriginalNotificationIdx() == null ? n.getIdx() : n.getOriginalNotificationIdx();
         long manualClones = notificationRepository.countByOriginalNotificationIdxAndNotificationTypeNot(rootIdx, "C1914");
 
+        // 제목·본문 앞에 [재발송] 프리픽스 — 수신자가 "이건 재발송된 메시지" 식별 가능하게.
+        // 이미 프리픽스가 있으면 또 붙이지 않음.
+        String prefix = "[재발송] ";
+        String newTitle = n.getTitle() != null && !n.getTitle().startsWith(prefix)
+                ? prefix + n.getTitle() : n.getTitle();
+        String newBody  = n.getBody()  != null && !n.getBody().startsWith(prefix)
+                ? prefix + n.getBody()  : n.getBody();
+
         Notification clone = Notification.builder()
                 .notificationType(n.getNotificationType())
                 .channel(n.getChannel())
@@ -213,8 +221,8 @@ public class AdminNotificationController {
                 .targetType(n.getTargetType())
                 .targetIdx(n.getTargetIdx())
                 .documentIdx(n.getDocumentIdx())
-                .title(n.getTitle())
-                .body(n.getBody())
+                .title(newTitle)
+                .body(newBody)
                 .linkUrl(n.getLinkUrl())
                 .payloadJson(n.getPayloadJson())
                 .status("C2001")

@@ -293,10 +293,78 @@ document.addEventListener('DOMContentLoaded', function () {
             title: row.title,
             html: html,
             width: 720,
-            showConfirmButton: false,
+            showConfirmButton: true,
+            confirmButtonText: '<i class="fas fa-redo"></i> 재발송',
+            confirmButtonColor: '#1a73e8',
             showCancelButton: true,
             cancelButtonText: '닫기',
             customClass: { popup: 'notif-detail-popup' }
+        }).then(function (r) {
+            if (r.isConfirmed) resendNotification(row);
+        });
+    }
+
+    function resendNotification(row) {
+        Swal.fire({
+            title: '같은 메시지를 다시 보낼까요?',
+            html:
+                '<div style="text-align:left;font-size:13px;color:#4b5563;">' +
+                '  <strong>' + escapeHtml(row.recipientName || '수신자') + '</strong>' +
+                (row.recipientEmpId ? ' (' + escapeHtml(row.recipientEmpId) + ')' : '') +
+                '  님께 같은 내용으로 다시 발송합니다.<br>' +
+                '  <span style="color:#9ca3af;">한 알림에 대해 최대 5회까지 재발송 가능. 재발송된 메시지에는 [재발송] 프리픽스가 자동으로 붙습니다.</span>' +
+                '</div>',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '재발송',
+            cancelButtonText: '취소',
+            confirmButtonColor: '#1a73e8'
+        }).then(function (c) {
+            if (!c.isConfirmed) return;
+            fetch('/api/notifications/' + row.idx + '/retry', {
+                method: 'POST',
+                credentials: 'same-origin'
+            })
+                .then(function (res) {
+                    if (res.status === 409) {
+                        return res.json().catch(function () { return null; })
+                                .then(function (json) {
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: '재발송 한도를 모두 사용했습니다',
+                                        text: (json && json.message) ||
+                                              '같은 알림에 대한 재발송 한도(5회) 를 다 썼습니다. 메신저로 직접 연락해 주세요.'
+                                    });
+                                    throw new Error('LIMIT');
+                                });
+                    }
+                    if (res.status === 403) throw new Error('FORBIDDEN');
+                    if (!res.ok) throw new Error('FAIL');
+                    return res.json();
+                })
+                .then(function (json) {
+                    if (!json) return;
+                    Swal.fire({
+                        icon: 'success',
+                        title: '재발송 큐에 등록됐습니다',
+                        text: '결과는 잠시 후 [보낸 알림] 에 반영됩니다 (' +
+                              json.userRetryCount + '/' + json.userRetryMax + ').',
+                        timer: 2200,
+                        showConfirmButton: false
+                    });
+                    load();
+                })
+                .catch(function (err) {
+                    if (err.message === 'LIMIT') return;
+                    if (err.message === 'FORBIDDEN') {
+                        Swal.fire({ icon: 'error', title: '재발송 권한이 없습니다',
+                            text: '본인이 일으킨 알림만 재발송 가능합니다.' });
+                    } else {
+                        Swal.fire({ icon: 'error', title: '재발송에 실패했습니다',
+                            text: '잠시 후 다시 시도해 주세요.' });
+                    }
+                    console.error('[Inbox/sent] 재발송 실패', err);
+                });
         });
     }
 

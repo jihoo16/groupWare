@@ -43,6 +43,8 @@ import java.util.Map;
 public class NotificationRetryController {
 
     private static final int USER_RETRY_MAX = 5;
+    /** 재발송 메시지 앞에 붙는 프리픽스 — 수신자가 "이건 다시 받은 메시지" 라고 식별할 수 있게 */
+    private static final String RESEND_PREFIX = "[재발송] ";
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -114,7 +116,8 @@ public class NotificationRetryController {
                     "수동 재시도 한도(" + USER_RETRY_MAX + "회) 를 모두 사용했습니다. 메신저로 직접 연락해 주세요.");
         }
 
-        // 재시도 = 같은 내용으로 새 행 INSERT (PENDING) — title/body/linkUrl 은 root 의 것 재사용
+        // 재시도 = 같은 내용으로 새 행 INSERT (PENDING). 제목·본문 앞에 [재발송] 프리픽스를
+        // 한 번만 붙임 (이미 붙어있으면 또 붙이지 않음 — 5회 재시도해도 [재발송][재발송]... 안 됨).
         Notification clone = Notification.builder()
                 .notificationType(root.getNotificationType())
                 .channel(root.getChannel())
@@ -124,8 +127,8 @@ public class NotificationRetryController {
                 .targetType(root.getTargetType())
                 .targetIdx(root.getTargetIdx())
                 .documentIdx(root.getDocumentIdx())
-                .title(root.getTitle())
-                .body(root.getBody())
+                .title(prependResendPrefix(root.getTitle()))
+                .body(prependResendPrefix(root.getBody()))
                 .linkUrl(root.getLinkUrl())
                 .payloadJson(root.getPayloadJson())
                 .status("C2001")  // PENDING
@@ -162,6 +165,13 @@ public class NotificationRetryController {
         return userIdx;
     }
 
+    /** 같은 텍스트에 [재발송] 프리픽스가 이미 있으면 또 붙이지 않음 */
+    private static String prependResendPrefix(String text) {
+        if (text == null) return null;
+        if (text.startsWith(RESEND_PREFIX)) return text;
+        return RESEND_PREFIX + text;
+    }
+
     /**
      * idx 가 가리키는 알림의 root 를 반환. C1914 fallback 으로 도착한 idx 인 경우
      * original_notification_idx 를 따라 올라가 원본 알림을 가져온다.
@@ -175,7 +185,7 @@ public class NotificationRetryController {
         return n;
     }
 
-    /** 원본 알림의 actor 또는 알림 관리자만 재시도 가능 */
+    /** 원본 알림의 actor (보낸 사람) 또는 알림 관리자만 재시도 가능. 받은 사람은 자기한테 다시 보낼 일이 없음. */
     private static void assertCanAccess(Notification root, Long userIdx, HttpSession session) {
         if (AuthorizationUtil.isAdminOrHigher(session)) return;
         if (root.getActorUserIdx() != null && root.getActorUserIdx().equals(userIdx)) return;
