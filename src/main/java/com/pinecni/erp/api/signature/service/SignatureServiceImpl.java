@@ -55,6 +55,7 @@ public class SignatureServiceImpl implements SignatureService {
     private final CodeRepository codeRepository;
     private final ExternalPersonRepository externalPersonRepository;
     private final AuditLogService auditLogService;
+    private final com.pinecni.erp.api.notification.service.NotificationEnqueueService notificationEnqueueService;
 
     // ============================================================
     // 결재라인 기반 서명 요청 생성
@@ -228,6 +229,14 @@ public class SignatureServiceImpl implements SignatureService {
                             .isCompleted(false)
                             .build();
                     signatureRequestRepository.save(sr);
+
+                    // C1901 — 그 차례 서명자에게 알림
+                    try {
+                        enqueueSignatureRequestNotification(document, row, requesterUserIdx);
+                    } catch (Exception e) {
+                        log.warn("[서명요청 알림 enqueue 실패 — 무시하고 진행] dsIdx={}, error={}",
+                                row.getIdx(), e.getMessage());
+                    }
                 }
             }
         }
@@ -447,6 +456,29 @@ public class SignatureServiceImpl implements SignatureService {
                                 .isCompleted(false)
                                 .build();
                         signatureRequestRepository.save(sr);
+
+                        // C1901 — 그 차례 서명자에게 알림 (advanceToNextOrder 경로)
+                        try {
+                            enqueueSignatureRequestNotification(document, row, requesterIdx);
+                        } catch (Exception e) {
+                            log.warn("[서명요청 알림 enqueue 실패 — 무시하고 진행] dsIdx={}, error={}",
+                                    row.getIdx(), e.getMessage());
+                        }
+                    }
+                }
+
+                // C1902 — order > 1 의 활성화 = 이전 order 가 방금 완료된 시점.
+                // 작성자(drafter) 에게 진행 상황 알림. 마지막 order 라면 SKIP (그건 C1903 으로 처리).
+                if (order > 1 && document != null) {
+                    int totalOrders = byOrder.size();
+                    int completedOrdersNow = order - 1;
+                    if (completedOrdersNow < totalOrders) {
+                        try {
+                            enqueueSignatureProgressNotification(document, rows, completedOrdersNow, totalOrders);
+                        } catch (Exception e) {
+                            log.warn("[서명진행 알림 enqueue 실패 — 무시하고 진행] documentIdx={}, order={}, error={}",
+                                    documentIdx, order, e.getMessage());
+                        }
                     }
                 }
             }
@@ -843,5 +875,153 @@ public class SignatureServiceImpl implements SignatureService {
             result.add(item);
         }
         return result;
+    }
+
+    // =========================================================================
+    // 알림 enqueue 헬퍼 (Phase 5 — C1901 서명요청 / C1902 서명진행)
+    // =========================================================================
+
+    private static final java.time.format.DateTimeFormatter NOTIF_TIME_FMT =
+            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+    /** C1901 — 그 차례 서명자에게 알림. 외부인 / 본인=요청자 SKIP. */
+    private void enqueueSignatureRequestNotification(ApprovalDocument document,
+                                                     DocumentSignature ds,
+                                                     Long requesterUserIdx) {
+        if (document == null || ds == null) return;
+        if (Boolean.TRUE.equals(ds.getIsExternal())) return;
+        Long signerIdx = ds.getSignerUserIdx();
+        if (signerIdx == null) return;
+        if (signerIdx.equals(requesterUserIdx)) return;
+
+        String recipientName = userRepository.findById(signerIdx)
+                .map(User::getEmpName).orElse("");
+        String actorName = requesterUserIdx != null
+                ? userRepository.findById(requesterUserIdx).map(User::getEmpName).orElse("")
+                : "";
+        String slotLabel = ds.getSignatureSlot() != null
+                ? codeRepository.findByCode(ds.getSignatureSlot()).map(Code::getCodeName).orElse("서명")
+                : "서명";
+
+        String deepLink = approvalDeepLink(document.getDocumentType(), document.getIdx());
+
+        java.util.Map<String, Object> vars = new java.util.LinkedHashMap<>();
+        vars.put("recipientName",   recipientName);
+        vars.put("documentTitle",   safe(document.getTitle(), "문서"));
+        vars.put("documentNo",      safe(document.getDocumentNo(), ""));
+        vars.put("slotLabel",       slotLabel);
+        vars.put("actorName",       actorName);
+        vars.put("eventTime",       LocalDateTime.now().format(NOTIF_TIME_FMT));
+        vars.put("documentTypePath", "");        // link_template 변수 — deepLink 가 우선됨
+        vars.put("documentIdx",     document.getIdx());
+        vars.put("deepLink",        deepLink);
+
+        notificationEnqueueService.enqueue(
+                com.pinecni.erp.api.notification.dto.NotificationCreateCommand.builder()
+                        .notificationType("C1901")
+                        .channel("C2101")
+                        .channel("C2103")
+                        .recipientUserIdx(signerIdx)
+                        .actorUserIdx(requesterUserIdx)
+                        .targetType("C1702")  // signature_requests
+                        .targetIdx(ds.getIdx())
+                        .documentIdx(document.getIdx())
+                        .variables(vars)
+                        .dedupKey("SIGREQ:" + ds.getIdx())
+                        .build());
+    }
+
+    /**
+     * C1902 — 중간 단계 완료 시 작성자(drafter) 에게 진행 상황 알림.
+     * 다음 차례 서명자(들)는 이미 활성화된 상태 — rows 가 그 단계의 행들.
+     */
+    private void enqueueSignatureProgressNotification(ApprovalDocument document,
+                                                      List<DocumentSignature> nextRows,
+                                                      int completedOrders,
+                                                      int totalOrders) {
+        if (document == null || document.getDrafterUserIdx() == null) return;
+
+        Long drafterIdx = document.getDrafterUserIdx();
+        String recipientName = userRepository.findById(drafterIdx)
+                .map(User::getEmpName).orElse("");
+
+        // 다음 차례 (방금 활성화된) 서명자/슬롯 — 첫 행 기준
+        DocumentSignature next = nextRows != null && !nextRows.isEmpty() ? nextRows.get(0) : null;
+        String nextSignerName = "";
+        String nextSlotLabel  = "";
+        if (next != null) {
+            if (next.getSignerUserIdx() != null) {
+                nextSignerName = userRepository.findById(next.getSignerUserIdx())
+                        .map(User::getEmpName).orElse("");
+            }
+            if (next.getSignatureSlot() != null) {
+                nextSlotLabel = codeRepository.findByCode(next.getSignatureSlot())
+                        .map(Code::getCodeName).orElse("");
+            }
+        }
+
+        // 마지막으로 서명한 사람의 이름/슬롯은 "이전 단계 완료자" — 정확한 추적이 까다로워 비워둠
+        // (필수 변수 아니라 템플릿에서 빈값으로 자연스럽게 렌더됨)
+        String deepLink = approvalDeepLink(document.getDocumentType(), document.getIdx());
+
+        java.util.Map<String, Object> vars = new java.util.LinkedHashMap<>();
+        vars.put("recipientName",    recipientName);
+        vars.put("documentTitle",    safe(document.getTitle(), "문서"));
+        vars.put("documentNo",       safe(document.getDocumentNo(), ""));
+        vars.put("actorName",        "");
+        vars.put("actorSlotLabel",   "");
+        vars.put("completedOrders",  completedOrders);
+        vars.put("totalOrders",      totalOrders);
+        vars.put("nextSignerName",   nextSignerName);
+        vars.put("nextSlotLabel",    nextSlotLabel);
+        vars.put("eventTime",        LocalDateTime.now().format(NOTIF_TIME_FMT));
+        vars.put("documentTypePath", "");
+        vars.put("documentIdx",      document.getIdx());
+        vars.put("deepLink",         deepLink);
+
+        notificationEnqueueService.enqueue(
+                com.pinecni.erp.api.notification.dto.NotificationCreateCommand.builder()
+                        .notificationType("C1902")
+                        .channel("C2101")
+                        .channel("C2103")
+                        .recipientUserIdx(drafterIdx)
+                        .actorUserIdx(drafterIdx)  // self — 도메인 actor 가 모호하면 drafter 로
+                        .targetType("C1701")
+                        .targetIdx(document.getIdx())
+                        .documentIdx(document.getIdx())
+                        .variables(vars)
+                        .dedupKey("SIGPROGRESS:" + document.getIdx() + ":" + completedOrders)
+                        .build());
+    }
+
+    /** documentType (C04) → /approval/{path}/detail?documentIdx={idx} 형태의 URL */
+    public static String approvalDeepLink(String documentType, Long documentIdx) {
+        String prefix = approvalPathPrefix(documentType);
+        if (documentIdx == null) return prefix;
+        if (prefix.endsWith("=")) return prefix + documentIdx;
+        return prefix + "/" + documentIdx;
+    }
+
+    private static String approvalPathPrefix(String documentType) {
+        if (documentType == null) return "/approval";
+        return switch (documentType) {
+            case "C0413" -> "/approval/vacation/detail?documentIdx=";
+            case "C0401" -> "/approval/expense/detail?documentIdx=";
+            case "C0402" -> "/approval/requisition/detail?documentIdx=";
+            case "C0403" -> "/approval/receipt-overtime/detail?documentIdx=";
+            case "C0404" -> "/approval/receipt-trip/detail?documentIdx=";
+            case "C0405" -> "/approval/receipt-trip-meeting/detail?documentIdx=";
+            case "C0406" -> "/approval/receipt-meeting/detail?documentIdx=";
+            case "C0407", "C0408" -> "/approval/receipt-purchase/detail?documentIdx=";
+            case "C0409" -> "/approval/weekly-report/detail?documentIdx=";
+            case "C0410" -> "/approval/project-weekly-report/detail?documentIdx=";
+            case "C0411" -> "/approval/monthly-report/detail?documentIdx=";
+            case "C0412" -> "/approval/meeting/detail?documentIdx=";
+            default      -> "/approval";
+        };
+    }
+
+    private static String safe(String s, String fallback) {
+        return s == null || s.isBlank() ? fallback : s;
     }
 }

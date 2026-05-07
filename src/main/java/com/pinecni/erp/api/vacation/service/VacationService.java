@@ -164,4 +164,10 @@ public interface VacationService {
      * @param approve true = 승인, false = 승인 취소
      */
     void approveVacation(Long documentIdx, Long approverUserIdx, boolean approve);
+
+    /**
+     * 연차 승인/반려 처리 (반려 사유 함께 기록).
+     * 반려 사유는 알림(C1906) 본문에 포함되어 신청자에게 전달됨.
+     */
+    void approveVacation(Long documentIdx, Long approverUserIdx, boolean approve, String rejectReason);
 }

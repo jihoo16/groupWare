@@ -76,6 +76,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final ReceiptTripMeetingSessionRepository receiptTripMeetingSessionRepository;
     private final ReceiptAttendeeRepository receiptAttendeeRepository;
     private final UserRepository userRepository;
+    private final com.pinecni.erp.api.notification.service.NotificationEnqueueService notificationEnqueueService;
 
     @Override
     public List<ProjectDTO> getAllProjects() {
@@ -398,6 +399,15 @@ public class ProjectServiceImpl implements ProjectService {
                         .orElse(null);
 
                 if (existingMember != null) {
+                    // 변경 항목 감지 (알림용)
+                    java.util.List<String> changes = new java.util.ArrayList<>();
+                    if (!java.util.Objects.equals(existingMember.getRole(), memberDTO.getRole())) changes.add("역할");
+                    if (!java.util.Objects.equals(existingMember.getParticipationStartDate(), memberDTO.getParticipationStartDate())
+                            || !java.util.Objects.equals(existingMember.getParticipationEndDate(), memberDTO.getParticipationEndDate())) {
+                        changes.add("참여 기간");
+                    }
+                    boolean wasInactive = !Boolean.TRUE.equals(existingMember.getIsActive());
+
                     // 기존 팀원 업데이트
                     existingMember.setRole(memberDTO.getRole());
                     existingMember.setParticipationStartDate(memberDTO.getParticipationStartDate());
@@ -407,6 +417,19 @@ public class ProjectServiceImpl implements ProjectService {
                     projectMemberRepository.save(existingMember);
                     log.debug("Project member updated: employeeIdx={}, projectIdx={}",
                              memberDTO.getEmployeeIdx(), idx);
+
+                    // 비활성→활성 재참여는 C1911(참여) 로, 그 외 의미 있는 변경은 C1912(정보변경) 로
+                    try {
+                        if (wasInactive) {
+                            enqueueProjectMemberNotification("C1911", project, existingMember, updatedUserIdx, null);
+                        } else if (!changes.isEmpty()) {
+                            enqueueProjectMemberNotification("C1912", project, existingMember, updatedUserIdx,
+                                    String.join(", ", changes));
+                        }
+                    } catch (Exception e) {
+                        log.warn("[프로젝트 알림 enqueue 실패 — 무시하고 진행] empIdx={}, error={}",
+                                memberDTO.getEmployeeIdx(), e.getMessage());
+                    }
                 } else {
                     // 신규 팀원 생성
                     ProjectMember newMember = ProjectMember.builder()
@@ -421,6 +444,14 @@ public class ProjectServiceImpl implements ProjectService {
                     projectMemberRepository.save(newMember);
                     log.debug("Project member created: employeeIdx={}, projectIdx={}",
                              memberDTO.getEmployeeIdx(), idx);
+
+                    // C1911 — 신규 멤버 등록 알림
+                    try {
+                        enqueueProjectMemberNotification("C1911", project, newMember, updatedUserIdx, null);
+                    } catch (Exception e) {
+                        log.warn("[프로젝트 참여 알림 enqueue 실패 — 무시하고 진행] empIdx={}, error={}",
+                                memberDTO.getEmployeeIdx(), e.getMessage());
+                    }
                 }
 
                 updatedMemberEmployeeIds.add(memberDTO.getEmployeeIdx());
@@ -428,11 +459,20 @@ public class ProjectServiceImpl implements ProjectService {
 
             // 3. DTO에 포함되지 않은 기존 팀원은 비활성화 (삭제된 것으로 간주)
             for (ProjectMember existingMember : existingMembers) {
-                if (!updatedMemberEmployeeIds.contains(existingMember.getEmployeeIdx())) {
+                if (!updatedMemberEmployeeIds.contains(existingMember.getEmployeeIdx())
+                        && Boolean.TRUE.equals(existingMember.getIsActive())) {
                     existingMember.setIsActive(false);
                     projectMemberRepository.save(existingMember);
                     log.debug("Project member deactivated: employeeIdx={}, projectIdx={}",
                              existingMember.getEmployeeIdx(), idx);
+
+                    // C1913 — 프로젝트 제외 알림
+                    try {
+                        enqueueProjectMemberNotification("C1913", project, existingMember, updatedUserIdx, null);
+                    } catch (Exception e) {
+                        log.warn("[프로젝트 제외 알림 enqueue 실패 — 무시하고 진행] empIdx={}, error={}",
+                                existingMember.getEmployeeIdx(), e.getMessage());
+                    }
                 }
             }
         }
@@ -990,5 +1030,60 @@ public class ProjectServiceImpl implements ProjectService {
                 sb.append("- ").append(name).append(": ").append(count).append("건\n"));
         sb.append("해당 문서를 먼저 수정하거나 삭제해야 멤버 기간을 변경할 수 있습니다.");
         return sb.toString();
+    }
+
+    // =========================================================================
+    // 프로젝트 멤버 알림 (Phase 5 — C1911/C1912/C1913)
+    // =========================================================================
+
+    /**
+     * 본인이 자기 자신을 등록/변경/제외해도 알림 SKIP. 외부인은 employeeIdx 가 user.idx 이므로 정상 사용자만 매칭.
+     *
+     * @param type C1911(참여) / C1912(정보변경) / C1913(제외)
+     * @param changedFields C1912 일 때만 채움 (예: "역할, 참여 기간"). 다른 종류는 null.
+     */
+    private void enqueueProjectMemberNotification(String type, Project project, ProjectMember member,
+                                                  Long actorUserIdx, String changedFields) {
+        if (project == null || member == null || member.getEmployeeIdx() == null) return;
+        if (member.getEmployeeIdx().equals(actorUserIdx)) return;
+
+        java.time.format.DateTimeFormatter dateFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        java.time.format.DateTimeFormatter dtFmt   = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        String roleName = member.getRole() != null
+                ? codeRepository.findByCode(member.getRole())
+                        .map(com.pinecni.erp.entity.Code::getCodeName).orElse(member.getRole())
+                : "";
+        String actorName = actorUserIdx != null
+                ? userRepository.findById(actorUserIdx)
+                        .map(com.pinecni.erp.entity.User::getEmpName).orElse("관리자")
+                : "관리자";
+
+        java.util.Map<String, Object> vars = new java.util.LinkedHashMap<>();
+        vars.put("projectName",            project.getProjectName() != null ? project.getProjectName() : "");
+        vars.put("memberRole",             roleName);
+        vars.put("participationStartDate", member.getParticipationStartDate() != null
+                ? member.getParticipationStartDate().format(dateFmt) : "-");
+        vars.put("participationEndDate",   member.getParticipationEndDate() != null
+                ? member.getParticipationEndDate().format(dateFmt) : "-");
+        vars.put("changedFields",          changedFields != null ? changedFields : "");
+        vars.put("actorName",              actorName);
+        vars.put("eventTime",              java.time.LocalDateTime.now().format(dtFmt));
+        vars.put("projectIdx",             project.getIdx());
+        vars.put("deepLink",               "/project-detail?idx=" + project.getIdx());
+
+        notificationEnqueueService.enqueue(
+                com.pinecni.erp.api.notification.dto.NotificationCreateCommand.builder()
+                        .notificationType(type)
+                        .channel("C2101")
+                        .channel("C2103")
+                        .recipientUserIdx(member.getEmployeeIdx())
+                        .actorUserIdx(actorUserIdx)
+                        .targetType("C1704")  // project_member
+                        .targetIdx(member.getIdx())
+                        .variables(vars)
+                        .dedupKey("PRJ-" + type + ":" + project.getIdx() + ":" + member.getEmployeeIdx() + ":"
+                                + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")))
+                        .build());
     }
 }

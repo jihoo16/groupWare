@@ -33,6 +33,7 @@ public class CalendarEventService {
     private final CalendarParticipantRepository calendarParticipantRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final com.pinecni.erp.api.notification.service.NotificationEnqueueService notificationEnqueueService;
 
     /**
      * 기간별 일정 조회
@@ -127,7 +128,74 @@ public class CalendarEventService {
 
         log.info("일정 생성 완료: eventIdx={}", savedEvent.getIdx());
 
+        // 알림 발송 — 참석자에게 일정 초대 (C1908). 본인이 등록자이면 SKIP, 외부인 SKIP.
+        try {
+            enqueueCalendarInviteNotifications(savedEvent, eventDto);
+        } catch (Exception e) {
+            log.warn("[일정초대 알림 enqueue 실패 — 무시하고 진행] eventIdx={}, error={}",
+                    savedEvent.getIdx(), e.getMessage());
+        }
+
         return getEventById(savedEvent.getIdx());
+    }
+
+    private void enqueueCalendarInviteNotifications(CalendarEvent savedEvent, CalendarEventDto eventDto) {
+        if (eventDto.getParticipants() == null || eventDto.getParticipants().isEmpty()) return;
+
+        Long creatorIdx = eventDto.getCreatorIdx();
+        String actorName = creatorIdx != null
+                ? userRepository.findById(creatorIdx).map(User::getEmpName).orElse("등록자")
+                : "등록자";
+
+        java.time.format.DateTimeFormatter dateFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        java.time.format.DateTimeFormatter dtFmt   = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        String eventStart = savedEvent.getStartDate() != null
+                ? savedEvent.getStartDate().format(dateFmt) +
+                  (savedEvent.getStartTime() != null ? " " + savedEvent.getStartTime() : "")
+                : "-";
+        String eventEnd   = savedEvent.getEndDate() != null
+                ? savedEvent.getEndDate().format(dateFmt) +
+                  (savedEvent.getEndTime() != null ? " " + savedEvent.getEndTime() : "")
+                : "-";
+        String eventStartDate = savedEvent.getStartDate() != null
+                ? savedEvent.getStartDate().format(dateFmt) : "";
+
+        for (CalendarParticipantDto p : eventDto.getParticipants()) {
+            Long recipientIdx = p.getUserIdx();
+            // 외부인 (userIdx null) SKIP — MM 계정 없음
+            if (recipientIdx == null) continue;
+            // 본인이 만든 일정에 본인을 참석자로 등록한 경우 SKIP
+            if (creatorIdx != null && recipientIdx.equals(creatorIdx)) continue;
+
+            String recipientName = userRepository.findById(recipientIdx)
+                    .map(User::getEmpName)
+                    .orElse(p.getUserName() != null ? p.getUserName() : "");
+
+            java.util.Map<String, Object> vars = new java.util.LinkedHashMap<>();
+            vars.put("recipientName", recipientName);
+            vars.put("eventTitle",    savedEvent.getEventTitle() != null ? savedEvent.getEventTitle() : "(제목 없음)");
+            vars.put("eventStart",    eventStart);
+            vars.put("eventEnd",      eventEnd);
+            vars.put("eventLocation", savedEvent.getLocation() != null ? savedEvent.getLocation() : "(장소 미정)");
+            vars.put("actorName",     actorName);
+            vars.put("eventStartDate", eventStartDate);
+            vars.put("eventTime",     LocalDateTime.now().format(dtFmt));
+            vars.put("deepLink",      "/calendar?date=" + eventStartDate);
+
+            notificationEnqueueService.enqueue(
+                    com.pinecni.erp.api.notification.dto.NotificationCreateCommand.builder()
+                            .notificationType("C1908")
+                            .channel("C2101")
+                            .channel("C2103")
+                            .recipientUserIdx(recipientIdx)
+                            .actorUserIdx(creatorIdx)
+                            .targetType("C1703")  // calendar_events
+                            .targetIdx(savedEvent.getIdx())
+                            .variables(vars)
+                            .dedupKey("CAL-INVITE:" + savedEvent.getIdx() + ":" + recipientIdx)
+                            .build());
+        }
     }
 
     /**
@@ -139,6 +207,21 @@ public class CalendarEventService {
 
         CalendarEvent event = calendarEventRepository.findById(eventIdx)
                 .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다."));
+
+        // 변경 항목 감지 (알림용) — 수정 전 스냅샷
+        java.util.List<String> changedFields = new java.util.ArrayList<>();
+        if (!java.util.Objects.equals(event.getStartDate(), eventDto.getStartDate())
+                || !java.util.Objects.equals(event.getStartTime(), eventDto.getStartTime())
+                || !java.util.Objects.equals(event.getEndDate(),   eventDto.getEndDate())
+                || !java.util.Objects.equals(event.getEndTime(),   eventDto.getEndTime())) {
+            changedFields.add("일시");
+        }
+        if (!java.util.Objects.equals(event.getLocation(), eventDto.getLocation())) {
+            changedFields.add("장소");
+        }
+        if (!java.util.Objects.equals(event.getEventTitle(), eventDto.getEventTitle())) {
+            changedFields.add("제목");
+        }
 
         // 이벤트 정보 수정
         event.setEventTitle(eventDto.getEventTitle());
@@ -197,7 +280,73 @@ public class CalendarEventService {
 
         log.info("일정 수정 완료: eventIdx={}", eventIdx);
 
+        // C1909 — 의미 있는 변경이 있을 때만 참여자에게 알림
+        if (!changedFields.isEmpty()) {
+            try {
+                enqueueCalendarUpdateNotifications(event, eventDto, String.join(", ", changedFields));
+            } catch (Exception e) {
+                log.warn("[일정변경 알림 enqueue 실패 — 무시하고 진행] eventIdx={}, error={}",
+                        eventIdx, e.getMessage());
+            }
+        }
+
         return getEventById(eventIdx);
+    }
+
+    private void enqueueCalendarUpdateNotifications(CalendarEvent event, CalendarEventDto eventDto, String changes) {
+        if (eventDto.getParticipants() == null || eventDto.getParticipants().isEmpty()) return;
+
+        Long actorIdx = eventDto.getCreatorIdx();
+        String actorName = actorIdx != null
+                ? userRepository.findById(actorIdx).map(User::getEmpName).orElse("등록자")
+                : "등록자";
+
+        java.time.format.DateTimeFormatter dateFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        java.time.format.DateTimeFormatter dtFmt   = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        String eventStart = event.getStartDate() != null
+                ? event.getStartDate().format(dateFmt) +
+                  (event.getStartTime() != null ? " " + event.getStartTime() : "") : "-";
+        String eventEnd = event.getEndDate() != null
+                ? event.getEndDate().format(dateFmt) +
+                  (event.getEndTime() != null ? " " + event.getEndTime() : "") : "-";
+        String eventStartDate = event.getStartDate() != null ? event.getStartDate().format(dateFmt) : "";
+
+        for (CalendarParticipantDto p : eventDto.getParticipants()) {
+            Long recipientIdx = p.getUserIdx();
+            if (recipientIdx == null) continue;
+            if (actorIdx != null && recipientIdx.equals(actorIdx)) continue;
+
+            String recipientName = userRepository.findById(recipientIdx)
+                    .map(User::getEmpName)
+                    .orElse(p.getUserName() != null ? p.getUserName() : "");
+
+            java.util.Map<String, Object> vars = new java.util.LinkedHashMap<>();
+            vars.put("recipientName", recipientName);
+            vars.put("eventTitle",    event.getEventTitle() != null ? event.getEventTitle() : "(제목 없음)");
+            vars.put("changedFields", changes);
+            vars.put("eventStart",    eventStart);
+            vars.put("eventEnd",      eventEnd);
+            vars.put("eventLocation", event.getLocation() != null ? event.getLocation() : "(장소 미정)");
+            vars.put("actorName",     actorName);
+            vars.put("eventStartDate", eventStartDate);
+            vars.put("eventTime",     LocalDateTime.now().format(dtFmt));
+            vars.put("deepLink",      "/calendar?date=" + eventStartDate);
+
+            notificationEnqueueService.enqueue(
+                    com.pinecni.erp.api.notification.dto.NotificationCreateCommand.builder()
+                            .notificationType("C1909")
+                            .channel("C2101")
+                            .channel("C2103")
+                            .recipientUserIdx(recipientIdx)
+                            .actorUserIdx(actorIdx)
+                            .targetType("C1703")
+                            .targetIdx(event.getIdx())
+                            .variables(vars)
+                            .dedupKey("CAL-UPDATE:" + event.getIdx() + ":" + recipientIdx + ":"
+                                    + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")))
+                            .build());
+        }
     }
 
     /**
@@ -210,12 +359,71 @@ public class CalendarEventService {
         CalendarEvent event = calendarEventRepository.findById(eventIdx)
                 .orElseThrow(() -> new RuntimeException("일정을 찾을 수 없습니다."));
 
+        // 삭제 전 스냅샷 (알림용)
+        CalendarEvent eventSnapshot = event;
+        java.util.List<CalendarParticipant> participants = calendarParticipantRepository.findByEventIdx(eventIdx);
+
         event.setDeletedAt(LocalDateTime.now());
         event.setDeletedUserIdx(userId);
 
         calendarEventRepository.save(event);
 
         log.info("일정 삭제 완료: eventIdx={}", eventIdx);
+
+        // C1910 — 참여자에게 일정 취소 알림 (등록자 본인 SKIP, 외부인 SKIP)
+        try {
+            enqueueCalendarCancelNotifications(eventSnapshot, participants, userId);
+        } catch (Exception e) {
+            log.warn("[일정취소 알림 enqueue 실패 — 무시하고 진행] eventIdx={}, error={}",
+                    eventIdx, e.getMessage());
+        }
+    }
+
+    private void enqueueCalendarCancelNotifications(CalendarEvent event,
+                                                    java.util.List<CalendarParticipant> participants,
+                                                    Long actorIdx) {
+        if (participants == null || participants.isEmpty()) return;
+
+        String actorName = actorIdx != null
+                ? userRepository.findById(actorIdx).map(User::getEmpName).orElse("등록자")
+                : "등록자";
+
+        java.time.format.DateTimeFormatter dateFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        java.time.format.DateTimeFormatter dtFmt   = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        String eventStart = event.getStartDate() != null
+                ? event.getStartDate().format(dateFmt) +
+                  (event.getStartTime() != null ? " " + event.getStartTime() : "") : "-";
+        String eventEnd = event.getEndDate() != null
+                ? event.getEndDate().format(dateFmt) +
+                  (event.getEndTime() != null ? " " + event.getEndTime() : "") : "-";
+
+        for (CalendarParticipant p : participants) {
+            Long recipientIdx = p.getUserIdx();
+            if (recipientIdx == null) continue;
+            if (actorIdx != null && recipientIdx.equals(actorIdx)) continue;
+
+            java.util.Map<String, Object> vars = new java.util.LinkedHashMap<>();
+            vars.put("eventTitle",    event.getEventTitle() != null ? event.getEventTitle() : "(제목 없음)");
+            vars.put("eventStart",    eventStart);
+            vars.put("eventEnd",      eventEnd);
+            vars.put("actorName",     actorName);
+            vars.put("eventTime",     LocalDateTime.now().format(dtFmt));
+            vars.put("deepLink",      "/calendar");
+
+            notificationEnqueueService.enqueue(
+                    com.pinecni.erp.api.notification.dto.NotificationCreateCommand.builder()
+                            .notificationType("C1910")
+                            .channel("C2101")
+                            .channel("C2103")
+                            .recipientUserIdx(recipientIdx)
+                            .actorUserIdx(actorIdx)
+                            .targetType("C1703")
+                            .targetIdx(event.getIdx())
+                            .variables(vars)
+                            .dedupKey("CAL-CANCEL:" + event.getIdx() + ":" + recipientIdx)
+                            .build());
+        }
     }
 
     /**

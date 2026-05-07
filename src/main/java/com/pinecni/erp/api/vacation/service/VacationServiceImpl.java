@@ -52,6 +52,7 @@ public class VacationServiceImpl implements VacationService {
     private final com.pinecni.erp.api.calendar.service.HolidayService holidayService;
     private final com.pinecni.erp.api.user.service.UserService userService;
     private final com.pinecni.erp.api.signature.service.SignatureService signatureService;
+    private final com.pinecni.erp.api.notification.service.NotificationEnqueueService notificationEnqueueService;
 
     /**
      * self-proxy: 배치 메서드에서 각 사용자를 독립 트랜잭션으로 실행하기 위해 사용.
@@ -1882,6 +1883,18 @@ public class VacationServiceImpl implements VacationService {
             }
         }
 
+        // 8. 알림 발송 — 관리자가 본인 외 사용자의 연차를 삭제한 경우 신청자에게 통보 (C1907)
+        if (isAdmin && !vacationRequests.isEmpty()) {
+            try {
+                Long vacationUserIdx = vacationRequests.get(0).getUserIdx();
+                enqueueVacationAdminDeletedNotification(document, vacationRequests,
+                        vacationUserIdx, currentUserIdx);
+            } catch (Exception e) {
+                log.warn("[연차 관리자삭제 알림 enqueue 실패 — 무시하고 진행] documentIdx={}, error={}",
+                        documentIdx, e.getMessage());
+            }
+        }
+
         log.info("[연차신청서 삭제 완료] documentIdx: {}, 연차 기간 수: {}, 복구 일수: {}일",
                 documentIdx, vacationRequests.size(), totalDaysToRestore);
     }
@@ -1889,8 +1902,14 @@ public class VacationServiceImpl implements VacationService {
     @Override
     @Transactional
     public void approveVacation(Long documentIdx, Long approverUserIdx, boolean approve) {
-        log.info("[연차 승인 처리 시작] documentIdx: {}, approverUserIdx: {}, approve: {}",
-                documentIdx, approverUserIdx, approve);
+        approveVacation(documentIdx, approverUserIdx, approve, null);
+    }
+
+    @Override
+    @Transactional
+    public void approveVacation(Long documentIdx, Long approverUserIdx, boolean approve, String rejectReason) {
+        log.info("[연차 승인 처리 시작] documentIdx: {}, approverUserIdx: {}, approve: {}, hasReason: {}",
+                documentIdx, approverUserIdx, approve, rejectReason != null && !rejectReason.isBlank());
 
         // 1. 해당 문서의 연차 신청 행 존재 여부 확인
         List<VacationRequest> vacationRequests = vacationRequestRepository.findByDocumentIdx(documentIdx);
@@ -1961,7 +1980,128 @@ public class VacationServiceImpl implements VacationService {
             log.error("[vacation_balance 갱신 실패 - 승인] documentIdx={}, error={}", documentIdx, e.getMessage());
         }
 
+        // 6. 알림 발송 — 신청자에게 승인/반려 결과 통보 (C1905/C1906)
+        try {
+            enqueueVacationApprovalNotification(document, vacationRequests, vacationUserIdx,
+                    approverUserIdx, approve, rejectReason);
+        } catch (Exception e) {
+            log.warn("[연차 알림 enqueue 실패 — 무시하고 진행] documentIdx={}, error={}",
+                    documentIdx, e.getMessage());
+        }
+
         log.info("[연차 승인 처리 완료] documentIdx: {}, approve: {}", documentIdx, approve);
+    }
+
+    // =========================================================================
+    // 알림 enqueue 헬퍼 (Phase 5)
+    // =========================================================================
+
+    /**
+     * C1905/C1906 — 연차 승인/반려 결과를 신청자에게.
+     * 자기 자신에게 가는 알림은 SKIP (관리자가 본인 연차를 직접 처리하는 경우).
+     */
+    private void enqueueVacationApprovalNotification(ApprovalDocument document,
+                                                     List<VacationRequest> vacationRequests,
+                                                     Long vacationUserIdx,
+                                                     Long approverUserIdx,
+                                                     boolean approve,
+                                                     String rejectReason) {
+        if (vacationUserIdx == null || vacationUserIdx.equals(approverUserIdx)) return;
+
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        LocalDate start = vacationRequests.stream().map(VacationRequest::getStartDate)
+                .min(LocalDate::compareTo).orElse(null);
+        LocalDate end = vacationRequests.stream().map(VacationRequest::getEndDate)
+                .max(LocalDate::compareTo).orElse(null);
+        BigDecimal totalDays = vacationRequests.stream().map(VacationRequest::getDays)
+                .filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        String actorName = userRepository.findById(approverUserIdx)
+                .map(User::getEmpName).orElse("관리자");
+
+        Map<String, Object> vars = new LinkedHashMap<>();
+        vars.put("documentTitle", nullSafe(document.getTitle(), "연차신청서"));
+        vars.put("documentNo",    nullSafe(document.getDocumentNo(), ""));
+        vars.put("vacationStart", start != null ? start.format(dateFmt) : "-");
+        vars.put("vacationEnd",   end   != null ? end.format(dateFmt)   : "-");
+        vars.put("vacationDays",  totalDays.stripTrailingZeros().toPlainString());
+        vars.put("actorName",     actorName);
+        vars.put("eventTime",     LocalDateTime.now().format(timeFmt));
+        vars.put("rejectReason",  approve
+                ? ""
+                : (rejectReason != null && !rejectReason.isBlank()
+                        ? rejectReason
+                        : "(상세 사유는 처리자에게 문의해 주세요)"));
+        vars.put("deepLink",      "/vacation");
+
+        String type = approve
+                ? "C1905"   // 연차승인
+                : "C1906";  // 연차반려
+
+        notificationEnqueueService.enqueue(
+                com.pinecni.erp.api.notification.dto.NotificationCreateCommand.builder()
+                        .notificationType(type)
+                        .channel("C2101")
+                        .channel("C2103")
+                        .recipientUserIdx(vacationUserIdx)
+                        .actorUserIdx(approverUserIdx)
+                        .targetType("C1701")  // approval_documents
+                        .targetIdx(document.getIdx())
+                        .documentIdx(document.getIdx())
+                        .variables(vars)
+                        .dedupKey("VAC-APPROVE:" + document.getIdx() + ":" + (approve ? "OK" : "NG"))
+                        .build());
+    }
+
+    /**
+     * C1907 — 관리자가 신청자의 연차를 삭제했을 때.
+     * 호출은 deleteVacation 안에서 isAdmin=true 일 때만.
+     */
+    private void enqueueVacationAdminDeletedNotification(ApprovalDocument document,
+                                                         List<VacationRequest> vacationRequests,
+                                                         Long vacationUserIdx,
+                                                         Long actorUserIdx) {
+        if (vacationUserIdx == null || vacationUserIdx.equals(actorUserIdx)) return;
+
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        LocalDate start = vacationRequests.stream().map(VacationRequest::getStartDate)
+                .min(LocalDate::compareTo).orElse(null);
+        LocalDate end = vacationRequests.stream().map(VacationRequest::getEndDate)
+                .max(LocalDate::compareTo).orElse(null);
+
+        String actorName = userRepository.findById(actorUserIdx)
+                .map(User::getEmpName).orElse("관리자");
+
+        Map<String, Object> vars = new LinkedHashMap<>();
+        vars.put("documentTitle", nullSafe(document.getTitle(), "연차신청서"));
+        vars.put("documentNo",    nullSafe(document.getDocumentNo(), ""));
+        vars.put("vacationStart", start != null ? start.format(dateFmt) : "-");
+        vars.put("vacationEnd",   end   != null ? end.format(dateFmt)   : "-");
+        vars.put("actorName",     actorName);
+        vars.put("eventTime",     LocalDateTime.now().format(timeFmt));
+        vars.put("deepLink",      "/vacation");
+
+        notificationEnqueueService.enqueue(
+                com.pinecni.erp.api.notification.dto.NotificationCreateCommand.builder()
+                        .notificationType("C1907")
+                        .channel("C2101")
+                        .channel("C2103")
+                        .recipientUserIdx(vacationUserIdx)
+                        .actorUserIdx(actorUserIdx)
+                        .targetType("C1701")
+                        .targetIdx(document.getIdx())
+                        .documentIdx(document.getIdx())
+                        .variables(vars)
+                        .dedupKey("VAC-ADMIN-DEL:" + document.getIdx())
+                        .build());
+    }
+
+    private static String nullSafe(String s, String fallback) {
+        return s == null || s.isBlank() ? fallback : s;
     }
 
 }

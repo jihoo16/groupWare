@@ -725,6 +725,7 @@ public class VacationController {
     public ResponseEntity<?> approveVacation(
             @PathVariable Long documentIdx,
             @RequestParam(defaultValue = "true") boolean approve,
+            @RequestParam(required = false) String rejectReason,
             HttpSession session) {
 
         if (!AuthorizationUtil.isAdminOrHigher(session)) {
@@ -741,7 +742,7 @@ public class VacationController {
             log.info("[연차 승인 처리] documentIdx: {}, approve: {}, approverIdx: {}",
                     documentIdx, approve, currentUserIdx);
 
-            vacationService.approveVacation(documentIdx, currentUserIdx, approve);
+            vacationService.approveVacation(documentIdx, currentUserIdx, approve, rejectReason);
 
             String message = approve ? "승인되었습니다." : "승인이 취소되었습니다.";
             return ResponseEntity.ok(Map.of("message", message, "isApproved", approve));
