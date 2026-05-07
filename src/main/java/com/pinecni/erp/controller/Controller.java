@@ -39,19 +39,31 @@ public class Controller {
         return "vacation";
     }
 
-    // ─── Mattermost 알림 (Phase 1: 화면 스켈레톤) ───
+    // ─── Mattermost 알림 (관리자: C1101/C1102 만) ───
     @GetMapping("/admin/notifications")
-    public String adminNotifications() {
+    public String adminNotifications(HttpSession session) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
+            log.warn("관리자가 아닌 사용자의 알림 시스템 설정 접근 시도");
+            return "redirect:/nope";
+        }
         return "admin-notifications";
     }
 
     @GetMapping("/admin/notifications/templates")
-    public String adminNotificationTemplates() {
+    public String adminNotificationTemplates(HttpSession session) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
+            log.warn("관리자가 아닌 사용자의 알림 템플릿 관리 접근 시도");
+            return "redirect:/nope";
+        }
         return "admin-notification-templates";
     }
 
     @GetMapping("/admin/notifications/logs")
-    public String adminNotificationLogs() {
+    public String adminNotificationLogs(HttpSession session) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
+            log.warn("관리자가 아닌 사용자의 알림 발송 이력 접근 시도");
+            return "redirect:/nope";
+        }
         return "admin-notification-logs";
     }
 
