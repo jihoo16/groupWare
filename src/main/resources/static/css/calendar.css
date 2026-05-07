@@ -548,8 +548,7 @@
     gap: 3px;
     position: relative;
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden; /* 셀 내부 스크롤 금지 — 4건 이상은 "더보기" 팝업으로 */
     min-height: 80px; /* multi-day 일정 겹침을 위한 최소 높이 */
 }
 
@@ -1476,33 +1475,28 @@ input.form-input:read-only {
 }
 
 /* 스크롤바 커스터마이징 - 호버 시에만 표시 */
-.modal-body::-webkit-scrollbar,
-.schedule-list::-webkit-scrollbar {
+.modal-body::-webkit-scrollbar {
     width: 6px;
     height: 6px;
 }
 
-.modal-body::-webkit-scrollbar-track,
-.schedule-list::-webkit-scrollbar-track {
+.modal-body::-webkit-scrollbar-track {
     background: transparent;
     border-radius: 3px;
 }
 
-.modal-body::-webkit-scrollbar-thumb,
-.schedule-list::-webkit-scrollbar-thumb {
+.modal-body::-webkit-scrollbar-thumb {
     background: transparent;
     border-radius: 3px;
     transition: background 0.3s ease;
 }
 
-.modal-body:hover::-webkit-scrollbar-thumb,
-.schedule-list:hover::-webkit-scrollbar-thumb {
+.modal-body:hover::-webkit-scrollbar-thumb {
     background: #ccc;
 }
 
-.modal-body::-webkit-scrollbar-thumb:hover,
-.schedule-list::-webkit-scrollbar-thumb:hover {
-    background: #999 !important;
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }
 
 /* 팀 선택 모달 스타일 */

@@ -578,66 +578,79 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 일정 HTML 생성 - multi-day와 시간 일정을 분리
-        let multiDayHTML = '';
-        let timeSchedulesHTML = '';
-        const maxDisplay = 5; // 최대 표시 개수 (multi-day 겹침 고려하여 증가)
+        // Google Calendar 스타일: 최대 3개 노출, 4개 이상이면 "더보기" 링크
+        const maxDisplay = 3;
 
-        // track 순서대로 정렬 (같은 track끼리 묶이도록)
-        daySchedules.sort((a, b) => {
-            const aTrack = a.track !== undefined ? a.track : 999;
-            const bTrack = b.track !== undefined ? b.track : 999;
-            return aTrack - bTrack;
+        // multi-day vs single-day 분리
+        const multiDayList = [];
+        const singleDayList = [];
+        daySchedules.forEach(s => {
+            const dayDiff = Math.ceil((new Date(s.endDate) - new Date(s.startDate)) / (1000 * 60 * 60 * 24));
+            if (dayDiff >= 1) {
+                multiDayList.push(s);
+            } else {
+                singleDayList.push(s);
+            }
         });
 
-        daySchedules.slice(0, maxDisplay).forEach(schedule => {
+        // multi-day는 전역 track이 maxDisplay 이내인 것만 노출 (그 외는 "더보기" 카운트로)
+        const visibleMultiDay = multiDayList.filter(s => (s.track ?? 0) < maxDisplay);
+        const hiddenMultiDayCount = multiDayList.length - visibleMultiDay.length;
+
+        // 노출되는 multi-day가 사용한 슬롯 수 = max(track) + 1
+        let multiDayMaxTrack = -1;
+        visibleMultiDay.forEach(s => {
+            const t = s.track ?? 0;
+            if (t > multiDayMaxTrack) multiDayMaxTrack = t;
+        });
+        const slotsUsedByMultiDay = multiDayMaxTrack + 1;
+
+        // 단일 일정은 남은 슬롯만큼만 노출
+        const remainingSlots = Math.max(0, maxDisplay - slotsUsedByMultiDay);
+        const visibleSingleDay = singleDayList.slice(0, remainingSlots);
+        const hiddenSingleDayCount = singleDayList.length - visibleSingleDay.length;
+
+        const totalHiddenCount = hiddenMultiDayCount + hiddenSingleDayCount;
+
+        let multiDayHTML = '';
+        visibleMultiDay.forEach(schedule => {
             const isMySchedule = schedule.participants.includes(currentUser);
-            let scheduleClasses = [schedule.type];
-            if (isMySchedule) {
-                scheduleClasses.push('my-schedule');
+            const scheduleClasses = [schedule.type];
+            if (isMySchedule) scheduleClasses.push('my-schedule');
+
+            if (dateStr === schedule.startDate) {
+                scheduleClasses.push('multi-day-start');
+            } else if (dateStr === schedule.endDate) {
+                scheduleClasses.push('multi-day-end');
+            } else {
+                scheduleClasses.push('multi-day-middle');
             }
 
-            // 연속 일정인지 확인 (2일 이상인 일정)
-            const startDateObj = new Date(schedule.startDate);
-            const endDateObj = new Date(schedule.endDate);
-            const dayDiff = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
-            const isMultiDay = dayDiff >= 1; // 2일 이상인 일정
+            const trackIndex = schedule.track !== undefined ? schedule.track : 0;
+            const trackStyle = ` style="--track: ${trackIndex};"`;
+            const displayTitle = `[종일] ${schedule.title}`;
+            multiDayHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}"${trackStyle} data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${displayTitle}</div>`;
+        });
+
+        let timeSchedulesHTML = '';
+        visibleSingleDay.forEach(schedule => {
+            const isMySchedule = schedule.participants.includes(currentUser);
+            const scheduleClasses = [schedule.type];
+            if (isMySchedule) scheduleClasses.push('my-schedule');
+
             const isAllDay = schedule.time === '종일';
-
-            let trackStyle = '';
-            if (isMultiDay) {
-                // 시작일, 중간일, 종료일 구분
-                if (dateStr === schedule.startDate) {
-                    scheduleClasses.push('multi-day-start');
-                } else if (dateStr === schedule.endDate) {
-                    scheduleClasses.push('multi-day-end');
-                } else {
-                    scheduleClasses.push('multi-day-middle');
-                }
-
-                // 전역적으로 할당된 track 번호 사용
-                const trackIndex = schedule.track !== undefined ? schedule.track : 0;
-                trackStyle = ` style="--track: ${trackIndex};"`;
-
-                // 일정 제목에 종일 표시 추가
-                let displayTitle = `[종일] ${schedule.title}`;
-                multiDayHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}"${trackStyle} data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${displayTitle}</div>`;
+            if (!isAllDay) {
+                scheduleClasses.push('time-dot');
+                const timeMatch = schedule.time.match(/(\d{2}:\d{2})/);
+                const startTime = timeMatch ? timeMatch[1] : '';
+                timeSchedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}" data-tip="${startTime} ${schedule.title}">
+                    <span class="dot-time">${startTime}</span>
+                    <span class="dot-title">${schedule.title}</span>
+                </div>`;
             } else {
-                // 단일 일정
-                if (!isAllDay) {
-                    // 단일 시간 일정 - 점으로 표시
-                    scheduleClasses.push('time-dot');
-                    const timeMatch = schedule.time.match(/(\d{2}:\d{2})/);
-                    const startTime = timeMatch ? timeMatch[1] : '';
-                    timeSchedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}" data-tip="${startTime} ${schedule.title}">
-                        <span class="dot-time">${startTime}</span>
-                        <span class="dot-title">${schedule.title}</span>
-                    </div>`;
-                } else {
-                    // 단일 종일 일정
-                    scheduleClasses.push('single-day');
-                    let displayTitle = `[종일] ${schedule.title}`;
-                    timeSchedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${displayTitle}</div>`;
-                }
+                scheduleClasses.push('single-day');
+                const displayTitle = `[종일] ${schedule.title}`;
+                timeSchedulesHTML += `<div class="schedule-item ${scheduleClasses.join(' ')}" data-schedule-id="${schedule.id}" data-group-id="${schedule.groupId}">${displayTitle}</div>`;
             }
         });
 
@@ -647,21 +660,12 @@ document.addEventListener('DOMContentLoaded', function() {
             schedulesHTML += `<div class="time-schedules-wrapper">${timeSchedulesHTML}</div>`;
         }
 
-        if (daySchedules.length > maxDisplay) {
-            schedulesHTML += `<div class="more-schedules" data-date="${dateStr}" data-total="${daySchedules.length}">+${daySchedules.length - maxDisplay}개 더보기</div>`;
+        if (totalHiddenCount > 0) {
+            schedulesHTML += `<div class="more-schedules" data-date="${dateStr}" data-total="${daySchedules.length}">+${totalHiddenCount}개 더보기</div>`;
         }
 
-        // multi-day 일정들의 최대 track 번호 계산 (시간 일정을 위한 offset 확보)
-        let maxTrack = -1;
-        daySchedules.forEach(schedule => {
-            const startDateObj = new Date(schedule.startDate);
-            const endDateObj = new Date(schedule.endDate);
-            const dayDiff = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
-            if (dayDiff >= 1 && schedule.track !== undefined) {
-                maxTrack = Math.max(maxTrack, schedule.track);
-            }
-        });
-        const multidayOffset = maxTrack >= 0 ? `--multiday-offset: ${(maxTrack + 1) * 24}px;` : '';
+        // 노출되는 multi-day의 최대 track 기준 offset (시간 일정 위치)
+        const multidayOffset = multiDayMaxTrack >= 0 ? `--multiday-offset: ${(multiDayMaxTrack + 1) * 24}px;` : '';
 
         // 공휴일 표시 (이전달/다음달도 포함)
         let holidayHTML = '';
