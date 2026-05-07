@@ -1,65 +1,126 @@
 /* =========================================================
- * settings.html [알림] 탭 — Phase 1 (더미데이터)
- * 더미 = window.NOTIF_DUMMY (notification-dummy-data.js)
- * Phase 4 에서 fetch 호출로 교체 예정.
+ * settings.html [알림] 탭 — Phase 4 실 API 연결
+ *
+ * - GET  /api/me/subscriptions
+ * - PUT  /api/me/subscriptions
+ *
+ * Mattermost 연결 상태 카드는 발송 시 자동 확인되므로 사용자 화면에서는
+ * 안내 문구로 대체. [테스트 메시지 보내기] 는 다음 슬라이스에서 본인 발송 기능 추가.
  * ========================================================= */
 
 (function () {
     'use strict';
 
+    // 사용자 화면에 노출할 알림 종류 (1차 MVP, force_send 잠긴 행 포함)
+    const VISIBLE_TYPES = [
+        { code: 'C1901', name: '서명요청',         desc: '내가 서명할 차례가 됐을 때' },
+        { code: 'C1902', name: '서명진행',         desc: '내 문서의 중간 서명 단계가 끝났을 때' },
+        { code: 'C1903', name: '서명완료알림',     desc: '내 문서의 모든 서명이 끝났을 때' },
+        { code: 'C1905', name: '연차승인',         desc: '내 연차 신청이 승인됐을 때' },
+        { code: 'C1906', name: '연차반려',         desc: '내 연차 신청이 반려됐을 때' },
+        { code: 'C1907', name: '연차관리자삭제',   desc: '관리자가 내 연차를 삭제했을 때' },
+        { code: 'C1908', name: '일정초대',         desc: '내가 일정 참여자로 등록됐을 때' },
+        { code: 'C1914', name: '알림발송실패',     desc: '내가 요청한 알림이 상대방에게 전달 못 했을 때' }
+    ];
+
+    let currentSubscriptionsByKey = {};
+    let currentForceSendByCode    = {};
+
     document.addEventListener('DOMContentLoaded', function () {
-        // 알림 탭이 settings.html 안에 들어 있으므로, 해당 탭 컨테이너가 존재할 때만 동작
         const notifTab = document.getElementById('notification');
         if (!notifTab) return;
 
-        renderLinkStatus();
-        renderTypeGrid();
-        renderQuietHours();
+        loadLinkStatus();
+        loadSubscriptions();
         bindActions();
     });
 
-    function renderLinkStatus() {
-        const link = window.NOTIF_DUMMY.MY_LINK;
+    // -------------------------------------------------------------
+    // Mattermost 연결 상태
+    // -------------------------------------------------------------
+
+    function loadLinkStatus() {
+        fetch('/api/me/mattermost-link', { credentials: 'same-origin' })
+            .then(function (res) { return res.ok ? res.json() : null; })
+            .then(function (link) { renderLinkStatus(link); })
+            .catch(function () { renderLinkStatus(null); });
+    }
+
+    function renderLinkStatus(link) {
         const wrap = document.getElementById('mmLinkStatus');
+        const info = document.getElementById('mmLinkInfo');
         if (!wrap) return;
 
-        const isConn = link.connected && link.isActive;
-        wrap.classList.toggle('disconnected', !isConn);
-
-        const icon  = wrap.querySelector('.status-icon i');
-        const text  = wrap.querySelector('.status-text');
-        if (icon) icon.className = isConn ? 'fas fa-check-circle' : 'fas fa-times-circle';
-        if (text) {
-            text.innerHTML = isConn
-                ? '<strong>연결됨</strong>마지막 발송 성공: ' + (link.lastSentAt || '없음')
-                : '<strong>연결 실패</strong>' + (link.lastError || '봇 차단·미가입 의심');
+        if (!link || !link.connected) {
+            wrap.classList.add('disconnected');
+            if (link && link.lastError) {
+                wrap.innerHTML =
+                    '<i class="fas fa-exclamation-circle status-icon" style="color:#dc2626;"></i>' +
+                    '<div class="status-text"><strong>연결 안 됨</strong>' + escapeHtml(link.lastError) + '</div>';
+            } else {
+                wrap.innerHTML =
+                    '<i class="fas fa-info-circle status-icon" style="color:#3b82f6;"></i>' +
+                    '<div class="status-text"><strong>아직 연결 안 됨</strong>첫 알림 발송 시 자동으로 봇과 연결됩니다.</div>';
+            }
+            if (info) info.innerHTML = '';
+            return;
         }
 
-        // 정보 그리드
-        const info = document.getElementById('mmLinkInfo');
+        wrap.classList.remove('disconnected');
+        wrap.innerHTML =
+            '<i class="fas fa-check-circle status-icon" style="color:#059669;"></i>' +
+            '<div class="status-text"><strong>연결됨</strong>봇이 본인 Mattermost 와 정상 연결되어 있습니다.</div>';
+
         if (info) {
             info.innerHTML =
-                '<dt>Mattermost username</dt><dd>' + escapeHtml(link.mmUsername) + ' <span style="color:#9ca3af;font-size:12px;">← 사번과 동일 (자동)</span></dd>' +
-                '<dt>봇과의 DM 채널 ID</dt><dd style="font-family:monospace;font-size:12px;color:#6b7280;">' + escapeHtml(link.mmDmChannelId || '미생성') + '</dd>' +
-                '<dt>캐시 갱신 시각</dt><dd>' + escapeHtml(link.cachedAt || '-') + '</dd>';
+                '<dt>봇과의 DM 채널 ID</dt>' +
+                '<dd style="font-family:monospace;font-size:12px;color:#6b7280;">' +
+                escapeHtml(link.mmDmChannelId || '미생성') + '</dd>' +
+                '<dt>마지막 캐시 갱신</dt>' +
+                '<dd>' + escapeHtml(formatTime(link.cachedAt) || '-') + '</dd>';
         }
+    }
+
+    function formatTime(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        const pad = function (n) { return String(n).padStart(2, '0'); };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+               ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    // -------------------------------------------------------------
+    // 구독 조회 + 렌더
+    // -------------------------------------------------------------
+
+    function loadSubscriptions() {
+        fetch('/api/me/subscriptions', { credentials: 'same-origin' })
+            .then(function (res) {
+                if (!res.ok) throw new Error('LOAD_FAILED');
+                return res.json();
+            })
+            .then(function (data) {
+                currentSubscriptionsByKey = {};
+                currentForceSendByCode    = {};
+                (data.subscriptions || []).forEach(function (s) {
+                    currentSubscriptionsByKey[s.notificationType + ':' + s.channel] = s;
+                    if (s.isForceSend) currentForceSendByCode[s.notificationType] = true;
+                });
+                renderTypeGrid();
+                renderQuietHours(data.quietHours);
+            })
+            .catch(function (err) {
+                console.error('[Settings/알림] 조회 실패', err);
+                Swal.fire({ icon: 'error', title: '알림 설정을 불러오지 못했습니다',
+                    text: '잠시 후 다시 시도해 주세요.' });
+            });
     }
 
     function renderTypeGrid() {
         const container = document.getElementById('notifTypeGrid');
         if (!container) return;
 
-        // 종류+채널 키로 구독 매핑
-        const subs = window.NOTIF_DUMMY.MY_SUBSCRIPTIONS;
-        const subMap = {};
-        subs.forEach(function (s) { subMap[s.notificationType + ':' + s.channel] = s; });
-
-        // 사용자 화면에는 1차 MVP 종류만 노출 (C1915 시스템공지는 강제발송이라 비노출)
-        const visibleTypes = window.NOTIF_DUMMY.TYPES.filter(function (t) {
-            return t.phase === 1 && t.code !== 'C1915';
-        });
-
-        // 헤더 행 + 종류 행들
         const header =
             '<div class="notif-grid-head">' +
             '  <div class="col-name">알림 종류</div>' +
@@ -67,11 +128,12 @@
             '  <div class="col-channel"><i class="fas fa-bell" title="그룹웨어 인박스"></i> 인박스</div>' +
             '</div>';
 
-        const rows = visibleTypes.map(function (t) {
-            const subMM    = subMap[t.code + ':C2101'] || {};
-            const subInWeb = subMap[t.code + ':C2103'] || {};
-            const disabled = t.forceSend ? 'disabled' : '';
-            const rowCls   = ['notif-grid-row', t.forceSend ? 'force-send' : ''].filter(Boolean).join(' ');
+        const rows = VISIBLE_TYPES.map(function (t) {
+            const subMM    = currentSubscriptionsByKey[t.code + ':C2101'] || {};
+            const subInWeb = currentSubscriptionsByKey[t.code + ':C2103'] || {};
+            const isForce  = !!currentForceSendByCode[t.code];
+            const disabled = isForce ? 'disabled' : '';
+            const rowCls   = ['notif-grid-row', isForce ? 'force-send' : ''].filter(Boolean).join(' ');
 
             return (
                 '<div class="' + rowCls + '" data-code="' + t.code + '">' +
@@ -80,10 +142,12 @@
                 '    <div class="item-desc">' + escapeHtml(t.desc) + '</div>' +
                 '  </div>' +
                 '  <div class="col-channel">' +
-                '    <label class="ch-toggle"><input type="checkbox" data-ch="C2101" ' + (subMM.isEnabled ? 'checked' : '') + ' ' + disabled + '><span></span></label>' +
+                '    <label class="ch-toggle"><input type="checkbox" data-ch="C2101" ' +
+                (subMM.isEnabled ? 'checked' : '') + ' ' + disabled + '><span></span></label>' +
                 '  </div>' +
                 '  <div class="col-channel">' +
-                '    <label class="ch-toggle"><input type="checkbox" data-ch="C2103" ' + (subInWeb.isEnabled ? 'checked' : '') + ' ' + disabled + '><span></span></label>' +
+                '    <label class="ch-toggle"><input type="checkbox" data-ch="C2103" ' +
+                (subInWeb.isEnabled ? 'checked' : '') + ' ' + disabled + '><span></span></label>' +
                 '  </div>' +
                 '</div>'
             );
@@ -99,18 +163,17 @@
         container.innerHTML = header + rows + note;
     }
 
-    function renderQuietHours() {
-        const q = window.NOTIF_DUMMY.MY_QUIET_HOURS;
+    function renderQuietHours(qh) {
+        qh = qh || { enabled: false, start: '22:00', end: '08:00' };
         const enabled = document.getElementById('quietHoursEnabled');
         const start   = document.getElementById('quietHoursStart');
         const end     = document.getElementById('quietHoursEnd');
-        const group   = document.getElementById('quietTimeGroup');
-        if (enabled) enabled.checked = q.enabled;
-        if (start)   start.value     = q.start;
-        if (end)     end.value       = q.end;
-        applyQuietGroupState(q.enabled);
+        if (enabled) enabled.checked = !!qh.enabled;
+        if (start)   start.value     = qh.start || '22:00';
+        if (end)     end.value       = qh.end   || '08:00';
+        applyQuietGroupState(qh.enabled);
 
-        if (enabled && group) {
+        if (enabled) {
             enabled.addEventListener('change', function () {
                 applyQuietGroupState(enabled.checked);
             });
@@ -122,42 +185,139 @@
         if (group) group.classList.toggle('disabled', !isOn);
     }
 
+    // -------------------------------------------------------------
+    // 저장
+    // -------------------------------------------------------------
+
+    function collectPayload() {
+        const subs = [];
+        VISIBLE_TYPES.forEach(function (t) {
+            const isForce = !!currentForceSendByCode[t.code];
+            if (isForce) return; // 잠긴 행은 보내지 않음 (어차피 서버가 무시)
+            const row = document.querySelector('[data-code="' + t.code + '"]');
+            if (!row) return;
+            const mmCb = row.querySelector('input[data-ch="C2101"]');
+            const inCb = row.querySelector('input[data-ch="C2103"]');
+            subs.push({ notificationType: t.code, channel: 'C2101', isEnabled: mmCb && mmCb.checked });
+            subs.push({ notificationType: t.code, channel: 'C2103', isEnabled: inCb && inCb.checked });
+        });
+
+        const enabled = document.getElementById('quietHoursEnabled');
+        const start   = document.getElementById('quietHoursStart');
+        const end     = document.getElementById('quietHoursEnd');
+
+        return {
+            subscriptions: subs,
+            quietHours: {
+                enabled: enabled ? !!enabled.checked : false,
+                start: start ? start.value : '22:00',
+                end:   end   ? end.value   : '08:00'
+            }
+        };
+    }
+
+    function save() {
+        fetch('/api/me/subscriptions', {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(collectPayload())
+        })
+            .then(function (res) {
+                if (!res.ok) throw new Error('SAVE_FAILED');
+                return res.json();
+            })
+            .then(function (data) {
+                currentSubscriptionsByKey = {};
+                currentForceSendByCode    = {};
+                (data.subscriptions || []).forEach(function (s) {
+                    currentSubscriptionsByKey[s.notificationType + ':' + s.channel] = s;
+                    if (s.isForceSend) currentForceSendByCode[s.notificationType] = true;
+                });
+                renderTypeGrid();
+                renderQuietHours(data.quietHours);
+                Swal.fire({ icon: 'success', title: '저장되었습니다',
+                    timer: 1200, showConfirmButton: false });
+            })
+            .catch(function (err) {
+                console.error('[Settings/알림] 저장 실패', err);
+                Swal.fire({ icon: 'error', title: '저장에 실패했습니다',
+                    text: '잠시 후 다시 시도해 주세요.' });
+            });
+    }
+
+    // -------------------------------------------------------------
+    // 액션
+    // -------------------------------------------------------------
+
     function bindActions() {
+        const saveBtn = document.getElementById('btnNotifSave');
+        if (saveBtn) saveBtn.addEventListener('click', save);
+
         const testBtn = document.getElementById('btnMmTest');
         if (testBtn) {
             testBtn.addEventListener('click', function () {
-                Swal.fire({
-                    icon: 'info',
-                    title: '미리보기 화면',
-                    text: '본인의 Mattermost 로 테스트 메시지를 보내는 자리입니다. 실제 발송은 다음 작업 단계에서 연결됩니다.'
-                });
+                testBtn.disabled = true;
+                fetch('/api/me/notifications/test-send', {
+                    method: 'POST', credentials: 'same-origin'
+                })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error('FAIL');
+                        return res.json();
+                    })
+                    .then(function (r) {
+                        if (r.success) {
+                            Swal.fire({ icon: 'success', title: '메시지를 보냈습니다',
+                                text: r.message, timer: 2400, showConfirmButton: false });
+                            loadLinkStatus();
+                        } else {
+                            Swal.fire({ icon: 'error', title: '발송에 실패했습니다',
+                                text: r.message || '잠시 후 다시 시도해 주세요.' });
+                        }
+                    })
+                    .catch(function () {
+                        Swal.fire({ icon: 'error', title: '요청을 처리하지 못했습니다',
+                            text: '잠시 후 다시 시도해 주세요.' });
+                    })
+                    .finally(function () { testBtn.disabled = false; });
             });
         }
-
         const refreshBtn = document.getElementById('btnMmRefresh');
         if (refreshBtn) {
-            refreshBtn.addEventListener('click', function () {
-                Swal.fire({
-                    icon: 'info',
-                    title: '미리보기 화면',
-                    text: 'Mattermost 와의 연결을 다시 맺는 자리입니다 (계정 가입을 새로 했거나 봇 차단을 풀었을 때 사용). 실제 동작은 다음 작업 단계에서 연결됩니다.'
+            refreshBtn.addEventListener('click', async function () {
+                const result = await Swal.fire({
+                    title: 'Mattermost 연결을 다시 맺을까요?',
+                    text: '저장된 연결 캐시를 비우고, 다음 알림 발송 시 새로 조회합니다.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '네',
+                    cancelButtonText: '취소'
                 });
-            });
-        }
-
-        const saveBtn = document.getElementById('btnNotifSave');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', function () {
-                Swal.fire({
-                    icon: 'success',
-                    title: '저장됨 (더미)',
-                    text: '실제 저장은 다음 작업 단계에서 연결됩니다.',
-                    timer: 1800,
-                    showConfirmButton: false
-                });
+                if (!result.isConfirmed) return;
+                fetch('/api/me/notifications/refresh-link', {
+                    method: 'POST', credentials: 'same-origin'
+                })
+                    .then(function (res) {
+                        if (!res.ok) throw new Error('FAIL');
+                        return res.json();
+                    })
+                    .then(function (link) {
+                        renderLinkStatus(link);
+                        Swal.fire({ icon: 'success', title: '캐시를 비웠습니다',
+                            text: '다음 알림이 발생하면 새로 연결을 맺습니다.',
+                            timer: 1800, showConfirmButton: false });
+                    })
+                    .catch(function () {
+                        Swal.fire({ icon: 'error', title: '처리에 실패했습니다',
+                            text: '잠시 후 다시 시도해 주세요.' });
+                    });
             });
         }
     }
+
+    // -------------------------------------------------------------
+    // 유틸
+    // -------------------------------------------------------------
 
     function escapeHtml(s) {
         if (s == null) return '';

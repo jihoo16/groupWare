@@ -24,7 +24,7 @@
                 <a href="/notifications">
                     <i class="fas fa-bell"></i>
                     <span class="menu-text">알림</span>
-                    <span class="notif-badge" id="sidebarNotifBadge" data-count="3">3</span>
+                    <span class="notif-badge" id="sidebarNotifBadge" data-count="0" hidden>0</span>
                 </a>
             </li>
             <li class="menu-item" th:classappend="${activeMenu == 'organization'} ? 'active' : ''" data-tooltip="조직도">
@@ -248,5 +248,31 @@
             <span class="logout-text">로그아웃</span>
         </button>
     </nav>
+
+    <!-- 사이드바 알림 카운트 — 모든 페이지에서 자동으로 갱신 -->
+    <script>
+        (function () {
+            'use strict';
+            function refresh() {
+                fetch('/api/me/inbox/unread-count', { credentials: 'same-origin' })
+                    .then(function (res) { return res.ok ? res.json() : null; })
+                    .then(function (json) {
+                        if (!json) return;
+                        var badge = document.getElementById('sidebarNotifBadge');
+                        if (!badge) return;
+                        var count = json.count || 0;
+                        badge.textContent = count > 99 ? '99+' : String(count);
+                        badge.dataset.count = String(count);
+                        badge.hidden = count === 0;
+                    })
+                    .catch(function () { /* 사이드바 카운트 조회 실패는 조용히 무시 */ });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', refresh);
+            } else {
+                refresh();
+            }
+        })();
+    </script>
 </body>
 </html>
