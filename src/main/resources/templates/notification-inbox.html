@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('알림 인박스', '/css/notification-inbox.css')}"></head>
+<body>
+<div class="container">
+    <div th:replace="~{fragments/sidebar :: sidebar('notification-inbox')}"></div>
+
+    <main class="main-content">
+        <div class="inbox-page">
+
+            <header class="inbox-header">
+                <h1 class="inbox-title"><i class="fas fa-bell"></i> 알림 인박스</h1>
+                <p class="inbox-subtitle">그룹웨어에서 받은 알림 목록입니다. 클릭하면 자동으로 읽음 처리됩니다.</p>
+            </header>
+
+            <section class="inbox-toolbar">
+                <div class="inbox-filters">
+                    <label class="filter-checkbox">
+                        <input type="checkbox" id="inboxUnreadOnly">
+                        <span>안 읽은 것만</span>
+                    </label>
+                    <select class="filter-select" id="inboxTypeFilter">
+                        <option value="">전체 유형</option>
+                        <option value="C1901">서명요청</option>
+                        <option value="C1902">서명진행</option>
+                        <option value="C1903">서명완료</option>
+                        <option value="C1905">연차승인</option>
+                        <option value="C1906">연차반려</option>
+                        <option value="C1907">연차관리자삭제</option>
+                        <option value="C1908">일정초대</option>
+                        <option value="C1914">알림발송실패</option>
+                    </select>
+                    <input type="date" class="filter-date" id="inboxFromDate">
+                    <span class="date-tilde">~</span>
+                    <input type="date" class="filter-date" id="inboxToDate">
+                </div>
+
+                <div class="inbox-summary-actions">
+                    <span class="inbox-counts">
+                        총 <strong id="inboxTotalCount">0</strong>건
+                        (안 읽음 <strong id="inboxUnreadCount" class="unread-strong">0</strong>건)
+                    </span>
+                    <button type="button" class="btn-mark-all-read" id="inboxMarkAllReadBtn">
+                        <i class="fas fa-envelope-open"></i> 모두 읽음
+                    </button>
+                </div>
+            </section>
+
+            <section class="inbox-list" id="inboxList">
+                <!-- JS 가 더미 데이터로 채움 -->
+                <div class="inbox-empty" id="inboxEmpty" hidden>
+                    <i class="fas fa-inbox"></i>
+                    <p>받은 알림이 없습니다.</p>
+                </div>
+            </section>
+
+            <nav class="inbox-pagination" id="inboxPagination" aria-label="페이지">
+                <!-- JS 가 채움 -->
+            </nav>
+
+        </div>
+    </main>
+</div>
+
+<script th:src="@{/js/notification-dummy-data.js}" defer></script>
+<script th:src="@{/js/notification-inbox.js}" defer></script>
+</body>
+</html>

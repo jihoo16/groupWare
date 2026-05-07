@@ -1,0 +1,431 @@
+/* =========================================================
+ * settings.html 의 [알림] 탭 전용 스타일
+ * Phase 1: 더미데이터 스켈레톤
+ * ========================================================= */
+
+#notification .notif-section {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+#notification .notif-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+/* 연동 상태 박스 */
+.mm-link-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+}
+
+.mm-link-status.disconnected {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.mm-link-status .status-icon {
+    font-size: 22px;
+    color: #059669;
+}
+
+.mm-link-status.disconnected .status-icon {
+    color: #dc2626;
+}
+
+.mm-link-status .status-text {
+    flex: 1;
+    font-size: 14px;
+    color: #374151;
+}
+
+.mm-link-status .status-text strong {
+    color: #111827;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.mm-link-info {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 8px 16px;
+    margin: 12px 0;
+    font-size: 14px;
+}
+
+.mm-link-info dt {
+    color: #6b7280;
+}
+
+.mm-link-info dd {
+    color: #111827;
+    margin: 0;
+}
+
+.mm-link-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f3f4f6;
+}
+
+.mm-link-notice {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: #f9fafb;
+    border-left: 3px solid #1a73e8;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #4b5563;
+    line-height: 1.6;
+}
+
+.mm-link-notice .notice-line + .notice-line {
+    margin-top: 4px;
+}
+
+/* 알림 종류 — 채널별 ON/OFF 그리드 (종류 × MM/인박스 두 컬럼) */
+.notif-type-grid {
+    display: block;  /* row 기반으로 변경 */
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.notif-grid-head,
+.notif-grid-row {
+    display: grid;
+    grid-template-columns: 1fr 90px 90px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+}
+
+.notif-grid-head {
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: none;
+}
+.notif-grid-head .col-channel {
+    text-align: center;
+}
+.notif-grid-head .col-channel .fas {
+    margin-right: 4px;
+    color: #1a73e8;
+}
+
+.notif-grid-row {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.12s;
+}
+.notif-grid-row:last-of-type {
+    border-bottom: none;
+}
+.notif-grid-row:hover {
+    background: #f9fafb;
+}
+
+.notif-grid-row .col-name .item-name {
+    font-size: 13px;
+    color: #111827;
+    font-weight: 500;
+}
+.notif-grid-row .col-name .item-desc {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.notif-grid-row .col-channel {
+    text-align: center;
+}
+
+/* 채널 ON/OFF 토글 (작은 스위치) */
+.ch-toggle {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    cursor: pointer;
+}
+.ch-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.ch-toggle span {
+    position: absolute;
+    inset: 0;
+    background: #cbd5e0;
+    border-radius: 22px;
+    transition: background 0.2s;
+}
+.ch-toggle span::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 2px;
+    top: 2px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.ch-toggle input:checked + span {
+    background: #1a73e8;
+}
+.ch-toggle input:checked + span::before {
+    transform: translateX(18px);
+}
+.ch-toggle input:disabled + span {
+    background: #fb923c;
+    cursor: not-allowed;
+}
+.ch-toggle input:disabled {
+    cursor: not-allowed;
+}
+
+/* 강제 발송 행 (시스템 공지 등 — 토글 잠김) */
+.notif-grid-row.force-send {
+    background: #fff7ed;
+}
+.notif-grid-row.force-send .col-name .item-name::after {
+    content: '🔒';
+    margin-left: 6px;
+    font-size: 11px;
+}
+
+.notif-grid-note {
+    padding: 12px 16px;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.6;
+}
+.notif-grid-note .force-send-note {
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+.notif-type-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.notif-type-item:hover {
+    background: #f9fafb;
+}
+
+.notif-type-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #1a73e8;
+    flex-shrink: 0;
+}
+
+.notif-type-item .item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notif-type-item .item-name {
+    font-size: 13px;
+    color: #111827;
+    font-weight: 500;
+}
+
+.notif-type-item .item-desc {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+/* 강제 발송 항목 — 사용자가 끌 수 없음을 시각적으로 표시 */
+.notif-type-item.force-send {
+    background: #fff7ed;
+    border-color: #fed7aa;
+}
+
+.notif-type-item.force-send::after {
+    content: '항상 받기';
+    font-size: 10px;
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 2px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* 토글 스위치 (방해금지 등) */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #d1d5db;
+    border-radius: 26px;
+    transition: background-color 0.25s;
+}
+
+.toggle-slider::before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    top: 3px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    transition: transform 0.25s;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #1a73e8;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(24px);
+}
+
+.toggle-switch input:focus-visible + .toggle-slider {
+    outline: 3px solid rgba(26, 115, 232, 0.4);
+    outline-offset: 2px;
+}
+
+/* 방해금지 영역 */
+.quiet-hours {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.quiet-hours .quiet-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #374151;
+    font-weight: 500;
+}
+
+.quiet-hours .quiet-time-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #374151;
+    font-size: 14px;
+}
+
+.quiet-hours .quiet-time-group.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.quiet-hours input[type="time"] {
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.quiet-hours-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.notif-save-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.notif-save-row .btn-save {
+    padding: 10px 20px;
+    background: #1a73e8;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.notif-save-row .btn-save:hover {
+    background: #1558b8;
+}
+
+/* 공통 small button (테스트, 새로고침 등) */
+.notif-small-btn {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #374151;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.notif-small-btn:hover {
+    background: #f3f4f6;
+}
+
+@media screen and (max-width: 768px) {
+    .mm-link-info {
+        grid-template-columns: 1fr;
+    }
+
+    .notif-grid-head,
+    .notif-grid-row {
+        grid-template-columns: 1fr 70px 70px;
+        gap: 8px;
+        padding: 10px 12px;
+    }
+}

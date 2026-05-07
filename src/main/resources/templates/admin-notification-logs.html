@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('알림 발송 이력', '/css/admin-notifications.css')}"></head>
+<body>
+<div class="container">
+    <div th:replace="~{fragments/sidebar :: sidebar('admin-notifications')}"></div>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="page-title">알림 발송 이력</h1>
+                <p class="page-subtitle">발송 성공·실패·만료·재시도대기 모든 이력 조회 · 수동 재시도 / 취소</p>
+            </div>
+        </header>
+
+        <div class="notifications-content">
+
+            <nav class="notif-tab-nav">
+                <a href="/admin/notifications"><i class="fas fa-cog"></i> 시스템 설정</a>
+                <a href="/admin/notifications/templates"><i class="fas fa-file-alt"></i> 템플릿 관리</a>
+                <a href="/admin/notifications/logs" class="active"><i class="fas fa-list-alt"></i> 발송 이력</a>
+            </nav>
+
+            <div id="notifLogsRoot">
+
+                <!-- 필터 -->
+                <div class="logs-filter">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="flType">알림 종류</label>
+                            <select id="flType"></select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="flStatus">상태</label>
+                            <select id="flStatus"></select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="flFrom">발생 시작</label>
+                            <input type="date" id="flFrom">
+                        </div>
+                        <div class="filter-group">
+                            <label for="flTo">발생 종료</label>
+                            <input type="date" id="flTo">
+                        </div>
+                        <div class="filter-group flex-1">
+                            <label for="flKeyword">검색어 (수신자/요청자/문서번호/사유)</label>
+                            <input type="text" id="flKeyword" placeholder="이름·사번·문서번호·에러 키워드">
+                        </div>
+                        <div class="filter-group">
+                            <button class="notif-btn notif-btn-primary" id="btnApplyFilter"><i class="fas fa-search"></i> 검색</button>
+                        </div>
+                        <div class="filter-group">
+                            <button class="notif-btn" id="btnResetFilter"><i class="fas fa-undo"></i> 초기화</button>
+                        </div>
+                        <div class="filter-group">
+                            <button class="notif-btn" id="btnExportCsv"><i class="fas fa-file-csv"></i> CSV</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 표 -->
+                <div class="logs-table-wrap">
+                    <table class="logs-table">
+                        <thead>
+                        <tr>
+                            <th style="width:60px;">#</th>
+                            <th>알림 종류</th>
+                            <th>받을 사람</th>
+                            <th>요청자</th>
+                            <th>문서번호</th>
+                            <th>상태</th>
+                            <th style="width:60px;">재시도</th>
+                            <th>마지막 에러</th>
+                            <th>요청자 알림</th>
+                            <th>발송/생성 시각</th>
+                            <th style="width:140px;">액션</th>
+                        </tr>
+                        </thead>
+                        <tbody id="logsTbody"></tbody>
+                    </table>
+                    <div id="logsEmpty" style="display:none;padding:40px;text-align:center;color:#6b7280;">
+                        <i class="fas fa-inbox" style="font-size:32px;color:#d1d5db;"></i>
+                        <p>조건에 맞는 발송 이력이 없습니다.</p>
+                    </div>
+                </div>
+
+                <!-- 페이지네이션 (Phase 1 더미: 단일 페이지) -->
+                <div class="logs-pagination">
+                    <div class="page-info">
+                        총 <strong id="totalCount">6</strong>건 · 1 / 1 페이지
+                    </div>
+                    <div class="page-buttons">
+                        <button disabled><i class="fas fa-angle-double-left"></i></button>
+                        <button disabled><i class="fas fa-angle-left"></i></button>
+                        <button class="active">1</button>
+                        <button disabled><i class="fas fa-angle-right"></i></button>
+                        <button disabled><i class="fas fa-angle-double-right"></i></button>
+                    </div>
+                </div>
+
+                <!-- 상태 배지 안내 -->
+                <div class="notif-card" style="margin-top:16px;">
+                    <h3 class="notif-card-title">상태 안내</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px 16px;font-size:13px;color:#374151;">
+                        <span><span class="status-badge status-pending">대기중</span> 발송 차례를 기다리는 중</span>
+                        <span><span class="status-badge status-sent">발송성공</span> 상대방 Mattermost 에 정상 도착</span>
+                        <span><span class="status-badge status-skipped">발송제외</span> 외부인이거나 사용자가 끈 알림</span>
+                        <span><span class="status-badge status-retry-wait">재시도대기</span> 일시 실패, 자동으로 다시 시도 중</span>
+                        <span><span class="status-badge status-failed">발송실패</span> 5회 시도해도 실패 (요청자에게 안내 알림 발송됨)</span>
+                        <span><span class="status-badge status-expired">만료</span> 24시간 지나 발송 포기 (요청자에게 안내 알림 발송됨)</span>
+                    </div>
+                </div>
+
+                <div class="notif-card" style="background:#fffbeb;border-color:#fde68a;">
+                    <div style="color:#92400e;font-size:13px;display:flex;align-items:center;gap:8px;">
+                        <i class="fas fa-info-circle"></i>
+                        <span><strong>미리보기 화면</strong> · 지금 보이는 6건은 예시 데이터입니다. 검색·재시도·취소·CSV 동작은 다음 작업 단계에서 연결됩니다.</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+</div>
+
+<script th:src="@{/js/notification-dummy-data.js}" defer></script>
+<script th:src="@{/js/admin-notification-logs.js}" defer></script>
+</body>
+</html>

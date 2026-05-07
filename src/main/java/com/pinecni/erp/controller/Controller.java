@@ -39,6 +39,34 @@ public class Controller {
         return "vacation";
     }
 
+    // ─── Mattermost 알림 (Phase 1: 화면 스켈레톤) ───
+    @GetMapping("/admin/notifications")
+    public String adminNotifications() {
+        return "admin-notifications";
+    }
+
+    @GetMapping("/admin/notifications/templates")
+    public String adminNotificationTemplates() {
+        return "admin-notification-templates";
+    }
+
+    @GetMapping("/admin/notifications/logs")
+    public String adminNotificationLogs() {
+        return "admin-notification-logs";
+    }
+
+    @GetMapping("/notifications/{idx}/retry")
+    public String notificationRetry(@org.springframework.web.bind.annotation.PathVariable Long idx) {
+        // Phase 1: idx 무시하고 더미 데이터 렌더. Phase 4 에서 권한 체크 + DB 조회.
+        return "notification-retry";
+    }
+
+    @GetMapping("/notifications")
+    public String notificationInbox() {
+        // Phase 1: 더미 데이터로 인박스 게시판 렌더. Phase 4 에서 본인 INWEB 알림 조회.
+        return "notification-inbox";
+    }
+
     @GetMapping("/calendar")
     public String calendar() {
         return "calendar";

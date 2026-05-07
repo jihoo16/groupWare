@@ -2,6 +2,7 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('설정', '/css/settings.css')}"></head>
 <body>
+    <link rel="stylesheet" th:href="@{/css/settings-notification.css}">
     <div class="container">
         <!-- 좌측 네비게이션 바 -->
         <div th:replace="~{fragments/sidebar :: sidebar('settings')}"></div>
@@ -26,12 +27,10 @@
                         <i class="fas fa-key"></i>
                         계정
                     </button>
-                    <!-- 알림 탭 - 구현되지 않은 서비스 (주석처리)
                     <button class="tab-btn" data-tab="notification">
                         <i class="fas fa-bell"></i>
                         알림
                     </button>
-                    -->
                     <!-- 시스템 탭 - 구현되지 않은 서비스 (주석처리)
                     <button class="tab-btn" data-tab="system">
                         <i class="fas fa-cog"></i>
@@ -312,75 +311,68 @@
                     </div>
                 </div>
 
-                <!-- 알림 설정 - 구현되지 않은 서비스 (주석처리)
+                <!-- 알림 설정 (Mattermost 봇 DM) -->
                 <div class="tab-content" id="notification">
-                    <div class="settings-card">
-                        <h3 class="card-title">알림 설정</h3>
-                        <div class="notification-section">
-                            <div class="setting-item">
-                                <div class="setting-info">
-                                    <h4>메일 알림</h4>
-                                    <p>새 메일 수신 시 알림을 받습니다.</p>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-item">
-                                <div class="setting-info">
-                                    <h4>결재 알림</h4>
-                                    <p>결재 요청 및 승인/반려 시 알림을 받습니다.</p>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-item">
-                                <div class="setting-info">
-                                    <h4>메신저 알림</h4>
-                                    <p>새 메시지 수신 시 알림을 받습니다.</p>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-item">
-                                <div class="setting-info">
-                                    <h4>일정 알림</h4>
-                                    <p>일정 시작 전 알림을 받습니다.</p>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-item">
-                                <div class="setting-info">
-                                    <h4>데스크톱 알림</h4>
-                                    <p>브라우저 데스크톱 알림을 활성화합니다.</p>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            <div class="setting-item">
-                                <div class="setting-info">
-                                    <h4>알림음</h4>
-                                    <p>알림 수신 시 소리를 재생합니다.</p>
-                                </div>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" checked>
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
+
+                    <!-- ① Mattermost 연동 상태 -->
+                    <div class="notif-section">
+                        <h3 class="notif-section-title">Mattermost 연동</h3>
+
+                        <div class="mm-link-status" id="mmLinkStatus">
+                            <i class="fas fa-check-circle status-icon"></i>
+                            <div class="status-text"><strong>연결됨</strong></div>
+                        </div>
+
+                        <dl class="mm-link-info" id="mmLinkInfo"></dl>
+
+                        <div class="mm-link-actions">
+                            <button class="notif-small-btn" id="btnMmTest">
+                                <i class="fas fa-paper-plane"></i> 테스트 메시지 보내기
+                            </button>
+                            <button class="notif-small-btn" id="btnMmRefresh">
+                                <i class="fas fa-sync-alt"></i> 연결 새로고침
+                            </button>
+                        </div>
+
+                        <div class="mm-link-notice">
+                            <div class="notice-line">※ 사번이 곧 Mattermost 사용자명입니다. 등록·해제 절차는 없으며 알림은 자동으로 본인의 Mattermost 로 발송됩니다.</div>
+                            <div class="notice-line">※ Mattermost 에서 봇 'groupware-notifier' 를 차단하지 마세요.</div>
                         </div>
                     </div>
+
+                    <!-- ② 알림 종류별 ON/OFF -->
+                    <div class="notif-section">
+                        <h3 class="notif-section-title">알림 종류</h3>
+                        <div class="notif-type-grid" id="notifTypeGrid">
+                            <!-- JS 가 NOTIF_DUMMY.TYPES 기반으로 14개 항목 렌더 -->
+                        </div>
+                    </div>
+
+                    <!-- ③ 방해금지 시간 -->
+                    <div class="notif-section">
+                        <h3 class="notif-section-title">방해금지 시간</h3>
+                        <div class="quiet-hours">
+                            <span class="quiet-toggle-label">
+                                <label class="toggle-switch" title="방해금지 사용 여부">
+                                    <input type="checkbox" id="quietHoursEnabled">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                사용
+                            </span>
+                            <span class="quiet-time-group" id="quietTimeGroup">
+                                <label>시작 <input type="time" id="quietHoursStart"></label>
+                                <label>종료 <input type="time" id="quietHoursEnd"></label>
+                            </span>
+                        </div>
+                        <div class="quiet-hours-hint">※ 방해금지 시간(시작~종료) 동안 발생한 알림은 종료 시각 이후로 모아 발송됩니다.<br>※ 단, <strong>관리자가 내 연차를 삭제했을 때</strong>·<strong>내가 요청한 알림이 상대방에게 전달 못 됐을 때</strong> 같은 중요 알림은 방해금지 시간이어도 즉시 발송됩니다.</div>
+                    </div>
+
+                    <div class="notif-save-row">
+                        <button class="btn-save" id="btnNotifSave">
+                            <i class="fas fa-save"></i> 저장
+                        </button>
+                    </div>
                 </div>
-                -->
 
                 <!-- 시스템 설정 - 구현되지 않은 서비스 (주석처리)
                 <div class="tab-content" id="system">
@@ -793,5 +785,7 @@
     </div>
 
     <script th:src="@{/js/settings.js}" defer></script>
+    <script th:src="@{/js/notification-dummy-data.js}" defer></script>
+    <script th:src="@{/js/settings-notification.js}" defer></script>
 </body>
 </html>

@@ -20,6 +20,13 @@
                     <span class="menu-text">홈</span>
                 </a>
             </li>
+            <li class="menu-item notif-menu-item" th:classappend="${activeMenu == 'notification-inbox'} ? 'active' : ''" data-tooltip="알림 인박스">
+                <a href="/notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="menu-text">알림</span>
+                    <span class="notif-badge" id="sidebarNotifBadge" data-count="3">3</span>
+                </a>
+            </li>
             <li class="menu-item" th:classappend="${activeMenu == 'organization'} ? 'active' : ''" data-tooltip="조직도">
                 <a href="/organization">
                     <i class="fas fa-sitemap"></i>
@@ -209,6 +216,11 @@
                     <li class="submenu-item" th:classappend="${activeMenu == 'admin-audit-logs'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102' or session.userRoleCode == 'C1105'}">
                         <a href="/admin/audit-logs">
                             <span class="submenu-text">서명 이력</span>
+                        </a>
+                    </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-notifications'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
+                        <a href="/admin/notifications">
+                            <span class="submenu-text">알림 관리</span>
                         </a>
                     </li>
                     <li class="submenu-item" th:classappend="${activeMenu == 'dev-code-groups'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101'}">
