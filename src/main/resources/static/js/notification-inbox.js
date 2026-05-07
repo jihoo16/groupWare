@@ -165,19 +165,49 @@ document.addEventListener('DOMContentLoaded', function () {
             '<span class="row-time">' + formatTime(row.createdAt) + '</span>';
 
         el.addEventListener('click', function () {
-            const proceed = function () {
-                if (row.linkUrl) window.location.href = row.linkUrl;
-            };
+            // 안 읽음 → 자동 읽음 처리 (백그라운드, 모달 동시 표시)
             if (isUnread) {
                 fetch('/api/me/inbox/' + row.idx + '/read', {
                     method: 'PUT',
                     credentials: 'same-origin'
-                }).finally(proceed);
-            } else {
-                proceed();
+                }).then(function () {
+                    el.classList.remove('unread');
+                    if (sidebarBadge) {
+                        const cur = parseInt(sidebarBadge.dataset.count || '0', 10);
+                        const next = Math.max(0, cur - 1);
+                        sidebarBadge.textContent = next;
+                        sidebarBadge.dataset.count = String(next);
+                        sidebarBadge.hidden = next === 0;
+                    }
+                    if (unreadEl) unreadEl.textContent =
+                            Math.max(0, (parseInt(unreadEl.textContent, 10) || 0) - 1);
+                });
             }
+            openReceivedModal(row);
         });
         return el;
+    }
+
+    function openReceivedModal(row) {
+        const html =
+            '<dl class="notif-detail">' +
+            '  <dt>알림 종류</dt><dd>' + escapeHtml(row.notificationTypeName || row.notificationType) + '</dd>' +
+            '  <dt>받은 시각</dt><dd>' + escapeHtml(formatTime(row.createdAt)) + '</dd>' +
+            (row.readAt
+                ? '  <dt>읽은 시각</dt><dd>' + escapeHtml(formatTime(row.readAt)) + '</dd>'
+                : '') +
+            '</dl>' +
+            '<div class="notif-body-preview">' + markdownLite(row.body) + '</div>';
+
+        Swal.fire({
+            title: row.title,
+            html: html,
+            width: 720,
+            showConfirmButton: false,
+            showCancelButton: true,
+            cancelButtonText: '닫기',
+            customClass: { popup: 'notif-detail-popup' }
+        });
     }
 
     /* ─── 보낸 알림 렌더 ─── */
@@ -228,13 +258,46 @@ document.addEventListener('DOMContentLoaded', function () {
             '</div>' +
             '<span class="row-time">' + formatTime(row.sentAt || row.createdAt) + '</span>';
 
-        if (row.linkUrl) {
-            el.style.cursor = 'pointer';
-            el.addEventListener('click', function () {
-                window.location.href = row.linkUrl;
-            });
-        }
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', function () {
+            openSentModal(row);
+        });
         return el;
+    }
+
+    function openSentModal(row) {
+        const stat = STATUS_LABEL[row.status] || { name: row.statusName || row.status || '', cls: '' };
+        const recipient = row.recipientName
+                ? escapeHtml(row.recipientName) +
+                  (row.recipientEmpId ? ' <span style="color:#9ca3af;">(' + escapeHtml(row.recipientEmpId) + ')</span>' : '')
+                : '<span style="color:#9ca3af;">(수신자 없음)</span>';
+
+        const html =
+            '<dl class="notif-detail">' +
+            '  <dt>알림 종류</dt><dd>' + escapeHtml(row.notificationTypeName || row.notificationType) + '</dd>' +
+            '  <dt>받는 사람</dt><dd>' + recipient + '</dd>' +
+            '  <dt>채널</dt><dd>' + escapeHtml(row.channelLabel || row.channel) + '</dd>' +
+            '  <dt>상태</dt><dd><span class="status-badge ' + stat.cls + '">' + escapeHtml(stat.name) + '</span></dd>' +
+            (row.retryCount != null ? '  <dt>재시도</dt><dd>' + row.retryCount + '회</dd>' : '') +
+            '  <dt>생성 시각</dt><dd>' + escapeHtml(formatTime(row.createdAt)) + '</dd>' +
+            (row.sentAt
+                ? '  <dt>발송 시각</dt><dd>' + escapeHtml(formatTime(row.sentAt)) + '</dd>'
+                : '') +
+            (row.lastError
+                ? '  <dt>실패 사유</dt><dd style="color:#b91c1c;">' + escapeHtml(row.lastError) + '</dd>'
+                : '') +
+            '</dl>' +
+            '<div class="notif-body-preview">' + markdownLite(row.body) + '</div>';
+
+        Swal.fire({
+            title: row.title,
+            html: html,
+            width: 720,
+            showConfirmButton: false,
+            showCancelButton: true,
+            cancelButtonText: '닫기',
+            customClass: { popup: 'notif-detail-popup' }
+        });
     }
 
     /* ─── 페이지네이션 ─── */
@@ -316,6 +379,20 @@ document.addEventListener('DOMContentLoaded', function () {
         const div = document.createElement('div');
         div.textContent = str == null ? '' : str;
         return div.innerHTML;
+    }
+
+    /**
+     * 매우 간단한 Markdown 렌더 — 본문 안의 **굵게**, [라벨](url), 줄바꿈만 처리.
+     * (Mattermost 측 풀 마크다운 호환은 안 함)
+     */
+    function markdownLite(text) {
+        if (!text) return '';
+        let html = escapeHtml(text);
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\[([^\]]+)\]\((https?:[^\)\s]+)\)/g,
+                '<a href="$2" target="_blank" rel="noopener" style="color:#1a73e8;text-decoration:underline;">$1</a>');
+        html = html.replace(/\n/g, '<br>');
+        return html;
     }
 
     function formatTime(iso) {
