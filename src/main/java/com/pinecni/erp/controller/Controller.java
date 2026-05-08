@@ -67,6 +67,15 @@ public class Controller {
         return "admin-notification-logs";
     }
 
+    @GetMapping("/admin/announce")
+    public String adminAnnounce(HttpSession session) {
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
+            log.warn("관리자가 아닌 사용자의 공지 작성 접근 시도");
+            return "redirect:/nope";
+        }
+        return "admin-announce";
+    }
+
     @GetMapping("/notifications/{idx}/retry")
     public String notificationRetry(@org.springframework.web.bind.annotation.PathVariable Long idx) {
         // Phase 1: idx 무시하고 더미 데이터 렌더. Phase 4 에서 권한 체크 + DB 조회.

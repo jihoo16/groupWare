@@ -1,0 +1,281 @@
+/* ============================================================
+ * 공지 보내기 (/admin/announce)
+ * ============================================================ */
+
+.announce-page {
+    padding: 8px 24px 32px;
+    color: #1f2937;
+}
+
+.announce-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 1100px) {
+    .announce-grid { grid-template-columns: 1fr; }
+}
+
+/* ── 카드 공통 ── */
+.announce-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 20px 22px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.announce-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+.announce-card-title .card-subtle {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+/* ── 작성 폼 ── */
+.announce-field {
+    margin-bottom: 18px;
+}
+.announce-field > label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 6px;
+}
+.announce-field input[type="text"],
+.announce-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 14px;
+    color: #111827;
+    box-sizing: border-box;
+    font-family: inherit;
+    line-height: 1.5;
+    transition: border-color 0.12s, box-shadow 0.12s;
+}
+.announce-field input[type="text"]:focus,
+.announce-field textarea:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+}
+.announce-field textarea {
+    resize: vertical;
+    min-height: 200px;
+    font-family: 'Pretendard', -apple-system, system-ui, sans-serif;
+}
+
+.announce-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 6px;
+    font-size: 11px;
+    color: #6b7280;
+    gap: 8px;
+}
+.announce-meta .meta-hint {
+    flex: 1;
+    line-height: 1.6;
+}
+.announce-meta .meta-hint code {
+    background: #f3f4f6;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    color: #4b5563;
+}
+.announce-meta .meta-counter {
+    color: #9ca3af;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.announce-meta .meta-counter.over { color: #dc2626; font-weight: 600; }
+
+/* ── 체크박스 ── */
+.announce-check-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: #374151;
+    cursor: pointer;
+    user-select: none;
+}
+.announce-check-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #1a73e8;
+}
+
+/* ── 액션 버튼 ── */
+.announce-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid #f1f5f9;
+}
+.btn-announce-cancel,
+.btn-announce-send {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.btn-announce-cancel {
+    border: 1px solid #d1d5db;
+    background: #fff;
+    color: #4b5563;
+}
+.btn-announce-cancel:hover { background: #f9fafb; border-color: #9ca3af; }
+.btn-announce-send {
+    border: 1px solid #1a73e8;
+    background: #1a73e8;
+    color: #fff;
+}
+.btn-announce-send:hover:not(:disabled) { background: #1557b0; border-color: #1557b0; }
+.btn-announce-send:disabled {
+    background: #93c5fd;
+    border-color: #93c5fd;
+    cursor: not-allowed;
+}
+
+/* ── 결과 안내 ── */
+.announce-result {
+    margin-top: 18px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+.announce-result.success {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+.announce-result.error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+.announce-result .fas { margin-top: 2px; }
+
+/* ── 미리보기 ── */
+.preview-frame {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 18px 20px;
+    background: #fafbfc;
+    min-height: 320px;
+}
+
+.preview-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 14px;
+}
+.preview-icon {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a73e8;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.preview-meta-text { flex: 1; min-width: 0; }
+.preview-actor {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+}
+.preview-actor .preview-time {
+    font-weight: 400;
+    font-size: 11px;
+    color: #9ca3af;
+    margin-left: 6px;
+}
+.preview-channel {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.preview-title {
+    margin: 0 0 12px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.4;
+    word-break: break-word;
+}
+.preview-body {
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.7;
+    word-break: break-word;
+    white-space: normal;
+}
+.preview-body p { margin: 0 0 10px; }
+.preview-body p:last-child { margin-bottom: 0; }
+.preview-body strong { color: #111827; }
+.preview-body em { color: #4b5563; }
+.preview-body a {
+    color: #1a73e8;
+    text-decoration: underline;
+}
+.preview-body code {
+    background: #f3f4f6;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 13px;
+    color: #4b5563;
+}
+.preview-body h2,
+.preview-body h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin: 14px 0 8px;
+}
+.preview-body ul {
+    margin: 0 0 10px;
+    padding-left: 22px;
+}
+.preview-body ul li { margin-bottom: 4px; }
+
+.preview-body.empty {
+    color: #cbd5e0;
+    font-style: italic;
+}

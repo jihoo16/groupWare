@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('공지 보내기', '/css/admin-announce.css')}"></head>
+<body>
+<div class="container">
+    <div th:replace="~{fragments/sidebar :: sidebar('admin-announce')}"></div>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-left">
+                <h1 class="page-title">공지 보내기</h1>
+                <p class="page-subtitle">사내 메신저 공지 채널 + 직원 인박스로 시스템 공지를 발송합니다.</p>
+            </div>
+        </header>
+
+        <div class="announce-page">
+
+            <!-- 좌: 작성 폼 / 우: 미리보기 -->
+            <section class="announce-grid">
+
+                <div class="announce-card announce-form">
+                    <h3 class="announce-card-title">공지 내용</h3>
+
+                    <div class="announce-field">
+                        <label for="annTitle">제목</label>
+                        <input type="text" id="annTitle" placeholder="공지 제목" maxlength="100" autocomplete="off">
+                        <div class="announce-meta">
+                            <span class="meta-hint">한 줄 요약 — 메신저 알림과 인박스 목록에 그대로 보입니다.</span>
+                            <span class="meta-counter"><span id="annTitleCount">0</span>/100</span>
+                        </div>
+                    </div>
+
+                    <div class="announce-field">
+                        <label for="annBody">본문</label>
+                        <textarea id="annBody" placeholder="공지 본문을 입력하세요. Markdown 일부 표기를 지원합니다." rows="14" maxlength="4000"></textarea>
+                        <div class="announce-meta">
+                            <span class="meta-hint">
+                                <strong>**굵게**</strong>,
+                                <em>*기울임*</em>,
+                                [링크](url),
+                                <code>- 리스트</code>,
+                                <code>## 소제목</code>,
+                                줄바꿈은 빈 줄
+                            </span>
+                            <span class="meta-counter"><span id="annBodyCount">0</span>/4,000</span>
+                        </div>
+                    </div>
+
+                    <div class="announce-field">
+                        <label class="announce-check-label">
+                            <input type="checkbox" id="annAlsoInbox" checked>
+                            <span>모든 직원 인박스에도 동시 발송</span>
+                        </label>
+                        <div class="meta-hint" style="margin-top:6px;">
+                            끄면 메신저 공지 채널로만 가고, 인박스에는 들어가지 않습니다.
+                        </div>
+                    </div>
+
+                    <div class="announce-actions">
+                        <button class="btn-announce-cancel" id="btnAnnReset" type="button">
+                            <i class="fas fa-undo"></i> 비우기
+                        </button>
+                        <button class="btn-announce-send" id="btnAnnSend" type="button">
+                            <i class="fas fa-bullhorn"></i> 발송
+                        </button>
+                    </div>
+
+                    <div id="annResult" class="announce-result" hidden></div>
+                </div>
+
+                <div class="announce-card announce-preview">
+                    <h3 class="announce-card-title">
+                        미리보기
+                        <span class="card-subtle">수신자에게 표시되는 모양</span>
+                    </h3>
+
+                    <div class="preview-frame">
+                        <div class="preview-meta">
+                            <i class="fas fa-bullhorn preview-icon"></i>
+                            <div class="preview-meta-text">
+                                <div class="preview-actor"><span id="prevActor">관리자</span> <span class="preview-time" id="prevTime"></span></div>
+                                <div class="preview-channel">📢 공지 — <span id="prevChannelLabel">채널 + 인박스</span></div>
+                            </div>
+                        </div>
+                        <h2 class="preview-title" id="prevTitle">제목이 여기에 표시됩니다</h2>
+                        <div class="preview-body" id="prevBody">
+                            본문 내용이 여기에 미리보기로 렌더됩니다.
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </main>
+</div>
+
+<script th:src="@{/js/markdown-lite.js}" defer></script>
+<script th:src="@{/js/admin-announce.js}" defer></script>
+</body>
+</html>
