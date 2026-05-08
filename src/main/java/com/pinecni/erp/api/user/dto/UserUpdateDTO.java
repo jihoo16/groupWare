@@ -52,6 +52,15 @@ public class UserUpdateDTO {
     @Size(max = 20, message = "재직상태는 최대 20자입니다")
     private String empStatus;
 
+    /** 퇴사예정일. null 로 보내면 변경하지 않음. 명시적으로 해제하려면 별도 플래그 필요(현재는 변경+해제 분기 없이 set 만 지원). */
+    private LocalDate plannedResignationDate;
+
+    /**
+     * 퇴사예정일 명시적 해제 플래그. true 면 plannedResignationDate 가 null 로 클리어된다.
+     * (LocalDate null 만으로는 "변경 없음" 과 "해제" 를 구분할 수 없어서 별도 플래그 사용)
+     */
+    private Boolean plannedResignationDateClear;
+
     @Size(max = 20, message = "근무형태는 최대 20자입니다")
     private String empWorkType;
 

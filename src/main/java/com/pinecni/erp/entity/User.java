@@ -71,6 +71,20 @@ public class User extends BaseEntity {
     @Column(name = "emp_status", nullable = false, length = 20)
     private String empStatus = "재직";
 
+    /**
+     * 퇴사예정일. ADMIN이 미리 설정해두면 자정 스케줄러가 그 날짜에
+     * emp_status='퇴사' + soft delete 자동 처리.
+     */
+    @Column(name = "planned_resignation_date")
+    private LocalDate plannedResignationDate;
+
+    /**
+     * 퇴사예정일을 설정한 ADMIN 의 user.idx.
+     * 자동 퇴사 처리 시 deleted_user_idx 로 복사된다.
+     */
+    @Column(name = "planned_resignation_user_idx")
+    private Long plannedResignationUserIdx;
+
     @Column(name = "emp_work_type", length = 20)
     private String empWorkType = "정규직";
 

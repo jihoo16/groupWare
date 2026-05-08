@@ -26,5 +26,6 @@ public class UserSimpleDTO {
     private String empPhone;
     private LocalDate empJoinDate; // 입사일
     private String empStatus;
+    private LocalDate plannedResignationDate; // 퇴사예정일 (목록 행 하단 표시용)
     private String profilePhotoPath;
 }

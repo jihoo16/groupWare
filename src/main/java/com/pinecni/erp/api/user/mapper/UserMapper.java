@@ -43,6 +43,7 @@ public class UserMapper {
                 .empPosition(user.getEmpPosition())
                 .empJoinDate(user.getEmpJoinDate())
                 .empStatus(user.getEmpStatus())
+                .plannedResignationDate(user.getPlannedResignationDate())
                 .empWorkType(user.getEmpWorkType())
                 .empNotes(user.getEmpNotes())
                 .profilePhotoPath(user.getProfilePhotoPath())
@@ -88,6 +89,7 @@ public class UserMapper {
                 .empPhone(user.getEmpPhone())
                 .empJoinDate(user.getEmpJoinDate())
                 .empStatus(user.getEmpStatus())
+                .plannedResignationDate(user.getPlannedResignationDate())
                 .profilePhotoPath(user.getProfilePhotoPath())
                 .build();
 
@@ -195,6 +197,13 @@ public class UserMapper {
         }
         if (dto.getEmpStatus() != null) {
             user.setEmpStatus(dto.getEmpStatus());
+        }
+        // 퇴사예정일: clear 플래그가 우선, 그 다음 set. 둘 다 없으면 변경 없음.
+        // plannedResignationUserIdx 는 Service 에서 별도로 스탬프한다.
+        if (Boolean.TRUE.equals(dto.getPlannedResignationDateClear())) {
+            user.setPlannedResignationDate(null);
+        } else if (dto.getPlannedResignationDate() != null) {
+            user.setPlannedResignationDate(dto.getPlannedResignationDate());
         }
         if (dto.getEmpWorkType() != null) {
             user.setEmpWorkType(dto.getEmpWorkType());

@@ -31,6 +31,7 @@ public class UserDTO {
     private String empPositionName; // 직급 코드명 (전무, 상무, 부장 등)
     private LocalDate empJoinDate;
     private String empStatus;
+    private LocalDate plannedResignationDate;
     private String empWorkType;
     private String empNotes;
     private String profilePhotoPath;

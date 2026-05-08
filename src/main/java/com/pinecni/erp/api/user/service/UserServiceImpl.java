@@ -203,9 +203,23 @@ public class UserServiceImpl implements UserService {
         // 기존 부서명 저장
         String oldDept = user.getEmpDept();
 
+        // 퇴사예정일 변경 감지 (Mapper 적용 전 스냅샷)
+        java.time.LocalDate oldPlannedDate = user.getPlannedResignationDate();
+
         // Entity 업데이트
         userMapper.updateEntity(user, updateDTO, hashedPassword, salt);
         user.setUpdatedUserIdx(updatedUserIdx);
+
+        // 퇴사예정일이 변경(설정/해제/수정)된 경우 → 변경자 idx 를 plannedResignationUserIdx 에 스탬프.
+        // 이 값은 자동 스케줄러가 deleted_user_idx 로 복사한다 (누가 예약했는지 기록).
+        java.time.LocalDate newPlannedDate = user.getPlannedResignationDate();
+        boolean plannedDateChanged = !java.util.Objects.equals(oldPlannedDate, newPlannedDate);
+        if (plannedDateChanged) {
+            user.setPlannedResignationUserIdx(newPlannedDate == null ? null : updatedUserIdx);
+            log.info("퇴사예정일 {} - userIdx: {}, by ADMIN: {}, date: {}",
+                    newPlannedDate == null ? "해제" : (oldPlannedDate == null ? "설정" : "수정"),
+                    user.getIdx(), updatedUserIdx, newPlannedDate);
+        }
 
         // 부서가 변경된 경우 부서 코드 재설정
         if (updateDTO.getEmpDept() != null && !updateDTO.getEmpDept().equals(oldDept)) {

@@ -4,8 +4,10 @@ import com.pinecni.erp.api.competency.dto.UserCompetencyOverviewDTO;
 import com.pinecni.erp.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -131,6 +133,31 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     @Query("SELECT u FROM User u WHERE u.empDept = :empDept AND u.empPosition = :empPosition AND u.deletedAt IS NULL")
     Optional<User> findActiveByEmpDeptAndEmpPosition(String empDept, String empPosition);
+
+    // ========================================
+    // 퇴사예정일 자동 처리용
+    // ========================================
+
+    /**
+     * 자동 퇴사 처리 대상자 조회.
+     * planned_resignation_date <= today AND 아직 활성(deleted_at IS NULL) AND 퇴사 상태 아님.
+     * 서버 다운 등으로 누락된 과거 예정자도 함께 처리되도록 <= 비교.
+     */
+    @Query("SELECT u FROM User u " +
+           "WHERE u.plannedResignationDate IS NOT NULL " +
+           "  AND u.plannedResignationDate <= :today " +
+           "  AND u.deletedAt IS NULL " +
+           "  AND u.empStatus <> '퇴사'")
+    List<User> findUsersDueForAutoResignation(@Param("today") LocalDate today);
+
+    /**
+     * 알림 수신 대상 ADMIN+ 사용자 (DEVELOPER C1101, ADMIN C1102) 조회.
+     * 자동 퇴사 처리 시 전원에게 알림 발송.
+     */
+    @Query("SELECT u FROM User u " +
+           "WHERE u.deletedAt IS NULL " +
+           "  AND (u.userRoleCode = 'C1101' OR u.userRoleCode = 'C1102')")
+    List<User> findActiveAdmins();
 
     // ========================================
     // 역량관리 열람 페이지용
