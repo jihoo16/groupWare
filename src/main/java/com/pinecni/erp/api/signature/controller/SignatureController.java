@@ -318,6 +318,19 @@ public class SignatureController {
     }
 
     /**
+     * 미서명자에게 서명요청 알림 (시스템 알림 + 메신저) 다시 보내기.
+     * 보낸요청 탭 모달의 미서명 행에서 호출.
+     */
+    @PostMapping("/{documentSignatureIdx}/resend-request")
+    public ResponseEntity<Map<String, Object>> resendSignatureRequest(
+            @PathVariable Long documentSignatureIdx, HttpSession session) {
+        Long userIdx = (Long) session.getAttribute("userIdx");
+        if (userIdx == null) return ResponseEntity.status(401).build();
+        signatureService.resendSignatureRequestNotification(documentSignatureIdx, userIdx);
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    /**
      * 일괄 서명 적용 (첫 번째 서명 이미지를 나머지에 적용)
      */
     @PostMapping("/bulk-apply")

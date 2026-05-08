@@ -191,9 +191,17 @@ function applyFilters() {
     filteredCompleted = completedItems.filter(filterFn);
     filteredRequested = requestedItems.filter(baseFilterFn);
 
-    // 기본 정렬: 받은/보낸 요청은 오래된 순, 이력은 최신 순
+    // 기본 정렬:
+    //  - 받은 요청: 오래된 순
+    //  - 보낸 요청: 미서명자 있는 문서 먼저(최신순) → 전원 완료된 문서(최신순)
+    //  - 이력: 최신 순
     filteredPending.sort((a, b) => new Date(a.requestedAt || 0) - new Date(b.requestedAt || 0));
-    filteredRequested.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+    filteredRequested.sort((a, b) => {
+        const aPending = (a.signers || []).some(s => !s.signed);
+        const bPending = (b.signers || []).some(s => !s.signed);
+        if (aPending !== bPending) return aPending ? -1 : 1;
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
     filteredCompleted.sort((a, b) => new Date(b.signedAt || 0) - new Date(a.signedAt || 0));
 
     // 탭 배지 건수 업데이트
@@ -567,6 +575,9 @@ function showSignerDetail(documentIdx, source) {
     const item = list.find(r => r.documentIdx === documentIdx);
     if (!item || !item.signers) return;
 
+    // 보낸요청 탭에서만 미서명자에게 알림 다시 보내기 버튼 노출 (외부인·차례 안 온 사람 제외)
+    const showResendCol = source === 'requested';
+
     const rows = item.signers.map(s => {
         const icon = s.signed
             ? '<i class="fas fa-check-circle" style="color:#059669; font-size:16px;"></i>'
@@ -577,6 +588,21 @@ function showSignerDetail(documentIdx, source) {
         const reqDate = s.requestedAt ? formatDateTime(s.requestedAt) : '-';
         const signDate = s.signedAt ? formatDateTime(s.signedAt) : '-';
 
+        let resendCell = '';
+        if (showResendCol) {
+            const canResend = !s.signed && !s.isExternal && !!s.requestedAt && !!s.documentSignatureIdx;
+            resendCell = canResend
+                ? `<td style="text-align:center; padding:12px 8px;">
+                       <button type="button" class="btn-sig-resend"
+                               data-ds-idx="${s.documentSignatureIdx}"
+                               data-signer-name="${(s.signerName || '').replace(/"/g, '&quot;')}"
+                               style="padding:5px 10px; font-size:11px; border:1px solid #4f46e5; background:#fff; color:#4f46e5; border-radius:4px; cursor:pointer; font-weight:500;">
+                           <i class="fas fa-paper-plane" style="font-size:10px;"></i> 다시 보내기
+                       </button>
+                   </td>`
+                : '<td style="text-align:center; padding:12px 8px; color:#cbd5e0; font-size:11px;">-</td>';
+        }
+
         return `<tr style="border-bottom:1px solid #f1f5f9;">
             <td style="text-align:center; padding:12px 8px;">${icon}</td>
             <td style="padding:12px 8px; font-weight:500;">${s.signerName}</td>
@@ -584,6 +610,7 @@ function showSignerDetail(documentIdx, source) {
             <td style="text-align:center; padding:12px 8px;">${statusText}</td>
             <td style="text-align:center; padding:12px 8px; font-size:11px; color:#64748b;">${reqDate}</td>
             <td style="text-align:center; padding:12px 8px; font-size:11px; color:#64748b;">${signDate}</td>
+            ${resendCell}
         </tr>`;
     }).join('');
 
@@ -618,17 +645,82 @@ function showSignerDetail(documentIdx, source) {
                         <th style="padding:10px 8px;">상태</th>
                         <th style="padding:10px 8px;">요청 일시</th>
                         <th style="padding:10px 8px;">서명 일시</th>
+                        ${showResendCol ? '<th style="padding:10px 8px;">알림</th>' : ''}
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
             </table>
         `,
-        width: 640,
+        width: showResendCol ? 760 : 640,
         showConfirmButton: true,
         confirmButtonText: '확인',
         confirmButtonColor: '#4f46e5',
-        customClass: { popup: 'swal-no-padding-top' }
+        customClass: { popup: 'swal-no-padding-top' },
+        didOpen: () => {
+            if (!showResendCol) return;
+            document.querySelectorAll('.btn-sig-resend').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    handleResendSignatureRequest(btn);
+                });
+            });
+        }
     });
+}
+
+async function handleResendSignatureRequest(btn) {
+    const dsIdx = btn.dataset.dsIdx;
+    const signerName = btn.dataset.signerName || '서명자';
+    if (!dsIdx) return;
+
+    const confirm = await Swal.fire({
+        icon: 'question',
+        title: '서명 알림을 다시 보낼까요?',
+        html: `<div style="text-align:left;font-size:13px;color:#4b5563;">
+                <strong>${signerName}</strong> 님께 시스템 알림과 메신저로 다시 발송됩니다.<br>
+                <span style="color:#9ca3af;">메시지 앞에 &quot;📬 알림을 놓치신 것 같아 다시 보내드려요!&quot; 안내가 자동으로 붙어요.</span>
+              </div>`,
+        showCancelButton: true,
+        confirmButtonText: '다시 보내기',
+        cancelButtonText: '취소',
+        confirmButtonColor: '#4f46e5'
+    });
+    if (!confirm.isConfirmed) return;
+
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:10px;"></i> 보내는 중';
+
+    try {
+        const res = await fetch(`/api/signature/${dsIdx}/resend-request`, {
+            method: 'POST',
+            credentials: 'same-origin'
+        });
+        if (!res.ok) {
+            let msg = '알림을 다시 보내지 못했어요.';
+            try { const j = await res.json(); if (j && j.message) msg = j.message; } catch (_) {}
+            throw new Error(msg);
+        }
+        btn.innerHTML = '<i class="fas fa-check" style="font-size:10px;"></i> 보냄';
+        btn.style.background = '#dcfce7';
+        btn.style.color = '#166534';
+        btn.style.borderColor = '#86efac';
+        Swal.fire({
+            icon: 'success',
+            title: '알림을 다시 보냈어요',
+            text: signerName + ' 님께 시스템 알림 + 메신저로 발송됐습니다.',
+            timer: 1800,
+            showConfirmButton: false
+        });
+    } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = original;
+        Swal.fire({
+            icon: 'error',
+            title: '다시 보내지 못했어요',
+            text: err.message || '잠시 후 다시 시도해 주세요.'
+        });
+        console.error('[Signature/Resend] 실패', err);
+    }
 }
 
 function getDetailUrl(item) {

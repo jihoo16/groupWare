@@ -4,6 +4,10 @@ import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.audit.service.AuditLogService;
 import com.pinecni.erp.api.code.repository.CodeRepository;
 import com.pinecni.erp.api.externalperson.repository.ExternalPersonRepository;
+import com.pinecni.erp.api.notification.dto.NotificationCreateCommand;
+import com.pinecni.erp.api.notification.repository.NotificationRepository;
+import com.pinecni.erp.api.notification.util.NotificationFormat;
+import com.pinecni.erp.api.notification.util.ResendPrefix;
 import com.pinecni.erp.api.project.repository.ProjectRepository;
 import com.pinecni.erp.api.signature.dto.DocumentSignatureResponse;
 import com.pinecni.erp.api.signature.repository.ApprovalLineTemplateRepository;
@@ -17,13 +21,16 @@ import com.pinecni.erp.entity.Code;
 import com.pinecni.erp.entity.DocumentSignature;
 import com.pinecni.erp.entity.ExternalPerson;
 import com.pinecni.erp.entity.Project;
+import com.pinecni.erp.entity.Notification;
 import com.pinecni.erp.entity.SignatureRequest;
 import com.pinecni.erp.entity.User;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -56,6 +63,7 @@ public class SignatureServiceImpl implements SignatureService {
     private final ExternalPersonRepository externalPersonRepository;
     private final AuditLogService auditLogService;
     private final com.pinecni.erp.api.notification.service.NotificationEnqueueService notificationEnqueueService;
+    private final NotificationRepository notificationRepository;
 
     // ============================================================
     // 결재라인 기반 서명 요청 생성
@@ -682,6 +690,7 @@ public class SignatureServiceImpl implements SignatureService {
                 String sSlot = codeRepository.findByCode(sig.getSignatureSlot())
                         .map(Code::getCodeName).orElse(sig.getSignatureSlot());
                 Map<String, Object> sd = new HashMap<>();
+                sd.put("documentSignatureIdx", sig.getIdx());
                 sd.put("signerName", sName);
                 sd.put("slotLabel", sSlot);
                 sd.put("isExternal", Boolean.TRUE.equals(sig.getIsExternal()));
@@ -862,6 +871,7 @@ public class SignatureServiceImpl implements SignatureService {
                 String sSlot = codeRepository.findByCode(sig.getSignatureSlot())
                         .map(Code::getCodeName).orElse(sig.getSignatureSlot());
                 Map<String, Object> sd = new HashMap<>();
+                sd.put("documentSignatureIdx", sig.getIdx());
                 sd.put("signerName", sName);
                 sd.put("slotLabel", sSlot);
                 sd.put("isExternal", Boolean.TRUE.equals(sig.getIsExternal()));
@@ -880,9 +890,6 @@ public class SignatureServiceImpl implements SignatureService {
     // =========================================================================
     // 알림 enqueue 헬퍼 (Phase 5 — C1901 서명요청 / C1902 서명진행)
     // =========================================================================
-
-    private static final java.time.format.DateTimeFormatter NOTIF_TIME_FMT =
-            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     /** C1901 — 그 차례 서명자에게 알림. 외부인만 SKIP. */
     private void enqueueSignatureRequestNotification(ApprovalDocument document,
@@ -910,7 +917,7 @@ public class SignatureServiceImpl implements SignatureService {
         vars.put("documentNo",      safe(document.getDocumentNo(), ""));
         vars.put("slotLabel",       slotLabel);
         vars.put("actorName",       actorName);
-        vars.put("eventTime",       LocalDateTime.now().format(NOTIF_TIME_FMT));
+        vars.put("eventTime",       LocalDateTime.now().format(NotificationFormat.EVENT_TIME));
         vars.put("documentTypePath", "");        // link_template 변수 — deepLink 가 우선됨
         vars.put("documentIdx",     document.getIdx());
         vars.put("deepLink",        deepLink);
@@ -929,6 +936,94 @@ public class SignatureServiceImpl implements SignatureService {
                         .dedupKey("SIGREQ:" + ds.getIdx())
                         .build());
     }
+
+    /**
+     * 보낸요청 탭에서 작성자가 미서명자에게 직접 알림을 다시 보낼 때 호출.
+     * <p>채널은 시스템 인박스(C2103) + 메신저 DM(C2101) 두 개 모두 enqueue.
+     * 본문/제목 앞에 친근한 톤의 재발송 프리픽스를 한 번 붙임 (이미 붙어 있으면 또 붙이지 않음).</p>
+     */
+    @Override
+    @Transactional
+    public void resendSignatureRequestNotification(Long documentSignatureIdx, Long actorUserIdx) {
+        if (documentSignatureIdx == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 요청입니다.");
+        }
+        DocumentSignature ds = documentSignatureRepository.findById(documentSignatureIdx)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "서명 대상을 찾을 수 없습니다."));
+        if (ds.getSignedAt() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 서명을 끝낸 분이라 다시 보낼 필요가 없습니다.");
+        }
+        if (Boolean.TRUE.equals(ds.getIsExternal())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "외부 참석자 서명은 별도 모바일 링크로 진행됩니다.");
+        }
+        if (ds.getRequestedAt() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "아직 차례가 오지 않은 서명자입니다.");
+        }
+
+        ApprovalDocument document = approvalDocumentRepository.findById(ds.getDocumentIdx())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "문서를 찾을 수 없습니다."));
+
+        if (document.getCreatedUserIdx() == null
+                || !document.getCreatedUserIdx().equals(actorUserIdx)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "본인이 만든 문서의 미서명자에게만 다시 보낼 수 있습니다.");
+        }
+
+        Long signerIdx = ds.getSignerUserIdx();
+        if (signerIdx == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "서명자 정보가 비어 있습니다.");
+        }
+
+        String recipientName = userRepository.findById(signerIdx)
+                .map(User::getEmpName).orElse("");
+        String actorName = userRepository.findById(actorUserIdx)
+                .map(User::getEmpName).orElse("");
+        String slotLabel = ds.getSignatureSlot() != null
+                ? codeRepository.findByCode(ds.getSignatureSlot()).map(Code::getCodeName).orElse("서명")
+                : "서명";
+
+        String deepLink = approvalDeepLink(document.getDocumentType(), document.getIdx());
+
+        java.util.Map<String, Object> vars = new java.util.LinkedHashMap<>();
+        vars.put("recipientName",   recipientName);
+        vars.put("documentTitle",   safe(document.getTitle(), "문서"));
+        vars.put("documentNo",      safe(document.getDocumentNo(), ""));
+        vars.put("slotLabel",       slotLabel);
+        vars.put("actorName",       actorName);
+        vars.put("eventTime",       LocalDateTime.now().format(NotificationFormat.EVENT_TIME));
+        vars.put("documentTypePath", "");
+        vars.put("documentIdx",     document.getIdx());
+        vars.put("deepLink",        deepLink);
+
+        // 매 재발송마다 새 dedupKey — 같은 행을 여러 번 다시 보내도 멱등 SKIP 안 되도록 timestamp 포함
+        String dedupKey = "SIGREQ-RESEND:" + ds.getIdx() + ":" + System.currentTimeMillis();
+
+        List<Long> insertedIdxs = notificationEnqueueService.enqueue(
+                NotificationCreateCommand.builder()
+                        .notificationType("C1901")
+                        .channel("C2101")
+                        .channel("C2103")
+                        .recipientUserIdx(signerIdx)
+                        .actorUserIdx(actorUserIdx)
+                        .targetType("C1702")
+                        .targetIdx(ds.getIdx())
+                        .documentIdx(document.getIdx())
+                        .variables(vars)
+                        .dedupKey(dedupKey)
+                        .build());
+
+        // 새로 만들어진 행에 친근한 톤의 재발송 프리픽스 prepend (제목은 한 줄, 본문은 한 줄 띄움)
+        for (Long idx : insertedIdxs) {
+            notificationRepository.findById(idx).ifPresent(n -> {
+                n.setTitle(ResendPrefix.forTitle(n.getTitle()));
+                n.setBody(ResendPrefix.forBody(n.getBody()));
+                notificationRepository.save(n);
+            });
+        }
+
+        log.info("[Signature/Resend] 재발송 — dsIdx={}, recipient={}, actor={}, channels={}",
+                ds.getIdx(), signerIdx, actorUserIdx, insertedIdxs.size());
+    }
+
 
     /**
      * C1902 — 중간 단계 완료 시 작성자(drafter) 에게 진행 상황 알림.
@@ -973,7 +1068,7 @@ public class SignatureServiceImpl implements SignatureService {
         vars.put("totalOrders",      totalOrders);
         vars.put("nextSignerName",   nextSignerName);
         vars.put("nextSlotLabel",    nextSlotLabel);
-        vars.put("eventTime",        LocalDateTime.now().format(NOTIF_TIME_FMT));
+        vars.put("eventTime",        LocalDateTime.now().format(NotificationFormat.EVENT_TIME));
         vars.put("documentTypePath", "");
         vars.put("documentIdx",      document.getIdx());
         vars.put("deepLink",         deepLink);

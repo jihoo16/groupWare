@@ -122,6 +122,16 @@ public interface SignatureService {
     List<Map<String, Object>> getRequestedListForUser(Long userIdx);
 
     /**
+     * 미서명자에게 서명요청 알림 (C1901) 을 시스템 알림 + 메신저 두 채널로 다시 발송한다.
+     * <p>본인이 만든 문서의 미서명 행 (외부인·서명완료 행 제외) 에만 가능하다.
+     * 본문 앞에 친근한 톤의 재발송 안내 문구가 자동으로 붙는다.</p>
+     *
+     * @param documentSignatureIdx 대상 서명 행 idx
+     * @param actorUserIdx         재발송을 요청한 사용자 (작성자 본인)
+     */
+    void resendSignatureRequestNotification(Long documentSignatureIdx, Long actorUserIdx);
+
+    /**
      * 문서의 가장 최근 서명 완료 시각.
      * <p>받은 PDF 영역이 페이지 로드 시 "방금 서명 끝난 문서인지" 판별해
      * "생성 중" 상태로 자동 진입할지 결정하는 데 사용.</p>
