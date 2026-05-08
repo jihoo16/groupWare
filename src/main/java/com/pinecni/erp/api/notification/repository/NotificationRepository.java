@@ -53,6 +53,15 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
            "  AND n.readAt IS NULL")
     int markAllInboxRead(@Param("userIdx") Long userIdx, @Param("now") LocalDateTime now);
 
+    /** 본인의 특정 종류 안 읽은 인박스 알림 전체 (자동 읽음 동기화용) */
+    @Query("SELECT n FROM Notification n " +
+           "WHERE n.recipientUserIdx = :userIdx " +
+           "  AND n.channel = 'C2103' " +
+           "  AND n.notificationType = :type " +
+           "  AND n.readAt IS NULL")
+    List<Notification> findUnreadInboxByType(@Param("userIdx") Long userIdx,
+                                              @Param("type") String type);
+
     /** root 에 매달린 알림 행 카운트 (특정 종류 제외) — 사용자 수동 재시도 한도 검사용 */
     @Query("SELECT COUNT(n) FROM Notification n " +
            "WHERE n.originalNotificationIdx = :rootIdx " +

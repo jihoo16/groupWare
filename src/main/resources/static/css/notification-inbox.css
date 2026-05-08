@@ -65,6 +65,38 @@
 }
 .date-tilde { color: #94a3b8; }
 
+/* 채널 필터 칩 (보낸 알림 탭 전용) */
+.inbox-channel-filter {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+.inbox-channel-filter[hidden] { display: none; }
+.inbox-channel-filter .channel-chip {
+    padding: 6px 12px;
+    border: 1px solid #cbd5e0;
+    background: #fff;
+    color: #4a5568;
+    border-radius: 16px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.inbox-channel-filter .channel-chip:hover {
+    border-color: #1a73e8;
+    color: #1a73e8;
+}
+.inbox-channel-filter .channel-chip.active {
+    background: #1a73e8;
+    color: #fff;
+    border-color: #1a73e8;
+}
+.inbox-channel-filter .channel-chip .fas { font-size: 11px; }
+
 .inbox-summary-actions {
     display: inline-flex;
     gap: 14px;
@@ -155,6 +187,29 @@
     flex-shrink: 0;
 }
 
+/* 서명요청 알림 처리 상태 뱃지 */
+.sig-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    vertical-align: middle;
+    line-height: 1.4;
+}
+.sig-status-badge .fas { font-size: 10px; }
+.sig-status-badge.completed {
+    background: #dcfce7;
+    color: #166534;
+}
+.sig-status-badge.pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
 /* 빈 상태 */
 .inbox-empty {
     padding: 60px 20px;
@@ -199,23 +254,7 @@
     background: #f7f9fc;
 }
 
-/* ========== 사이드바 알림 메뉴 배지 ========== */
-.notif-menu-item .notif-badge {
-    display: inline-block;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    background: #e53e3e;
-    color: #fff;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 700;
-    line-height: 20px;
-    text-align: center;
-    margin-left: auto;
-    vertical-align: middle;
-}
-.notif-menu-item .notif-badge[data-count="0"] { display: none; }
+/* 사이드바 알림 메뉴 배지 스타일은 home.css 로 이전 (모든 페이지 공용) */
 
 /* 알림 상세 모달 (SweetAlert 안에서) */
 .notif-detail-popup .swal2-html-container { text-align: left !important; }

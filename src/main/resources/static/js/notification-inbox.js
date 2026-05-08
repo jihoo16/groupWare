@@ -25,12 +25,13 @@ document.addEventListener('DOMContentLoaded', function () {
         C2006: { name: '만료',       cls: 'status-expired' }
     };
 
-    const PAGE_SIZE = 20;
+    const PAGE_SIZE = 10;
 
-    let currentTab  = 'received';
-    let currentPage = 0;
-    let unreadOnly  = false;
-    let filterType  = '';
+    let currentTab     = 'received';
+    let currentPage    = 0;
+    let unreadOnly     = false;
+    let filterType     = '';
+    let filterChannel  = '';
 
     /* ─── DOM ─── */
     const subtitleEl   = document.getElementById('inboxSubtitle');
@@ -46,6 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebarBadge = document.getElementById('sidebarNotifBadge');
     const countsReceived = document.getElementById('inboxCountsReceived');
     const countsSent     = document.getElementById('inboxCountsSent');
+    const channelFilterEl = document.getElementById('inboxChannelFilter');
 
     /* ─── 탭 전환 ─── */
     function bindTabs() {
@@ -78,6 +80,18 @@ document.addEventListener('DOMContentLoaded', function () {
         if (countsSent)     countsSent.hidden     = !isSent;
         if (markAllBtn)     markAllBtn.style.display = isSent ? 'none' : '';
         if (unreadOnlyChk)  unreadOnlyChk.parentElement.style.display = isSent ? 'none' : '';
+        if (channelFilterEl) channelFilterEl.hidden = !isSent;
+        if (!isSent && filterChannel) {
+            filterChannel = '';
+            updateChannelChipUI();
+        }
+    }
+
+    function updateChannelChipUI() {
+        if (!channelFilterEl) return;
+        channelFilterEl.querySelectorAll('.channel-chip').forEach(function (chip) {
+            chip.classList.toggle('active', (chip.dataset.channel || '') === filterChannel);
+        });
     }
 
     /* ─── 데이터 로드 ─── */
@@ -112,7 +126,8 @@ document.addEventListener('DOMContentLoaded', function () {
             page: String(currentPage),
             size: String(PAGE_SIZE)
         });
-        if (filterType) params.set('type', filterType);
+        if (filterType)    params.set('type', filterType);
+        if (filterChannel) params.set('channel', filterChannel);
 
         fetch('/api/me/inbox/sent?' + params.toString(), { credentials: 'same-origin' })
             .then(function (res) {
@@ -131,7 +146,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderReceived(data) {
         if (totalEl)  totalEl.textContent  = data.totalElements;
         if (unreadEl) unreadEl.textContent = data.totalUnread;
-        if (sidebarBadge) {
+        if (typeof window.applySidebarNotifCount === 'function') {
+            window.applySidebarNotifCount(data.totalUnread);
+        } else if (sidebarBadge) {
             sidebarBadge.textContent = data.totalUnread;
             sidebarBadge.dataset.count = String(data.totalUnread);
             sidebarBadge.hidden = data.totalUnread === 0;
@@ -156,10 +173,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const isUnread = !row.readAt;
         el.className = 'inbox-row' + (isUnread ? ' unread' : '');
         el.dataset.idx = row.idx;
+
+        let sigBadge = '';
+        if (row.signatureStatus === 'COMPLETED') {
+            sigBadge = '<span class="sig-status-badge completed"><i class="fas fa-check"></i> 처리됨</span>';
+        } else if (row.signatureStatus === 'PENDING') {
+            sigBadge = '<span class="sig-status-badge pending"><i class="fas fa-clock"></i> 처리대기</span>';
+        }
+
         el.innerHTML =
             '<span class="row-icon">' + (ICONS[row.notificationType] || '🔔') + '</span>' +
             '<div class="row-body">' +
-            '  <h3 class="row-title">' + escapeHtml(row.title) + '</h3>' +
+            '  <h3 class="row-title">' + escapeHtml(row.title) + sigBadge + '</h3>' +
             '  <p class="row-text">' + escapeHtml(row.body) + '</p>' +
             '</div>' +
             '<span class="row-time">' + formatTime(row.createdAt) + '</span>';
@@ -172,9 +197,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     credentials: 'same-origin'
                 }).then(function () {
                     el.classList.remove('unread');
-                    if (sidebarBadge) {
-                        const cur = parseInt(sidebarBadge.dataset.count || '0', 10);
-                        const next = Math.max(0, cur - 1);
+                    const cur = sidebarBadge ? parseInt(sidebarBadge.dataset.count || '0', 10) : 0;
+                    const next = Math.max(0, cur - 1);
+                    if (typeof window.applySidebarNotifCount === 'function') {
+                        window.applySidebarNotifCount(next);
+                    } else if (sidebarBadge) {
                         sidebarBadge.textContent = next;
                         sidebarBadge.dataset.count = String(next);
                         sidebarBadge.hidden = next === 0;
@@ -189,9 +216,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function openReceivedModal(row) {
+        let sigStatusRow = '';
+        if (row.signatureStatus === 'COMPLETED') {
+            sigStatusRow = '  <dt>서명 상태</dt><dd><span class="sig-status-badge completed"><i class="fas fa-check"></i> 처리됨</span></dd>';
+        } else if (row.signatureStatus === 'PENDING') {
+            sigStatusRow = '  <dt>서명 상태</dt><dd><span class="sig-status-badge pending"><i class="fas fa-clock"></i> 처리대기</span></dd>';
+        }
+
         const html =
             '<dl class="notif-detail">' +
             '  <dt>알림 종류</dt><dd>' + escapeHtml(row.notificationTypeName || row.notificationType) + '</dd>' +
+            sigStatusRow +
             '  <dt>받은 시각</dt><dd>' + escapeHtml(formatTime(row.createdAt)) + '</dd>' +
             (row.readAt
                 ? '  <dt>읽은 시각</dt><dd>' + escapeHtml(formatTime(row.readAt)) + '</dd>'
@@ -312,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 '  <strong>' + escapeHtml(row.recipientName || '수신자') + '</strong>' +
                 (row.recipientEmpId ? ' (' + escapeHtml(row.recipientEmpId) + ')' : '') +
                 '  님께 같은 내용으로 다시 발송합니다.<br>' +
-                '  <span style="color:#9ca3af;">한 알림에 대해 최대 5회까지 재발송 가능. 재발송된 메시지에는 [재발송] 프리픽스가 자동으로 붙습니다.</span>' +
+                '  <span style="color:#9ca3af;">한 알림당 최대 5회까지 다시 보낼 수 있고, 메시지 앞에 \"📬 알림을 놓치신 것 같아 다시 보내드려요!\" 안내가 자동으로 붙어요.</span>' +
                 '</div>',
             icon: 'question',
             showCancelButton: true,
@@ -406,6 +441,18 @@ document.addEventListener('DOMContentLoaded', function () {
             load();
         });
     }
+    if (channelFilterEl) {
+        channelFilterEl.addEventListener('click', function (ev) {
+            const chip = ev.target.closest('.channel-chip');
+            if (!chip || !channelFilterEl.contains(chip)) return;
+            const next = chip.dataset.channel || '';
+            if (next === filterChannel) return;
+            filterChannel = next;
+            updateChannelChipUI();
+            currentPage = 0;
+            load();
+        });
+    }
 
     if (markAllBtn) {
         markAllBtn.addEventListener('click', async function () {
@@ -449,18 +496,9 @@ document.addEventListener('DOMContentLoaded', function () {
         return div.innerHTML;
     }
 
-    /**
-     * 매우 간단한 Markdown 렌더 — 본문 안의 **굵게**, [라벨](url), 줄바꿈만 처리.
-     * (Mattermost 측 풀 마크다운 호환은 안 함)
-     */
+    // 본문 Markdown 렌더는 markdown-lite.js 의 MarkdownLite.render() 를 사용
     function markdownLite(text) {
-        if (!text) return '';
-        let html = escapeHtml(text);
-        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        html = html.replace(/\[([^\]]+)\]\((https?:[^\)\s]+)\)/g,
-                '<a href="$2" target="_blank" rel="noopener" style="color:#1a73e8;text-decoration:underline;">$1</a>');
-        html = html.replace(/\n/g, '<br>');
-        return html;
+        return window.MarkdownLite ? window.MarkdownLite.render(text) : escapeHtml(text || '');
     }
 
     function formatTime(iso) {

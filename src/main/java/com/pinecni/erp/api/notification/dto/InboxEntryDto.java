@@ -20,4 +20,11 @@ public class InboxEntryDto {
     private final String        linkUrl;
     private final LocalDateTime createdAt;
     private final LocalDateTime readAt;     // null 이면 안 읽음
+
+    /**
+     * 서명요청 알림(C1901)에 한해 채워짐.
+     * "COMPLETED" — 이미 서명 완료, "PENDING" — 아직 서명 전.
+     * null — 서명 알림이 아니거나 대상 행이 사라짐.
+     */
+    private final String        signatureStatus;
 }
