@@ -296,6 +296,22 @@ public class UserController {
             }
         }
 
+        // ADMIN 전용 필드 가드 — 본인이라도 ADMIN+ 이 아니면 권한/퇴사예약 변경 불가.
+        // (UI 에서 가렸지만 직접 API 호출 시 권한 escalation 차단)
+        if (!AuthorizationUtil.isAdminOrHigher(session)) {
+            if (updateDTO.getUserRoleCode() != null
+                    || updateDTO.getPlannedResignationDate() != null
+                    || Boolean.TRUE.equals(updateDTO.getPlannedResignationDateClear())) {
+                log.warn("ADMIN 전용 필드 변경 시도 (무시) — userIdx={}, role={}, plannedDate={}, clear={}",
+                        updatedUserIdx, updateDTO.getUserRoleCode(),
+                        updateDTO.getPlannedResignationDate(),
+                        updateDTO.getPlannedResignationDateClear());
+                updateDTO.setUserRoleCode(null);
+                updateDTO.setPlannedResignationDate(null);
+                updateDTO.setPlannedResignationDateClear(null);
+            }
+        }
+
         log.debug("PUT /api/users/{} - updateUser(), updatedUserIdx: {}", idx, updatedUserIdx);
         UserDTO user = userService.updateUser(idx, updateDTO, updatedUserIdx);
         return ResponseEntity.ok(user);
