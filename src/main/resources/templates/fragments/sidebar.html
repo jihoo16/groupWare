@@ -20,7 +20,7 @@
                     <span class="menu-text">홈</span>
                 </a>
             </li>
-            <li class="menu-item notif-menu-item" th:classappend="${activeMenu == 'notification-inbox'} ? 'active' : ''" data-tooltip="알림 인박스">
+            <li class="menu-item notif-menu-item" id="sidebarNotifMenuItem" th:classappend="${activeMenu == 'notification-inbox'} ? 'active' : ''" data-tooltip="알림 인박스">
                 <a href="/notifications">
                     <i class="fas fa-bell"></i>
                     <span class="menu-text">알림</span>
@@ -161,7 +161,7 @@
             <li class="menu-divider"></li>
 
             <!-- ── 관리 (권한별) ── -->
-            <li th:class="${(activeMenu == 'hr' or activeMenu == 'payroll' or activeMenu == 'basic-info' or activeMenu == 'manage-hierarchy' or activeMenu == 'external-person' or activeMenu == 'admin-vacation' or activeMenu == 'admin-vacation-documents' or activeMenu == 'admin-expense-documents' or activeMenu == 'admin-receipt-documents' or activeMenu == 'admin-competency' or activeMenu == 'admin-audit-logs' or activeMenu == 'dev-code-groups') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="관리">
+            <li th:class="${(activeMenu == 'hr' or activeMenu == 'payroll' or activeMenu == 'basic-info' or activeMenu == 'manage-hierarchy' or activeMenu == 'external-person' or activeMenu == 'admin-vacation' or activeMenu == 'admin-vacation-documents' or activeMenu == 'admin-expense-documents' or activeMenu == 'admin-receipt-documents' or activeMenu == 'admin-competency' or activeMenu == 'admin-audit-logs' or activeMenu == 'admin-notifications' or activeMenu == 'admin-announce' or activeMenu == 'dev-code-groups') ? 'menu-item menu-parent active' : 'menu-item menu-parent'}" data-tooltip="관리">
                 <a href="/external-person" class="menu-toggle-btn">
                     <i class="fas fa-cogs"></i>
                     <span class="menu-text">관리</span>
@@ -223,6 +223,11 @@
                             <span class="submenu-text">알림 관리</span>
                         </a>
                     </li>
+                    <li class="submenu-item" th:classappend="${activeMenu == 'admin-announce'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101' or session.userRoleCode == 'C1102'}">
+                        <a href="/admin/announce">
+                            <span class="submenu-text">공지 보내기</span>
+                        </a>
+                    </li>
                     <li class="submenu-item" th:classappend="${activeMenu == 'dev-code-groups'} ? 'active' : ''" th:if="${session.userRoleCode == 'C1101'}">
                         <a href="/dev/code-groups">
                             <span class="submenu-text">그룹코드 설정</span>
@@ -253,20 +258,29 @@
     <script>
         (function () {
             'use strict';
+            function applyCount(count) {
+                var badge = document.getElementById('sidebarNotifBadge');
+                var item  = document.getElementById('sidebarNotifMenuItem');
+                if (badge) {
+                    badge.textContent = count > 99 ? '99+' : String(count);
+                    badge.dataset.count = String(count);
+                    badge.hidden = count === 0;
+                }
+                // 메뉴 아이템에 .has-unread 클래스를 토글 — CSS 의 ::after 빨간점이 이 클래스 기반으로 표시됨
+                if (item) item.classList.toggle('has-unread', count > 0);
+            }
             function refresh() {
                 fetch('/api/me/inbox/unread-count', { credentials: 'same-origin' })
                     .then(function (res) { return res.ok ? res.json() : null; })
                     .then(function (json) {
                         if (!json) return;
-                        var badge = document.getElementById('sidebarNotifBadge');
-                        if (!badge) return;
-                        var count = json.count || 0;
-                        badge.textContent = count > 99 ? '99+' : String(count);
-                        badge.dataset.count = String(count);
-                        badge.hidden = count === 0;
+                        applyCount(json.count || 0);
                     })
                     .catch(function () { /* 사이드바 카운트 조회 실패는 조용히 무시 */ });
             }
+            // 다른 페이지(알림 인박스 등) 에서 직접 카운트를 조정할 수 있도록 노출
+            window.refreshSidebarNotif = refresh;
+            window.applySidebarNotifCount = applyCount;
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', refresh);
             } else {

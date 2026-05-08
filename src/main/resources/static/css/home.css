@@ -1420,6 +1420,55 @@ label {
    전체 너비가 필요한 테이블은 각자 .some-table { width: 100%; }로 명시할 것. */
 
 /* ==========================================
+   사이드바 알림 뱃지·점
+   - 안 읽은 알림이 있으면 .has-unread 클래스 부여 → 종 아이콘 우상단 빨간 점
+   - 사이드바 펼침 (.sidebar:hover) 상태에서는 점 대신 숫자 뱃지를 우측에 표시
+   ========================================== */
+.sidebar .notif-menu-item.has-unread > a > .fas.fa-bell {
+    position: relative;
+    overflow: visible;
+}
+.sidebar .notif-menu-item.has-unread > a > .fas.fa-bell::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 9px;
+    height: 9px;
+    background: #e53e3e;
+    border: 2px solid var(--v3-bg, #fff);
+    border-radius: 50%;
+    box-sizing: border-box;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+/* 펼침 상태에서는 숫자 뱃지가 같은 정보를 더 풍부하게 보여주므로 점은 숨김 */
+.sidebar:hover .notif-menu-item.has-unread > a > .fas.fa-bell::after {
+    display: none;
+}
+
+.notif-menu-item .notif-badge {
+    display: inline-block;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    background: #e53e3e;
+    color: #fff;
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    margin-left: auto;
+    vertical-align: middle;
+}
+.notif-menu-item .notif-badge[hidden] { display: none; }
+.notif-menu-item .notif-badge[data-count="0"] { display: none; }
+
+/* 접힘 상태에서는 menu-text 가 opacity 0 이라 숫자 뱃지가 어색하게 보일 수 있어 함께 숨김 */
+.sidebar:not(:hover) .notif-menu-item .notif-badge { display: none; }
+
+/* ==========================================
    반응형
    ========================================== */
 @media (max-width: 1024px) {
