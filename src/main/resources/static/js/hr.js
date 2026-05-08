@@ -9,6 +9,18 @@ let currentFilter = 'all'; // 현재 부서 필터
 let sortColumn = null; // 현재 정렬 컬럼
 let sortDirection = 'asc'; // 현재 정렬 방향 (asc/desc)
 let currentSearchKeyword = ''; // 현재 검색어
+let roleCodeNameMap = {}; // 권한 코드 → 코드명 캐시
+
+// 권한 체크 — ADMIN(C1102) 이상만 권한/퇴사예약 등 관리 필드 노출.
+// EXECUTIVE(C1105)는 읽기전용 권한이라 mutation 불가.
+function isAdminOrHigher() {
+    const code = window.CURRENT_USER && window.CURRENT_USER.userRoleCode;
+    return code === 'C1101' || code === 'C1102';
+}
+
+function isDeveloper() {
+    return window.CURRENT_USER && window.CURRENT_USER.userRoleCode === 'C1101';
+}
 
 // jQuery Ready
 $(document).ready(function() {
@@ -17,6 +29,7 @@ $(document).ready(function() {
     loadEmployees();
     loadDepartmentOptions(); // 모달 폼 부서 옵션 로드
     loadPositionOptions(); // 모달 폼 직급 옵션 로드
+    loadRoleOptions(); // 모달 폼 권한 옵션 로드 (관리자만)
 
     // 부서 필터 버튼 클릭 (이벤트 위임 방식)
     $('.department-filters').on('click', '.dept-btn', function() {
@@ -247,13 +260,27 @@ function createEmployeeRow(user) {
         searchUtils.highlightText(user.empPhone || '-', currentSearchKeyword) :
         (user.empPhone || '-');
 
+    // 퇴사예정 표시 — 예정일 있고, 아직 퇴사 상태 아님일 때만 (퇴사 처리 후엔 의미 없음)
+    let plannedResignationBadge = '';
+    if (user.plannedResignationDate && user.empStatus !== '퇴사') {
+        const d = new Date(user.plannedResignationDate);
+        if (!isNaN(d.getTime())) {
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            plannedResignationBadge = `<span class="planned-resignation-tag">${mm}/${dd} 퇴사예정</span>`;
+        }
+    }
+
     return `
         <tr data-idx="${user.idx}" data-dept="${user.empDept}">
             <td>${empId}</td>
             <td>
                 <div class="employee-name">
                     <div class="emp-avatar ${newBadge}">${initial}</div>
-                    <span>${empName}</span>
+                    <div class="emp-name-stack">
+                        <span>${empName}</span>
+                        ${plannedResignationBadge}
+                    </div>
                 </div>
             </td>
             <td>${empDeptName}</td>
@@ -343,6 +370,20 @@ function viewEmployeeDetail(idx) {
             $('#view-empStatus').text(user.empStatus || '-');
             $('#view-empWorkType').text(user.empWorkType || '-');
             $('#view-empNotes').text(user.empNotes || '-');
+
+            // 관리자에게만 권한 표시 (코드명으로)
+            const showRole = isAdminOrHigher();
+            $('#view-roleRow').toggle(showRole);
+            if (showRole) {
+                const roleName = roleCodeNameMap[user.userRoleCode] || user.userRoleCode || '-';
+                $('#view-userRoleCode').text(roleName);
+            }
+
+            // 관리자에게만 퇴사예정일 표시
+            $('#view-plannedResignationRow').toggle(showRole);
+            if (showRole) {
+                $('#view-plannedResignationDate').text(user.plannedResignationDate || '-');
+            }
         },
         error: function(xhr, status, error) {
             console.error('[직원 상세 조회]', error);
@@ -401,6 +442,18 @@ function editEmployee(idx) {
             $('#empStatus').val(user.empStatus);
             $('#empWorkType').val(user.empWorkType);
             $('#empNotes').val(user.empNotes || '');
+
+            // 관리자에게만 권한 row 표시 + 현재 값 세팅
+            $('#roleRow').toggle(isAdminOrHigher());
+            if (isAdminOrHigher()) {
+                setTimeout(function() {
+                    $('#userRoleCode').val(user.userRoleCode || 'C1104');
+                }, 100);
+            }
+
+            // 관리자에게만 퇴사예정일 row 표시 + 현재 값 세팅
+            $('#plannedResignationRow').toggle(isAdminOrHigher());
+            $('#plannedResignationDate').val(user.plannedResignationDate || '');
         },
         error: function(xhr, status, error) {
             console.error('[직원 정보 조회]', error);
@@ -653,6 +706,16 @@ function openEmployeeModal() {
     loadDepartmentOptions();
     loadPositionOptions();
 
+    // 관리자에게만 권한 row 표시 (등록 시 기본값 USER)
+    $('#roleRow').toggle(isAdminOrHigher());
+    if (isAdminOrHigher()) {
+        $('#userRoleCode').val('C1104');
+    }
+
+    // 관리자에게만 퇴사예정일 row 표시 (등록 시 기본값 비움)
+    $('#plannedResignationRow').toggle(isAdminOrHigher());
+    $('#plannedResignationDate').val('');
+
     // 생년월일 기본값 설정 (1990-01-01)
     $('#empBirth').val('1990-01-01');
 
@@ -721,6 +784,24 @@ function saveEmployee() {
         employeeData.password = 'temp1234'; // 임시 비밀번호
     }
 
+    // 관리자만 권한 변경 가능 (서버에서도 재검증)
+    if (isAdminOrHigher()) {
+        const roleCode = $('#userRoleCode').val();
+        if (roleCode) {
+            employeeData.userRoleCode = roleCode;
+        }
+
+        // 퇴사예정일 — 수정 모드일 때만 의미 있음. 빈 값이면 명시적 해제.
+        if (isEditMode) {
+            const plannedDate = $('#plannedResignationDate').val();
+            if (plannedDate) {
+                employeeData.plannedResignationDate = plannedDate;
+            } else {
+                employeeData.plannedResignationDateClear = true;
+            }
+        }
+    }
+
     // 필수 필드 검증
     if (!employeeData.empName || !employeeData.empId || !employeeData.empEmail) {
         showWarning('필수 항목을 모두 입력해주세요.', '입력 오류');
@@ -786,6 +867,41 @@ function loadDepartmentOptions() {
         },
         error: function(xhr, status, error) {
             console.error('부서 옵션 로드 실패:', error);
+        }
+    });
+}
+
+/**
+ * 모달 폼 권한 옵션 로드 (C11 그룹) — 관리자에게만 노출
+ * EXECUTIVE(C1105)는 mutation 불가이므로 enum 의 표시 순서대로 노출.
+ * DEVELOPER(C1101)는 개발자만 부여 가능.
+ */
+function loadRoleOptions() {
+    if (!isAdminOrHigher()) {
+        return; // 관리자가 아니면 select 자체를 채우지 않음
+    }
+
+    $.ajax({
+        url: '/api/codes?groupCode=C11&activeOnly=true',
+        method: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            const $select = $('#userRoleCode');
+            $select.empty();
+
+            roleCodeNameMap = {};
+            response.forEach(function(role) {
+                roleCodeNameMap[role.code] = role.codeName;
+
+                // DEVELOPER 는 개발자 본인만 부여 가능
+                if (role.code === 'C1101' && !isDeveloper()) {
+                    return;
+                }
+                $select.append(`<option value="${role.code}">${role.codeName}</option>`);
+            });
+        },
+        error: function(xhr, status, error) {
+            console.error('권한 옵션 로드 실패:', error);
         }
     });
 }

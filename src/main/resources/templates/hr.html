@@ -201,6 +201,14 @@
                         </div>
                     </div>
 
+                    <div class="form-row admin-only-field" id="plannedResignationRow" style="display:none;">
+                        <div class="form-group">
+                            <label for="plannedResignationDate">퇴사예정일</label>
+                            <input type="date" id="plannedResignationDate">
+                            <small class="field-hint">설정한 날짜에 자정 기준으로 자동 퇴사 처리됩니다. 비워두면 예약 없음.</small>
+                        </div>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="empWorkType">근무형태</label>
@@ -209,6 +217,12 @@
                                 <option value="계약직">계약직</option>
                                 <option value="인턴">인턴</option>
                                 <option value="프리랜서">프리랜서</option>
+                            </select>
+                        </div>
+                        <div class="form-group admin-only-field" id="roleRow" style="display:none;">
+                            <label for="userRoleCode">권한</label>
+                            <select id="userRoleCode">
+                                <!-- JavaScript에서 동적으로 로드됨 -->
                             </select>
                         </div>
                     </div>
@@ -311,10 +325,21 @@
                     </div>
                 </div>
 
+                <div class="form-row admin-only-field" id="view-plannedResignationRow" style="display:none;">
+                    <div class="view-group">
+                        <label>퇴사예정일</label>
+                        <p id="view-plannedResignationDate">-</p>
+                    </div>
+                </div>
+
                 <div class="form-row">
                     <div class="view-group">
                         <label>근무형태</label>
                         <p id="view-empWorkType">-</p>
+                    </div>
+                    <div class="view-group admin-only-field" id="view-roleRow" style="display:none;">
+                        <label>권한</label>
+                        <p id="view-userRoleCode">-</p>
                     </div>
                 </div>
 

@@ -137,6 +137,27 @@
     gap: 10px;
 }
 
+.employee-name .emp-name-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.2;
+}
+
+.employee-name .planned-resignation-tag {
+    font-size: 11px;
+    color: #999;
+    font-weight: 400;
+}
+
+#employeeForm .field-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: #888;
+    line-height: 1.4;
+}
+
 .emp-avatar {
     width: 36px;
     height: 36px;
