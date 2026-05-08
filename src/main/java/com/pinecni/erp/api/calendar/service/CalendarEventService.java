@@ -5,6 +5,7 @@ import com.pinecni.erp.api.calendar.dto.CalendarParticipantDto;
 import com.pinecni.erp.api.calendar.dto.TeamFilterDto;
 import com.pinecni.erp.api.calendar.repository.CalendarEventRepository;
 import com.pinecni.erp.api.calendar.repository.CalendarParticipantRepository;
+import com.pinecni.erp.api.notification.util.NotificationFormat;
 import com.pinecni.erp.api.team.repository.TeamRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
 import com.pinecni.erp.entity.CalendarEvent;
@@ -147,8 +148,8 @@ public class CalendarEventService {
                 ? userRepository.findById(creatorIdx).map(User::getEmpName).orElse("등록자")
                 : "등록자";
 
-        java.time.format.DateTimeFormatter dateFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        java.time.format.DateTimeFormatter dtFmt   = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        java.time.format.DateTimeFormatter dateFmt = NotificationFormat.EVENT_DATE;
+        java.time.format.DateTimeFormatter dtFmt   = NotificationFormat.EVENT_TIME;
 
         String eventStart = savedEvent.getStartDate() != null
                 ? savedEvent.getStartDate().format(dateFmt) +
@@ -299,8 +300,8 @@ public class CalendarEventService {
                 ? userRepository.findById(actorIdx).map(User::getEmpName).orElse("등록자")
                 : "등록자";
 
-        java.time.format.DateTimeFormatter dateFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        java.time.format.DateTimeFormatter dtFmt   = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        java.time.format.DateTimeFormatter dateFmt = NotificationFormat.EVENT_DATE;
+        java.time.format.DateTimeFormatter dtFmt   = NotificationFormat.EVENT_TIME;
 
         String eventStart = event.getStartDate() != null
                 ? event.getStartDate().format(dateFmt) +
@@ -313,6 +314,8 @@ public class CalendarEventService {
         for (CalendarParticipantDto p : eventDto.getParticipants()) {
             Long recipientIdx = p.getUserIdx();
             if (recipientIdx == null) continue;
+            // 참가자가 알림 수신을 거부했으면 SKIP (receiveNotification = 'N')
+            if ("N".equalsIgnoreCase(p.getReceiveNotification())) continue;
 
             String recipientName = userRepository.findById(recipientIdx)
                     .map(User::getEmpName)
@@ -341,7 +344,7 @@ public class CalendarEventService {
                             .targetIdx(event.getIdx())
                             .variables(vars)
                             .dedupKey("CAL-UPDATE:" + event.getIdx() + ":" + recipientIdx + ":"
-                                    + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")))
+                                    + LocalDateTime.now().format(NotificationFormat.DEDUP_TIMESTAMP))
                             .build());
         }
     }
@@ -385,8 +388,8 @@ public class CalendarEventService {
                 ? userRepository.findById(actorIdx).map(User::getEmpName).orElse("등록자")
                 : "등록자";
 
-        java.time.format.DateTimeFormatter dateFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        java.time.format.DateTimeFormatter dtFmt   = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        java.time.format.DateTimeFormatter dateFmt = NotificationFormat.EVENT_DATE;
+        java.time.format.DateTimeFormatter dtFmt   = NotificationFormat.EVENT_TIME;
 
         String eventStart = event.getStartDate() != null
                 ? event.getStartDate().format(dateFmt) +
@@ -398,6 +401,8 @@ public class CalendarEventService {
         for (CalendarParticipant p : participants) {
             Long recipientIdx = p.getUserIdx();
             if (recipientIdx == null) continue;
+            // 참가자가 알림 수신을 거부했으면 SKIP (receiveNotification = 'N')
+            if ("N".equalsIgnoreCase(p.getReceiveNotification())) continue;
 
             java.util.Map<String, Object> vars = new java.util.LinkedHashMap<>();
             vars.put("eventTitle",    event.getEventTitle() != null ? event.getEventTitle() : "(제목 없음)");
