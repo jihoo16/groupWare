@@ -15,6 +15,8 @@ import com.pinecni.erp.api.notification.repository.NotificationRepository;
 import com.pinecni.erp.api.notification.repository.NotificationTemplateRepository;
 import com.pinecni.erp.api.notification.service.BotConnectionTestService;
 import com.pinecni.erp.api.notification.service.NotificationSettingsService;
+import com.pinecni.erp.api.notification.util.NotificationFormat;
+import com.pinecni.erp.api.notification.util.ResendPrefix;
 import com.pinecni.erp.entity.NotificationTemplate;
 import com.pinecni.erp.api.approval.repository.ApprovalDocumentRepository;
 import com.pinecni.erp.api.user.repository.UserRepository;
@@ -204,13 +206,9 @@ public class AdminNotificationController {
         Long rootIdx = n.getOriginalNotificationIdx() == null ? n.getIdx() : n.getOriginalNotificationIdx();
         long manualClones = notificationRepository.countByOriginalNotificationIdxAndNotificationTypeNot(rootIdx, "C1914");
 
-        // 제목·본문 앞에 [재발송] 프리픽스 — 수신자가 "이건 재발송된 메시지" 식별 가능하게.
-        // 이미 프리픽스가 있으면 또 붙이지 않음.
-        String prefix = "[재발송] ";
-        String newTitle = n.getTitle() != null && !n.getTitle().startsWith(prefix)
-                ? prefix + n.getTitle() : n.getTitle();
-        String newBody  = n.getBody()  != null && !n.getBody().startsWith(prefix)
-                ? prefix + n.getBody()  : n.getBody();
+        // 제목은 한 줄 prefix, 본문은 한 줄 띄움 prefix. 옛 "[재발송] " · 중복 prefix 는 strip 후 한 번만 붙임.
+        String newTitle = ResendPrefix.forTitle(n.getTitle());
+        String newBody  = ResendPrefix.forBody(n.getBody());
 
         Notification clone = Notification.builder()
                 .notificationType(n.getNotificationType())
@@ -420,8 +418,7 @@ public class AdminNotificationController {
         vars.put("announceTitle", req.getTitle().trim());
         vars.put("announceBody",  req.getBody().trim());
         vars.put("actorName",     actorName);
-        vars.put("eventTime",     LocalDateTime.now().format(
-                java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+        vars.put("eventTime",     LocalDateTime.now().format(NotificationFormat.EVENT_TIME));
 
         // C1915 템플릿이 비활성이면 자동 활성화 (관리자가 사용 의사 표시한 셈)
         templateRepository.findByNotificationType("C1915").ifPresent(tpl -> {
@@ -547,4 +544,5 @@ public class AdminNotificationController {
         return cache.computeIfAbsent(code, c ->
                 codeRepository.findByCode(c).map(Code::getCodeName).orElse(c));
     }
+
 }

@@ -1,6 +1,7 @@
 package com.pinecni.erp.api.project.service;
 
 import com.pinecni.erp.api.code.repository.CodeRepository;
+import com.pinecni.erp.api.notification.util.NotificationFormat;
 import com.pinecni.erp.api.document.repository.ReceiptAttendeeRepository;
 import com.pinecni.erp.api.project.dto.*;
 import com.pinecni.erp.api.project.dto.ProjectCardDTO;
@@ -1046,8 +1047,8 @@ public class ProjectServiceImpl implements ProjectService {
                                                   Long actorUserIdx, String changedFields) {
         if (project == null || member == null || member.getEmployeeIdx() == null) return;
 
-        java.time.format.DateTimeFormatter dateFmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        java.time.format.DateTimeFormatter dtFmt   = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        java.time.format.DateTimeFormatter dateFmt = NotificationFormat.EVENT_DATE;
+        java.time.format.DateTimeFormatter dtFmt   = NotificationFormat.EVENT_TIME;
 
         String roleName = member.getRole() != null
                 ? codeRepository.findByCode(member.getRole())
@@ -1082,7 +1083,7 @@ public class ProjectServiceImpl implements ProjectService {
                         .targetIdx(member.getIdx())
                         .variables(vars)
                         .dedupKey("PRJ-" + type + ":" + project.getIdx() + ":" + member.getEmployeeIdx() + ":"
-                                + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")))
+                                + java.time.LocalDateTime.now().format(NotificationFormat.DEDUP_TIMESTAMP))
                         .build());
     }
 }
