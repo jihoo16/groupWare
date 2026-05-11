@@ -252,41 +252,42 @@
             <i class="fas fa-sign-out-alt"></i>
             <span class="logout-text">로그아웃</span>
         </button>
-    </nav>
 
-    <!-- 사이드바 알림 카운트 — 모든 페이지에서 자동으로 갱신 -->
-    <script>
-        (function () {
-            'use strict';
-            function applyCount(count) {
-                var badge = document.getElementById('sidebarNotifBadge');
-                var item  = document.getElementById('sidebarNotifMenuItem');
-                if (badge) {
-                    badge.textContent = count > 99 ? '99+' : String(count);
-                    badge.dataset.count = String(count);
-                    badge.hidden = count === 0;
+        <!-- 사이드바 알림 카운트 — 모든 페이지에서 자동으로 갱신.
+             th:fragment 안쪽에 둬야 다른 페이지의 th:replace 로 사이드바를 포함할 때 같이 실려옴. -->
+        <script>
+            (function () {
+                'use strict';
+                function applyCount(count) {
+                    var badge = document.getElementById('sidebarNotifBadge');
+                    var item  = document.getElementById('sidebarNotifMenuItem');
+                    if (badge) {
+                        badge.textContent = count > 99 ? '99+' : String(count);
+                        badge.dataset.count = String(count);
+                        badge.hidden = count === 0;
+                    }
+                    // 메뉴 아이템에 .has-unread 클래스를 토글 — CSS 의 ::after 빨간점이 이 클래스 기반으로 표시됨
+                    if (item) item.classList.toggle('has-unread', count > 0);
                 }
-                // 메뉴 아이템에 .has-unread 클래스를 토글 — CSS 의 ::after 빨간점이 이 클래스 기반으로 표시됨
-                if (item) item.classList.toggle('has-unread', count > 0);
-            }
-            function refresh() {
-                fetch('/api/me/inbox/unread-count', { credentials: 'same-origin' })
-                    .then(function (res) { return res.ok ? res.json() : null; })
-                    .then(function (json) {
-                        if (!json) return;
-                        applyCount(json.count || 0);
-                    })
-                    .catch(function () { /* 사이드바 카운트 조회 실패는 조용히 무시 */ });
-            }
-            // 다른 페이지(알림 인박스 등) 에서 직접 카운트를 조정할 수 있도록 노출
-            window.refreshSidebarNotif = refresh;
-            window.applySidebarNotifCount = applyCount;
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', refresh);
-            } else {
-                refresh();
-            }
-        })();
-    </script>
+                function refresh() {
+                    fetch('/api/me/inbox/unread-count', { credentials: 'same-origin' })
+                        .then(function (res) { return res.ok ? res.json() : null; })
+                        .then(function (json) {
+                            if (!json) return;
+                            applyCount(json.count || 0);
+                        })
+                        .catch(function () { /* 사이드바 카운트 조회 실패는 조용히 무시 */ });
+                }
+                // 다른 페이지(알림 인박스 등) 에서 직접 카운트를 조정할 수 있도록 노출
+                window.refreshSidebarNotif = refresh;
+                window.applySidebarNotifCount = applyCount;
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', refresh);
+                } else {
+                    refresh();
+                }
+            })();
+        </script>
+    </nav>
 </body>
 </html>
